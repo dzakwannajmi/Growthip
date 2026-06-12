@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import {
   addToken,
-  getAddress,
   getNetwork,
   isConnected,
   requestAccess,

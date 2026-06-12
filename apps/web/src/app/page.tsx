@@ -1,3 +1,4 @@
+import LiveContractReader from "@/components/LiveContractReader";
 import FreighterPayDemo from "@/components/FreighterPayDemo";
 const contracts = [
   {
@@ -199,6 +200,8 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      <LiveContractReader />
 
       <FreighterPayDemo />
 
