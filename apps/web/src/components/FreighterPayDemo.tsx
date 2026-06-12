@@ -1,13 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Buffer } from "buffer";
 import {
   addToken,
   getNetwork,
   isConnected,
   requestAccess,
   setAllowed,
+  signTransaction as freighterSignTransaction,
 } from "@stellar/freighter-api";
+import { Client, networks } from "growthip-pool-client";
 
 const TOKEN_ID =
   "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
@@ -15,6 +18,7 @@ const TOKEN_ID =
 const POOL_ID =
   "CDFAGPSKKJCWJEOGHFYBEWSMSVGQSNXBXPQA45MGHL2ZIQDBQTTHPEFZ";
 
+const RPC_URL = "https://soroban-testnet.stellar.org";
 const NETWORK_PASSPHRASE = "Test SDF Network ; September 2015";
 
 type PossibleError = string | { message?: string } | undefined;
@@ -70,6 +74,8 @@ export default function FreighterPayDemo() {
         return;
       }
 
+      setInstalled(true);
+
       await setAllowed();
 
       const accessResult = await requestAccess();
@@ -87,7 +93,7 @@ export default function FreighterPayDemo() {
       }
 
       setNetwork(networkResult.network || "");
-      setStatus("Freighter connected. You can now prepare a demo private tip.");
+      setStatus("Freighter connected. You can now prepare or submit a Growthip tip.");
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to connect wallet.";
@@ -141,8 +147,77 @@ export default function FreighterPayDemo() {
     );
 
     setStatus(
-      "Demo private tip note prepared. Next milestone: submit deposit_paid on-chain.",
+      "Demo private tip note prepared. You can now submit deposit_paid on-chain.",
     );
+  }
+
+  async function depositPaid() {
+    setBusy(true);
+
+    try {
+      if (!address) {
+        throw new Error("Connect Freighter first.");
+      }
+
+      if (!isTestnet) {
+        throw new Error("Switch Freighter to TESTNET first.");
+      }
+
+      const demoCommitment = commitment || randomHex(32);
+
+      if (!commitment) {
+        const secret = randomHex(32);
+        const nullifier = randomHex(32);
+
+        setCommitment(demoCommitment);
+        setPrivateNote(
+          `growthip-testnet-note:${demoCommitment}:${secret}:${nullifier}`,
+        );
+      }
+
+      setStatus("Preparing deposit_paid transaction...");
+
+      const client = new Client({
+        ...networks.testnet,
+        rpcUrl: RPC_URL,
+        publicKey: address,
+      });
+
+      const tx = await client.deposit_paid({
+        depositor: address,
+        commitment: Buffer.from(demoCommitment, "hex"),
+      });
+
+      setStatus("Open Freighter and approve the deposit transaction...");
+
+      const sent = await tx.signAndSend({
+        signTransaction: async (txXdr: string) => {
+          const signed = await freighterSignTransaction(txXdr, {
+            address,
+            networkPassphrase: NETWORK_PASSPHRASE,
+          });
+
+          if (signed.error) {
+            throw new Error(getErrorMessage(signed.error));
+          }
+
+          return {
+            signedTxXdr: signed.signedTxXdr,
+            signerAddress: signed.signerAddress,
+          };
+        },
+      });
+
+      setStatus(
+        `Deposit submitted successfully. Result: ${String(sent.result)}. Refresh Live Contract Reader to see totalDeposits increase.`,
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to submit deposit.";
+      setStatus(message);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -154,25 +229,23 @@ export default function FreighterPayDemo() {
           </p>
 
           <h2 className="text-3xl font-black tracking-tight text-white md:text-5xl">
-            Connect wallet and prepare a private Growthip tip.
+            Connect wallet and send a private Growthip tip.
           </h2>
 
           <p className="mt-5 text-base leading-8 text-soft-gray/68">
-            This demo connects Freighter, checks the user network, confirms the
-            native XLM token contract, and prepares a private tip note. The next
-            step is wiring this UI to the deployed GrowthipPool
+            This panel connects Freighter, checks the user network, confirms the
+            native XLM token contract, prepares a private tip note, and submits a
+            real
             <span className="font-mono text-fresh-green"> deposit_paid </span>
-            function.
+            transaction to the deployed GrowthipPool contract on Stellar Testnet.
           </p>
 
           <div className="mt-8 rounded-3xl border border-coral-red/20 bg-coral-red/10 p-5">
-            <p className="text-sm font-bold text-coral-red">
-              Demo boundary
-            </p>
+            <p className="text-sm font-bold text-coral-red">Testnet only</p>
             <p className="mt-2 text-sm leading-7 text-soft-gray/75">
-              This panel does not submit the on-chain deposit yet. It prepares
-              the wallet UX and private note flow first so the payment journey is
-              clear before contract binding integration.
+              This uses testnet XLM through the native Stellar Asset Contract.
+              Do not use real funds. If the transaction fails, make sure your
+              Freighter account is on TESTNET and funded with testnet XLM.
             </p>
           </div>
         </div>
@@ -201,7 +274,7 @@ export default function FreighterPayDemo() {
             <PayInfo
               label="Freighter Installed"
               value={
-                installed === null ? "checking..." : installed ? "yes" : "no"
+                installed === null ? "not checked" : installed ? "yes" : "no"
               }
             />
             <PayInfo
@@ -213,7 +286,7 @@ export default function FreighterPayDemo() {
             <PayInfo label="Growthip Pool" value={shortAddress(POOL_ID)} />
           </div>
 
-          <div className="mt-5 grid gap-3 md:grid-cols-3">
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
             <button
               onClick={connectWallet}
               disabled={busy}
@@ -233,9 +306,17 @@ export default function FreighterPayDemo() {
             <button
               onClick={prepareDemoTip}
               disabled={busy || !address}
+              className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Prepare Private Note
+            </button>
+
+            <button
+              onClick={depositPaid}
+              disabled={busy || !address}
               className="rounded-2xl bg-fresh-green px-4 py-3 text-sm font-black text-midnight-blue transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Prepare Demo Tip
+              Deposit 10 XLM
             </button>
           </div>
 
