@@ -1,0 +1,12 @@
+[workspace]
+resolver = "2"
+members = [
+  "contracts/square-verifier",
+  "contracts/growthip-note-verifier",
+  "contracts/growthip-merkle-verifier",
+  "contracts/growthip-merkle-verifier-v2",
+  "contracts/growthip-pool"
+]
+
+[workspace.dependencies]
+soroban-sdk = "25.1.0"
