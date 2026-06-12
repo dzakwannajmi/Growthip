@@ -10,3 +10,6 @@ members = [
 
 [workspace.dependencies]
 soroban-sdk = "25.1.0"
+
+[profile.release]
+overflow-checks = true
