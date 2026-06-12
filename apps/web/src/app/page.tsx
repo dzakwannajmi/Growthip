@@ -1,3 +1,4 @@
+import ClaimDemo from "@/components/ClaimDemo";
 import LiveContractReader from "@/components/LiveContractReader";
 import FreighterPayDemo from "@/components/FreighterPayDemo";
 const contracts = [
@@ -204,6 +205,8 @@ export default function Home() {
       <LiveContractReader />
 
       <FreighterPayDemo />
+
+      <ClaimDemo />
 
       <section id="security" className="mx-auto max-w-7xl px-6 py-20 lg:px-8">
         <SectionHeader
