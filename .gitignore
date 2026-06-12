@@ -30,3 +30,5 @@ circuits/build/*.ptau
 # OS / editor
 .DS_Store
 .vscode/
+apps/web/.next/
+apps/web/node_modules/

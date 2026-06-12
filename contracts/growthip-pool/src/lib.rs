@@ -555,4 +555,110 @@ mod test {
         assert_eq!(client.claim(&proof_bytes, &public_inputs), false);
         assert_eq!(client.total_claims(), 0);
     }
+
+    #[test]
+    #[should_panic]
+    fn test_initialize_twice_panics() {
+        let env = Env::default();
+
+        let verifier_id = env.register(GrowthipMerkleVerifier, ());
+        let contract_id = env.register(GrowthipPool, ());
+        let client = GrowthipPoolClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+
+        let mut root_bytes = [0u8; 32];
+        root_bytes[0] = 1;
+        let root = BytesN::from_array(&env, &root_bytes);
+
+        client.initialize(&admin, &verifier_id, &root);
+        client.initialize(&admin, &verifier_id, &root);
+    }
+
+    #[test]
+    fn test_claim_to_before_recipient_registered_returns_false() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let verifier_id = env.register(GrowthipMerkleVerifier, ());
+        let contract_id = env.register(GrowthipPool, ());
+        let client = GrowthipPoolClient::new(&env, &contract_id);
+
+        let recipient = Address::generate(&env);
+        let admin = Address::generate(&env);
+
+        let proof_hex =
+            include_str!("../../../circuits/build/growthip_merkle_note_v2_proof_abc.hex");
+        let public_inputs_hex =
+            include_str!("../../../circuits/build/growthip_merkle_note_v2_public_inputs.hex");
+
+        let proof_bytes = bytes_from_hex(&env, proof_hex);
+        let public_inputs = public_inputs_from_hex(&env, public_inputs_hex);
+
+        let root = public_inputs.get(0).expect("missing root");
+
+        client.initialize(&admin, &verifier_id, &root);
+
+        assert_eq!(
+            client.claim_to(&recipient, &proof_bytes, &public_inputs),
+            false
+        );
+        assert_eq!(client.total_claims(), 0);
+    }
+
+    #[test]
+    fn test_malformed_public_inputs_length_returns_false() {
+        let env = Env::default();
+
+        let verifier_id = env.register(GrowthipMerkleVerifier, ());
+        let contract_id = env.register(GrowthipPool, ());
+        let client = GrowthipPoolClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+
+        let proof_hex =
+            include_str!("../../../circuits/build/growthip_merkle_note_v2_proof_abc.hex");
+        let proof_bytes = bytes_from_hex(&env, proof_hex);
+
+        let mut root_bytes = [0u8; 32];
+        root_bytes[0] = 1;
+        let root = BytesN::from_array(&env, &root_bytes);
+
+        let bad_inputs = Vec::new(&env);
+
+        client.initialize(&admin, &verifier_id, &root);
+
+        assert_eq!(client.claim(&proof_bytes, &bad_inputs), false);
+    }
+
+    #[test]
+    fn test_wrong_root_does_not_consume_nullifier() {
+        let env = Env::default();
+
+        let verifier_id = env.register(GrowthipMerkleVerifier, ());
+        let contract_id = env.register(GrowthipPool, ());
+        let client = GrowthipPoolClient::new(&env, &contract_id);
+
+        let admin = Address::generate(&env);
+
+        let proof_hex =
+            include_str!("../../../circuits/build/growthip_merkle_note_v2_proof_abc.hex");
+        let public_inputs_hex =
+            include_str!("../../../circuits/build/growthip_merkle_note_v2_public_inputs.hex");
+
+        let proof_bytes = bytes_from_hex(&env, proof_hex);
+        let public_inputs = public_inputs_from_hex(&env, public_inputs_hex);
+        let nullifier_hash = public_inputs.get(1).expect("missing nullifier hash");
+
+        let mut wrong_root_bytes = [0u8; 32];
+        wrong_root_bytes[0] = 9;
+        let wrong_root = BytesN::from_array(&env, &wrong_root_bytes);
+
+        client.initialize(&admin, &verifier_id, &wrong_root);
+
+        assert_eq!(client.claim(&proof_bytes, &public_inputs), false);
+        assert_eq!(client.total_claims(), 0);
+        assert_eq!(client.is_nullifier_used(&nullifier_hash), false);
+    }
+
 }
