@@ -11,6 +11,7 @@ import {
   signTransaction as freighterSignTransaction,
 } from "@stellar/freighter-api";
 import { Client, networks } from "growthip-pool-client";
+import { GROWTHIP_COMMITMENT_HEX } from "@/lib/growthipProof";
 
 const TOKEN_ID =
   "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
@@ -137,17 +138,13 @@ export default function FreighterPayDemo() {
       return;
     }
 
-    const secret = randomHex(32);
-    const nullifier = randomHex(32);
-    const demoCommitment = randomHex(32);
-
-    setCommitment(demoCommitment);
+    setCommitment(GROWTHIP_COMMITMENT_HEX);
     setPrivateNote(
-      `growthip-testnet-note:${demoCommitment}:${secret}:${nullifier}`,
+      `growthip-testnet-note:${GROWTHIP_COMMITMENT_HEX}:fresh-proof-artifact`,
     );
 
     setStatus(
-      "Demo private tip note prepared. You can now submit deposit_paid on-chain.",
+      "Fresh proof-compatible private note prepared. This commitment matches the current generated proof artifact.",
     );
   }
 
@@ -163,15 +160,12 @@ export default function FreighterPayDemo() {
         throw new Error("Switch Freighter to TESTNET first.");
       }
 
-      const demoCommitment = commitment || randomHex(32);
+      const demoCommitment = commitment || GROWTHIP_COMMITMENT_HEX;
 
       if (!commitment) {
-        const secret = randomHex(32);
-        const nullifier = randomHex(32);
-
         setCommitment(demoCommitment);
         setPrivateNote(
-          `growthip-testnet-note:${demoCommitment}:${secret}:${nullifier}`,
+          `growthip-testnet-note:${demoCommitment}:fresh-proof-artifact`,
         );
       }
 
