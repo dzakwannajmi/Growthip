@@ -1,55 +1,86 @@
 # Growthip — Privacy-Preserving Creator Tips on Stellar
 
-Growthip is a privacy-preserving creator tipping prototype built on **Stellar Soroban**, **Groth16 zero-knowledge proofs**, and **Freighter wallet**.
+Growthip is a privacy-preserving creator tipping prototype built on **Stellar Soroban**, **Freighter Wallet**, and **Groth16 zero-knowledge proofs**.
 
-The goal of Growthip is simple:
+Growthip lets a supporter deposit a fixed tip into a Soroban pool, while a creator later claims the tip using a ZK proof. The protocol separates the public deposit event from the public claim event, while still preventing double-claims through an on-chain nullifier.
 
-> Let supporters deposit a fixed tip into a creator pool, then allow the recipient to claim it with a ZK proof without publicly linking the deposit event to the claim event.
-
-Growthip is not a mixer and not a production privacy wallet. It is a hackathon/testnet prototype focused on private creator support, ZK membership proofs, and on-chain nullifier enforcement.
-
----
-
-## Current Status
-
-Growthip now has a working end-to-end testnet flow:
-
-* Generate a ZK note commitment.
-* Deposit 10 testnet XLM into `GrowthipPool`.
-* Store the commitment on-chain.
-* Register a recipient hash.
-* Claim the deposited tip using a Groth16 proof.
-* Verify the proof through a native BN254 verifier on Soroban.
-* Transfer 10 testnet XLM from the pool to the recipient.
-* Mark the nullifier as used to prevent double claims.
-
-Latest verified testnet result:
-
-```txt
-totalDeposits = 1
-totalClaims = 1
-```
+> Deposit publicly. Claim privately. Prevent double-claims.
 
 ---
 
 ## Live Demo
 
-Live demo URL:
-
 ```txt
-Coming soon after Vercel deployment.
+Live Demo: <PASTE_YOUR_VERCEL_URL_HERE>
+Network: Stellar Testnet
+Wallet: Freighter
 ```
 
-The frontend currently includes:
+The deployed frontend supports:
 
-* Landing page
-* Protocol explanation
-* Live testnet contract reader
-* Freighter wallet connection
-* Real `deposit_paid` transaction flow
-* Real `register_recipient` transaction flow
-* Real `claim_to` transaction flow
-* Testnet proof demo using generated Growthip v2 proof artifacts
+```txt
+✅ Live GrowthipPool state reader
+✅ Freighter wallet connection
+✅ Real deposit_paid transaction on Stellar Testnet
+✅ Real register_recipient transaction on Stellar Testnet
+✅ Real claim_to transaction with Groth16 proof on Stellar Testnet
+✅ Native XLM SAC transfer into the pool
+✅ Native XLM SAC transfer out to the recipient
+✅ On-chain nullifier consumption to prevent double-claim
+```
+
+---
+
+## Project Summary
+
+Growthip is designed for creator monetization use cases where supporters and creators may want more relationship privacy than a normal public crypto donation address.
+
+In a normal public crypto donation flow:
+
+```txt
+supporter wallet → creator wallet
+```
+
+the relationship is visible on-chain.
+
+In Growthip:
+
+```txt
+supporter deposits → pool stores commitment
+creator claims → ZK proof verifies note membership
+```
+
+The public can see deposits and claims, but the direct relationship between a specific deposit and a specific claim is not trivially exposed.
+
+Growthip is not a general-purpose mixer. It is a focused prototype for **privacy-preserving creator support** and **ZK-based claim authorization**.
+
+---
+
+## Current Testnet Status
+
+Growthip has completed an end-to-end testnet flow:
+
+```txt
+fresh note
+→ fresh commitment
+→ fresh Merkle root
+→ update_root
+→ deposit_paid
+→ register_recipient
+→ claim_to
+→ proof verified
+→ nullifier consumed
+→ XLM transferred to recipient
+```
+
+Verified state after testnet demo:
+
+```txt
+Total Deposits: 4+
+Total Claims: 1+
+```
+
+The exact numbers may increase as more testnet deposits and claim demos are performed.
 
 ---
 
@@ -73,16 +104,16 @@ CDFAGPSKKJCWJEOGHFYBEWSMSVGQSNXBXPQA45MGHL2ZIQDBQTTHPEFZ
 CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC
 ```
 
+### Network
+
+```txt
+Stellar Testnet
+```
+
 ### Admin Address
 
 ```txt
 GDPAPDZWAKBXUPCNMI4YHAZ7DS7UOUTPGXAFDSWZG4URRMWHFSQTDQBM
-```
-
-### Initialized Merkle Root
-
-```txt
-08e4a3225b89097da6fde1da9e0dddac702af715a4213aed88a4ff698bfecb6d
 ```
 
 ### Tip Amount
@@ -93,117 +124,88 @@ GDPAPDZWAKBXUPCNMI4YHAZ7DS7UOUTPGXAFDSWZG4URRMWHFSQTDQBM
 
 ---
 
-## What Works
+## What Growthip Demonstrates
 
-### ZK Circuits
-
-Growthip includes multiple proof milestones:
+Growthip demonstrates the following technical primitives on Stellar:
 
 ```txt
-circuits/square.circom
-circuits/growthip_note.circom
-circuits/growthip_merkle_note.circom
-circuits/growthip_merkle_note_v2.circom
-```
-
-The current main circuit is:
-
-```txt
-growthip_merkle_note_v2.circom
-```
-
-It proves knowledge of:
-
-* `secret`
-* `nullifier`
-* Merkle path
-* Merkle path indices
-
-and outputs:
-
-* Merkle root
-* nullifier hash
-* recipient hash
-
-### Native Soroban Verifiers
-
-Growthip includes native BN254 verifier contracts generated from Groth16 verifying keys:
-
-```txt
-contracts/square-verifier
-contracts/growthip-note-verifier
-contracts/growthip-merkle-verifier
-contracts/growthip-merkle-verifier-v2
-```
-
-### GrowthipPool Contract
-
-The main pool contract is:
-
-```txt
-contracts/growthip-pool
-```
-
-It supports:
-
-```txt
-initialize
-set_token
-update_root
-deposit
-deposit_paid
-register_recipient
-claim
-claim_to
-verify
-current_root
-token
-tip_amount
-total_deposits
-total_claims
-get_commitment
-get_recipient_hash
-is_nullifier_used
+✅ Soroban smart contract escrow pool
+✅ Native BN254 Groth16 verification
+✅ Merkle membership proof
+✅ Poseidon-based commitment and nullifier hash
+✅ Nullifier-based double-claim prevention
+✅ Recipient hash registration
+✅ Freighter-signed deposit transaction
+✅ Freighter-signed claim transaction
+✅ TypeScript contract binding integration
+✅ Next.js frontend connected to Stellar Testnet
 ```
 
 ---
 
-## End-to-End Flow
+## How the Protocol Works
 
 ### 1. Deposit
 
-A supporter connects Freighter and calls:
+A supporter generates a private note and a public commitment.
+
+The supporter calls:
 
 ```txt
 deposit_paid(depositor, commitment)
 ```
 
-The pool transfers 10 testnet XLM from the depositor into the GrowthipPool contract and stores the commitment.
-
-Result:
+The pool contract:
 
 ```txt
-TotalDeposits = TotalDeposits + 1
-Commitment[index] = commitment
+- requires depositor authorization
+- transfers 10 testnet XLM from depositor to the pool
+- stores the commitment
+- increments totalDeposits
 ```
 
-### 2. Recipient Registration
+The deposit does not directly specify the final creator wallet. This is intentional, because linking a supporter wallet directly to a creator wallet would weaken privacy.
 
-The recipient connects Freighter and calls:
+---
+
+### 2. Private Note
+
+A private note acts like a secret claim ticket.
+
+Conceptually, it contains:
+
+```txt
+secret
+nullifier
+recipientHash
+Merkle path data
+```
+
+Whoever holds the valid note can generate a proof. In a real production version, the note should be encrypted to the creator and delivered through a secure private inbox or encrypted claim link.
+
+In the current prototype, the note/proof artifact is handled as a controlled testnet demo artifact.
+
+---
+
+### 3. Recipient Registration
+
+A creator or recipient registers their recipient hash:
 
 ```txt
 register_recipient(recipient, recipient_hash)
 ```
 
-The contract requires recipient authentication:
+The contract requires:
 
 ```rust
 recipient.require_auth();
 ```
 
-This stores the expected recipient hash for that creator address.
+This binds the recipient wallet to the expected recipient hash at the contract level.
 
-### 3. Claim
+---
+
+### 4. Claim
 
 The recipient calls:
 
@@ -213,238 +215,120 @@ claim_to(recipient, proof_bytes, public_inputs)
 
 The contract checks:
 
-* recipient hash is registered
-* public input length is valid
-* Merkle root matches current root
-* nullifier has not been used
-* Groth16 proof verifies successfully
-* recipient hash matches the registered recipient hash
+```txt
+- public input length is valid
+- Merkle root matches current root
+- nullifier has not been used
+- Groth16 proof verifies successfully
+- recipientHash matches the registered recipient hash
+```
 
-If valid, the contract transfers 10 testnet XLM from the pool to the recipient and marks the nullifier as used.
-
-Result:
+If valid, the pool transfers 10 XLM to the recipient and marks the nullifier as used.
 
 ```txt
-TotalClaims = TotalClaims + 1
 NullifierUsed[nullifierHash] = true
+TotalClaims = TotalClaims + 1
 ```
+
+This prevents the same proof/note from being claimed twice.
 
 ---
 
-## Frontend
+## Frontend Demo Flow
 
-The frontend lives in:
+The frontend has three main sections.
+
+### 1. Live Contract Reader
+
+Reads GrowthipPool state directly from Stellar Testnet.
+
+It displays:
 
 ```txt
-apps/web
+Current Root
+Token
+Tip Amount
+Total Deposits
+Total Claims
 ```
 
-Stack:
+### 2. Freighter Pay Demo
+
+Supporter flow:
 
 ```txt
-Next.js
-Tailwind CSS
-Freighter API
-Generated Stellar TypeScript contract binding
+Connect Freighter
+→ Prepare Private Note
+→ Deposit 10 XLM
+→ Approve transaction in Freighter
 ```
 
-Run locally:
+This calls:
 
-```bash
-cd apps/web
-npm install
-npm run dev
+```txt
+deposit_paid(depositor, commitment)
 ```
 
-Build:
+### 3. Live Claim Demo
 
-```bash
-npm run lint
-npm run build
+Creator/recipient flow:
+
+```txt
+Connect Freighter
+→ Register Recipient
+→ Claim 10 XLM
+→ Approve transaction in Freighter
 ```
+
+This calls:
+
+```txt
+register_recipient(recipient, recipient_hash)
+claim_to(recipient, proof_bytes, public_inputs)
+```
+
+After a successful claim, the same proof cannot be claimed again because the nullifier is already consumed.
 
 ---
 
-## Generated TypeScript Binding
+## Important UX Note
 
-The GrowthipPool TypeScript client is generated in:
+The current demo proof can only be claimed once.
+
+If `Claim 10 XLM` is clicked again with the same proof artifact, the claim should not succeed again. That is expected behavior.
+
+This proves:
 
 ```txt
-packages/growthip-pool-client
+✅ one proof = one claim
+✅ nullifier anti-double-claim works
+✅ repeated claim attempt is rejected/no-op
 ```
 
-Generated using:
-
-```bash
-stellar contract bindings typescript \
-  --contract-id CDFAGPSKKJCWJEOGHFYBEWSMSVGQSNXBXPQA45MGHL2ZIQDBQTTHPEFZ \
-  --network testnet \
-  --output-dir packages/growthip-pool-client
-```
-
-Build the package:
-
-```bash
-cd packages/growthip-pool-client
-npm install
-npm run build
-```
-
-Install it into the frontend:
-
-```bash
-cd apps/web
-npm install ../../packages/growthip-pool-client
-```
+To run a fresh claim demo again, generate a fresh note, fresh root, and fresh proof, then update the pool root before depositing and claiming again.
 
 ---
 
-## Local Development
+## Fresh Proof Demo Flow
 
-### Install dependencies
+Growthip supports regenerating a fresh testnet proof flow without redeploying the verifier.
 
-```bash
-npm install
-```
-
-### Build Soroban contracts
-
-```bash
-stellar contract build
-```
-
-### Run Rust/Soroban tests
-
-```bash
-cargo test --workspace -- --nocapture
-```
-
-### Run frontend
-
-```bash
-cd apps/web
-npm run dev
-```
-
----
-
-## Test Coverage
-
-Growthip includes local contract tests for verifier and pool behavior.
-
-Current GrowthipPool tests include:
+High-level flow:
 
 ```txt
-test_claim_to_rejects_wrong_recipient_hash
-test_paid_deposit_and_claim_to_recipient
-test_deposit_stores_commitment
-test_claim_valid_proof_once_only
-test_claim_rejects_wrong_root
-test_initialize_twice_panics
-test_claim_to_before_recipient_registered_returns_false
-test_malformed_public_inputs_length_returns_false
-test_wrong_root_does_not_consume_nullifier
+generate fresh note
+generate fresh commitment
+generate fresh Merkle root
+generate witness
+generate Groth16 proof
+convert proof to contract bytes
+update_root on GrowthipPool
+deposit the matching commitment
+register recipient
+claim with the fresh proof
 ```
 
-Current workspace status:
-
-```txt
-growthip_merkle_verifier: passed
-growthip_merkle_verifier_v2: passed
-growthip_note_verifier: passed
-growthip_pool: passed
-square_verifier: passed
-```
-
----
-
-## Security Model
-
-Growthip is a prototype with a focused threat model.
-
-It currently demonstrates:
-
-* Groth16 proof verification on Stellar Soroban
-* Merkle membership proof
-* nullifier-based double-claim prevention
-* recipient hash check at contract level
-* fixed-denomination testnet escrow
-* real Freighter-signed testnet transactions
-
----
-
-## Known Limitations
-
-### 1. Recipient Binding Is Contract-Level in v2
-
-In the current v2 circuit, `recipientHash` is included as a public output but is not bound inside the commitment hash.
-
-Current v2 structure:
-
-```txt
-commitment = Poseidon(secret, nullifier)
-nullifierHash = Poseidon(nullifier)
-recipientHashOut = recipientHash
-```
-
-The pool mitigates this by checking that the proof recipient hash matches the registered recipient hash for the claiming address.
-
-However, this is contract-level protection, not ZK-level binding.
-
-Planned v3 improvement:
-
-```txt
-commitment = Poseidon(secret, nullifier, recipientHash)
-```
-
-This would cryptographically bind the recipient into the note commitment and prevent recipient substitution at the circuit level.
-
-### 2. Admin-Controlled Merkle Root
-
-The current Merkle root is updated by an admin-controlled function.
-
-This is acceptable for the prototype but should be decentralized or made append-only in a production design.
-
-### 3. Off-Chain Note Delivery
-
-Growthip does not currently encrypt or deliver notes. The private note is handled off-chain by the user/demo flow.
-
-### 4. Small Testnet Anonymity Set
-
-The prototype testnet pool currently has a very small anonymity set.
-
-### 5. Not Audited
-
-Growthip is not audited and should not be used with real funds.
-
----
-
-## Roadmap
-
-### Short Term
-
-* Deploy frontend to Vercel
-* Add live demo URL
-* Improve README screenshots and demo evidence
-* Add a polished claim UX
-* Add invalid proof regression test for nullifier non-consumption
-
-### Medium Term
-
-* v3 circuit with recipient-bound commitment
-* append-only Merkle tree management
-* multiple supported denominations
-* better note format
-* encrypted note delivery
-* improved proof generation UX
-
-### Long Term
-
-* production-grade audit
-* decentralized root management
-* stronger privacy UX
-* creator dashboard
-* view key or compliance-friendly optional disclosure mode
+This allows repeated end-to-end demos with new nullifiers and new roots.
 
 ---
 
@@ -479,20 +363,473 @@ growthip/
 
 ---
 
-## Why Growthip Matters
+## Circuits
 
-Public creator payments reveal relationships between supporters and recipients.
+Growthip includes multiple ZK circuit milestones.
 
-For many creators, activists, educators, open-source maintainers, or community builders, support should be possible without exposing every relationship publicly.
-
-Growthip demonstrates how Stellar Soroban and zero-knowledge proofs can be combined to create a private support primitive:
+### Square Circuit
 
 ```txt
-deposit publicly
-prove privately
-claim safely
-prevent double claims
+circuits/square.circom
 ```
+
+A minimal proof circuit used to validate the Groth16 → Soroban verifier pipeline.
+
+### Growthip Note v0
+
+```txt
+circuits/growthip_note.circom
+```
+
+Proves knowledge of:
+
+```txt
+secret
+nullifier
+```
+
+and outputs:
+
+```txt
+commitment
+nullifierHash
+```
+
+### Growthip Merkle Note v1
+
+```txt
+circuits/growthip_merkle_note.circom
+```
+
+Adds Merkle membership proof support.
+
+### Growthip Merkle Note v2
+
+```txt
+circuits/growthip_merkle_note_v2.circom
+```
+
+Current main circuit.
+
+It proves knowledge of:
+
+```txt
+secret
+nullifier
+pathElements
+pathIndices
+```
+
+and exposes:
+
+```txt
+root
+nullifierHash
+recipientHash
+```
+
+---
+
+## Contracts
+
+### `growthip-merkle-verifier-v2`
+
+Native Soroban verifier for the Growthip Merkle v2 Groth16 proof.
+
+### `growthip-pool`
+
+Main escrow and claim contract.
+
+Exported functions include:
+
+```txt
+initialize
+set_token
+update_root
+deposit
+deposit_paid
+register_recipient
+claim
+claim_to
+verify
+current_root
+token
+tip_amount
+total_deposits
+total_claims
+get_commitment
+get_recipient_hash
+is_nullifier_used
+```
+
+---
+
+## TypeScript Contract Client
+
+The GrowthipPool TypeScript binding was generated using Stellar CLI:
+
+```bash
+stellar contract bindings typescript \
+  --contract-id CDFAGPSKKJCWJEOGHFYBEWSMSVGQSNXBXPQA45MGHL2ZIQDBQTTHPEFZ \
+  --network testnet \
+  --output-dir packages/growthip-pool-client
+```
+
+For Vercel deployment simplicity, the generated client is also vendored into the frontend as:
+
+```txt
+apps/web/src/lib/growthipPoolClient.ts
+```
+
+The frontend imports the client from the local app source.
+
+---
+
+## Local Development
+
+### Requirements
+
+```txt
+Node.js
+npm
+Rust
+Stellar CLI
+Freighter Wallet
+snarkjs
+circom
+```
+
+### Install Frontend Dependencies
+
+```bash
+cd apps/web
+npm install
+```
+
+### Run Frontend Locally
+
+```bash
+cd apps/web
+npm run dev
+```
+
+Open:
+
+```txt
+http://localhost:3000
+```
+
+### Production Build
+
+```bash
+cd apps/web
+npm run build
+npm run start
+```
+
+---
+
+## Run Contract Tests
+
+From the repository root:
+
+```bash
+cargo test --workspace -- --nocapture
+```
+
+GrowthipPool test coverage includes:
+
+```txt
+test_claim_to_rejects_wrong_recipient_hash
+test_paid_deposit_and_claim_to_recipient
+test_deposit_stores_commitment
+test_claim_valid_proof_once_only
+test_claim_rejects_wrong_root
+test_initialize_twice_panics
+test_claim_to_before_recipient_registered_returns_false
+test_malformed_public_inputs_length_returns_false
+test_wrong_root_does_not_consume_nullifier
+```
+
+---
+
+## Generate Fresh Growthip v2 Proof
+
+From the repository root:
+
+```bash
+node scripts/make_growthip_merkle_input_v2.js
+```
+
+Generate witness:
+
+```bash
+npx snarkjs wtns calculate \
+  circuits/build/growthip_merkle_note_v2_js/growthip_merkle_note_v2.wasm \
+  circuits/growthip_merkle_note_v2_input.json \
+  circuits/build/growthip_merkle_note_v2_witness.wtns
+```
+
+Generate proof:
+
+```bash
+npx snarkjs groth16 prove \
+  circuits/build/growthip_merkle_note_v2_final.zkey \
+  circuits/build/growthip_merkle_note_v2_witness.wtns \
+  circuits/build/growthip_merkle_note_v2_proof.json \
+  circuits/build/growthip_merkle_note_v2_public.json
+```
+
+Convert proof for Soroban contract input:
+
+```bash
+node scripts/convert_growthip_merkle_note_v2_snarkjs.js
+```
+
+Generated artifacts:
+
+```txt
+circuits/build/growthip_merkle_note_v2_demo_note.json
+circuits/build/growthip_merkle_note_v2_proof_abc.hex
+circuits/build/growthip_merkle_note_v2_public_inputs.hex
+circuits/build/growthip_merkle_note_v2_public_inputs.json
+```
+
+---
+
+## Update Pool Root
+
+After generating a fresh note and proof, compute the fresh root and update the GrowthipPool root.
+
+```bash
+FRESH_ROOT=$(python3 - << 'PY'
+import json
+from pathlib import Path
+note = json.loads(Path("circuits/build/growthip_merkle_note_v2_demo_note.json").read_text())
+print(f'{int(note["root"]):064x}')
+PY
+)
+
+echo $FRESH_ROOT
+```
+
+Update root:
+
+```bash
+stellar contract invoke \
+  --id CDFAGPSKKJCWJEOGHFYBEWSMSVGQSNXBXPQA45MGHL2ZIQDBQTTHPEFZ \
+  --source-account najmi \
+  --network testnet \
+  -- \
+  update_root \
+  --admin GDPAPDZWAKBXUPCNMI4YHAZ7DS7UOUTPGXAFDSWZG4URRMWHFSQTDQBM \
+  --new_root $FRESH_ROOT
+```
+
+Check current root:
+
+```bash
+stellar contract invoke \
+  --id CDFAGPSKKJCWJEOGHFYBEWSMSVGQSNXBXPQA45MGHL2ZIQDBQTTHPEFZ \
+  --source-account najmi \
+  --network testnet \
+  -- \
+  current_root
+```
+
+---
+
+## Security Model
+
+Growthip demonstrates a prototype-grade privacy model:
+
+```txt
+- deposits store commitments
+- claims require valid ZK proof
+- nullifiers prevent double claims
+- recipientHash is checked by the pool
+- fixed tip amount improves privacy set consistency
+```
+
+The protocol is designed for legitimate creator/supporter privacy, not for hiding illicit funds.
+
+---
+
+## Known Limitations
+
+### 1. Recipient Binding Is Contract-Level in v2
+
+In the current v2 circuit, `recipientHash` is included as a public output, but it is not bound inside the commitment.
+
+Current v2 structure:
+
+```txt
+commitment = Poseidon(secret, nullifier)
+nullifierHash = Poseidon(nullifier)
+recipientHashOut = recipientHash
+```
+
+The pool mitigates this by checking that the proof recipient hash matches the registered recipient hash for the claiming address.
+
+However, this is contract-level protection, not ZK-level binding.
+
+Planned v3 improvement:
+
+```txt
+commitment = Poseidon(secret, nullifier, recipientHash)
+```
+
+This would cryptographically bind the recipient into the note commitment and prevent recipient substitution at the circuit level.
+
+### 2. Admin-Controlled Merkle Root
+
+The current testnet prototype uses an admin-controlled `update_root` flow.
+
+This is acceptable for a prototype, but production should move toward append-only Merkle tree management or a more decentralized root update mechanism.
+
+### 3. Manual / Prototype Note Delivery
+
+The current demo handles private notes and proof artifacts manually.
+
+Production should use:
+
+```txt
+encrypted claim links
+encrypted creator inbox
+wallet-to-wallet encrypted message delivery
+```
+
+### 4. Small Testnet Anonymity Set
+
+The current testnet pool has a small anonymity set.
+
+Privacy improves as more deposits share the same denomination and pool.
+
+### 5. Not Audited
+
+Growthip has not been professionally audited.
+
+Do not use with real funds.
+
+---
+
+## Roadmap
+
+### Now / Hackathon
+
+```txt
+✅ Soroban pool contract
+✅ Native Groth16 verifier
+✅ Merkle proof circuit
+✅ Freighter deposit flow
+✅ Freighter claim flow
+✅ Live testnet state reader
+✅ Vercel deployment
+```
+
+### Next
+
+```txt
+- Polish demo video
+- Add screenshots to README
+- Improve claim UX wording
+- Add invalid-proof nullifier regression test
+- Improve fresh proof generation automation
+```
+
+### V1
+
+```txt
+- Encrypted creator inbox
+- Encrypted claim note delivery
+- USDC on Stellar support
+- Batch claim UX
+- Creator profile page
+- Privacy-preserving public dashboard
+```
+
+### V2
+
+```txt
+- v3 recipient-bound circuit
+- append-only Merkle tree
+- relayer-assisted gasless claim
+- Web Worker proof generation
+- optional viewing keys for creator reporting
+```
+
+---
+
+## Product Direction
+
+Growthip should be positioned in two layers.
+
+For technical audiences:
+
+```txt
+ZK-Based Creator Monetization Protocol on Stellar Soroban
+```
+
+For normal users:
+
+```txt
+Private tipping platform for creators and supporters
+```
+
+The core product thesis:
+
+> Creator monetization should not require exposing every supporter relationship publicly on-chain.
+
+---
+
+## Business Model Ideas
+
+Potential future monetization models:
+
+```txt
+0% fee during testnet / beta
+1%–1.5% platform fee on successful claims
+small flat relayer fee for gasless claims
+optional Creator Pro subscription
+white-label API for creator platforms
+```
+
+Growthip should avoid launching its own token in the early stage.
+
+Production should prioritize:
+
+```txt
+USDC on Stellar
+low fees
+clear compliance positioning
+encrypted note delivery
+creator dashboard UX
+```
+
+---
+
+## Privacy-Preserving Dashboard Direction
+
+Safe public dashboard metrics:
+
+```txt
+Total Deposited
+Total Claimed
+Pool Balance
+Number of Private Tips
+Number of Registered Creators
+```
+
+Metrics to avoid:
+
+```txt
+Top depositor wallet ranking
+Supporter address list
+Direct supporter-to-creator relation
+Realtime deposit-to-claim correlation
+```
+
+Creator leaderboard should be opt-in.
 
 ---
 
@@ -500,6 +837,12 @@ prevent double claims
 
 Growthip is a hackathon/testnet prototype.
 
-Do not use it with real funds.
+It is not audited, not production-ready, and should not be used with real funds.
 
-The current implementation is designed to demonstrate feasibility, protocol architecture, and end-to-end ZK verification on Stellar Soroban.
+The goal is to demonstrate that Stellar Soroban can support practical ZK-based creator monetization flows with real testnet transactions and on-chain proof verification.
+
+---
+
+## License
+
+MIT
