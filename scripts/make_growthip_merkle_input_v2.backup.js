@@ -1,14 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const crypto = require("crypto");
 const circomlibjs = require("circomlibjs");
-
-const buildDir = path.join("circuits", "build");
-
-function randomFieldDecimal() {
-  // BN254 scalar field is ~254 bits. 31 random bytes stays safely below field size.
-  return BigInt("0x" + crypto.randomBytes(31).toString("hex")).toString();
-}
 
 async function main() {
   const poseidon = await circomlibjs.buildPoseidon();
@@ -17,11 +9,13 @@ async function main() {
   const hash1 = (a) => F.toString(poseidon([BigInt(a)]));
   const hash2 = (a, b) => F.toString(poseidon([BigInt(a), BigInt(b)]));
 
-  const secret = randomFieldDecimal();
-  const nullifier = randomFieldDecimal();
-  const recipientId = randomFieldDecimal();
+  const secret = "123456789";
+  const nullifier = "987654321";
 
+  // Demo recipient field. Later this will be tied to creator registration.
+  const recipientId = "20260612";
   const recipientHash = hash1(recipientId);
+
   const commitment = hash2(secret, nullifier);
   const nullifierHash = hash1(nullifier);
 
@@ -64,45 +58,16 @@ async function main() {
     recipientHash,
   };
 
-  const note = {
-    version: "growthip-merkle-note-v2-fresh-demo",
-    secret,
-    nullifier,
-    recipientId,
-    commitment,
-    nullifierHash,
-    recipientHash,
-    root,
-    leafIndex: 0,
-    pathElements,
-    pathIndices,
-    warning:
-      "Testnet demo note. Keep secret/nullifier private in a real implementation.",
-  };
-
   fs.writeFileSync(
     path.join("circuits", "growthip_merkle_note_v2_input.json"),
     JSON.stringify(input, null, 2)
   );
 
-  fs.mkdirSync(buildDir, { recursive: true });
-
-  fs.writeFileSync(
-    path.join(buildDir, "growthip_merkle_note_v2_demo_note.json"),
-    JSON.stringify(note, null, 2)
-  );
-
-  console.log("Fresh Growthip Merkle v2 input generated.");
-  console.log("secret:", secret);
-  console.log("nullifier:", nullifier);
+  console.log("Growthip Merkle v2 input generated.");
   console.log("commitment:", commitment);
   console.log("nullifierHash:", nullifierHash);
   console.log("recipientHash:", recipientHash);
   console.log("root:", root);
-  console.log("");
-  console.log("Generated:");
-  console.log("- circuits/growthip_merkle_note_v2_input.json");
-  console.log("- circuits/build/growthip_merkle_note_v2_demo_note.json");
 }
 
 main().catch((err) => {
