@@ -9,7 +9,7 @@ import {
   setAllowed,
   signTransaction as freighterSignTransaction,
 } from "@stellar/freighter-api";
-import { Client, networks } from "growthip-pool-client";
+import { Client, networks } from "@/lib/growthipPoolClient";
 import {
   GROWTHIP_PROOF_HEX,
   GROWTHIP_PUBLIC_INPUTS_HEX,

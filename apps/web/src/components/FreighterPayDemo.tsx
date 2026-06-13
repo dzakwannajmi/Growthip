@@ -10,7 +10,7 @@ import {
   setAllowed,
   signTransaction as freighterSignTransaction,
 } from "@stellar/freighter-api";
-import { Client, networks } from "growthip-pool-client";
+import { Client, networks } from "@/lib/growthipPoolClient";
 import { GROWTHIP_COMMITMENT_HEX } from "@/lib/growthipProof";
 
 const TOKEN_ID =
@@ -35,14 +35,6 @@ function shortAddress(value: string) {
   return `${value.slice(0, 6)}...${value.slice(-6)}`;
 }
 
-function randomHex(bytes: number) {
-  const array = new Uint8Array(bytes);
-  crypto.getRandomValues(array);
-
-  return Array.from(array)
-    .map((item) => item.toString(16).padStart(2, "0"))
-    .join("");
-}
 
 export default function FreighterPayDemo() {
   const [installed, setInstalled] = useState<boolean | null>(null);

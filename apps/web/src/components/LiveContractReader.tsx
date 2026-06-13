@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Client, networks } from "growthip-pool-client";
+import { Client, networks } from "@/lib/growthipPoolClient";
 
 const RPC_URL = "https://soroban-testnet.stellar.org";
 
