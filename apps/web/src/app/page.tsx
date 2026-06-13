@@ -1,3 +1,4 @@
+import ProtocolStats from "@/components/ProtocolStats";
 import ClaimDemo from "@/components/ClaimDemo";
 import LiveContractReader from "@/components/LiveContractReader";
 import FreighterPayDemo from "@/components/FreighterPayDemo";
@@ -201,6 +202,8 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      <ProtocolStats />
 
       <LiveContractReader />
 
