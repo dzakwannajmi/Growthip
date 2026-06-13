@@ -11,6 +11,7 @@ import {
 } from "@stellar/freighter-api";
 import { Client, networks } from "@/lib/growthipPoolClient";
 import {
+  GROWTHIP_NULLIFIER_HASH_HEX,
   GROWTHIP_PROOF_HEX,
   GROWTHIP_PUBLIC_INPUTS_HEX,
   GROWTHIP_RECIPIENT_HASH_HEX,
@@ -36,10 +37,11 @@ export default function ClaimDemo() {
   const [address, setAddress] = useState("");
   const [network, setNetwork] = useState("");
   const [status, setStatus] = useState(
-    "Connect Freighter, register recipient hash, then claim the deposited testnet XLM.",
+    "Connect Freighter, check claim status, register recipient, then claim the deposited testnet XLM.",
   );
   const [busy, setBusy] = useState(false);
   const [lastResult, setLastResult] = useState("");
+  const [nullifierUsed, setNullifierUsed] = useState<boolean | null>(null);
 
   const isTestnet = useMemo(() => {
     return network.toUpperCase() === "TESTNET";
@@ -83,7 +85,7 @@ export default function ClaimDemo() {
 
       setAddress(accessResult.address);
       setNetwork(networkResult.network || "");
-      setStatus("Wallet connected. Ready for recipient registration.");
+      setStatus("Wallet connected. Check claim status before claiming.");
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to connect wallet.";
@@ -109,6 +111,39 @@ export default function ClaimDemo() {
     };
   }
 
+  async function checkClaimStatus() {
+    setBusy(true);
+
+    try {
+      setStatus("Checking whether this proof/nullifier has already been claimed...");
+
+      const tx = await client.is_nullifier_used({
+        nullifier_hash: Buffer.from(GROWTHIP_NULLIFIER_HASH_HEX, "hex"),
+      });
+
+      const used = Boolean(tx.result);
+      setNullifierUsed(used);
+
+      if (used) {
+        setStatus(
+          "This proof has already been claimed. The nullifier is used, so the same proof cannot be claimed again.",
+        );
+        setLastResult("claim status: already claimed");
+      } else {
+        setStatus(
+          "This proof has not been claimed yet. You can register recipient and claim.",
+        );
+        setLastResult("claim status: available");
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to check claim status.";
+      setStatus(message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function registerRecipient() {
     setBusy(true);
 
@@ -129,8 +164,10 @@ export default function ClaimDemo() {
         signTransaction: signWithFreighter,
       });
 
-      setStatus("Recipient hash registered successfully.");
+      setStatus("Recipient hash registered successfully. You can now claim.");
       setLastResult("register_recipient: success");
+
+      await checkClaimStatus();
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to register recipient.";
@@ -147,6 +184,18 @@ export default function ClaimDemo() {
       if (!address) throw new Error("Connect Freighter first.");
       if (!isTestnet) throw new Error("Switch Freighter to TESTNET first.");
 
+      const statusTx = await client.is_nullifier_used({
+        nullifier_hash: Buffer.from(GROWTHIP_NULLIFIER_HASH_HEX, "hex"),
+      });
+
+      if (Boolean(statusTx.result)) {
+        setNullifierUsed(true);
+        throw new Error(
+          "This proof has already been claimed. The nullifier is used, so double-claim is blocked.",
+        );
+      }
+
+      setNullifierUsed(false);
       setStatus("Preparing claim_to transaction with proof bytes and public inputs...");
 
       const tx = await client.claim_to({
@@ -170,6 +219,8 @@ export default function ClaimDemo() {
       );
 
       setLastResult(`claim_to result: ${String(sent.result)}`);
+
+      await checkClaimStatus();
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to claim.";
@@ -201,12 +252,12 @@ export default function ClaimDemo() {
 
           <div className="mt-8 rounded-3xl border border-coral-red/20 bg-coral-red/10 p-5">
             <p className="text-sm font-bold text-coral-red">
-              Controlled testnet demo
+              One proof, one claim
             </p>
             <p className="mt-2 text-sm leading-7 text-soft-gray/75">
-              This is not a production claim UX yet. It uses the existing v2
-              proof artifact that matches the initialized Merkle root on
-              testnet.
+              This proof can only be claimed once. After a successful claim, its
+              nullifier is marked as used on-chain and another claim attempt is
+              blocked.
             </p>
           </div>
         </div>
@@ -238,19 +289,37 @@ export default function ClaimDemo() {
             />
             <ClaimInfo label="Network" value={network || "unknown"} />
             <ClaimInfo
+              label="Nullifier Used"
+              value={
+                nullifierUsed === null
+                  ? "not checked"
+                  : nullifierUsed
+                    ? "yes — already claimed"
+                    : "no — claim available"
+              }
+            />
+            <ClaimInfo
               label="Recipient Hash"
               value={GROWTHIP_RECIPIENT_HASH_HEX}
             />
             <ClaimInfo label="Last Result" value={lastResult || "none"} />
           </div>
 
-          <div className="mt-5 grid gap-3 md:grid-cols-3">
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
             <button
               onClick={connectWallet}
               disabled={busy}
               className="rounded-2xl bg-neon-violet px-4 py-3 text-sm font-bold text-white transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50"
             >
               Connect
+            </button>
+
+            <button
+              onClick={checkClaimStatus}
+              disabled={busy}
+              className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-white transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Check Claim Status
             </button>
 
             <button
@@ -263,7 +332,7 @@ export default function ClaimDemo() {
 
             <button
               onClick={claimToRecipient}
-              disabled={busy || !address}
+              disabled={busy || !address || nullifierUsed === true}
               className="rounded-2xl bg-fresh-green px-4 py-3 text-sm font-black text-midnight-blue transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50"
             >
               Claim 10 XLM
