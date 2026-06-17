@@ -91,10 +91,21 @@ export default function ClaimPage() {
     }
   }, [recipient]);
 
+  const getPoolId = useCallback((tokenSymbol: string): string => {
+    if (tokenSymbol === "USDC") {
+      return process.env.NEXT_PUBLIC_POOL_USDC_ID || networks.testnet.contractId;
+    }
+    if (tokenSymbol === "EURC") {
+      return process.env.NEXT_PUBLIC_POOL_EURC_ID || networks.testnet.contractId;
+    }
+    return networks.testnet.contractId;
+  }, []);
+
   const buildClient = useCallback(
-    (publicKey: string) =>
+    (publicKey: string, tokenSymbol: string = "XLM") =>
       new Client({
         ...networks.testnet,
+        contractId: getPoolId(tokenSymbol),
         rpcUrl: RPC_URL,
         publicKey,
         signTransaction: async (xdr: string) => {
@@ -143,7 +154,7 @@ export default function ClaimPage() {
 
     try {
       const note = parseNote();
-      const client = buildClient(address);
+      const client = buildClient(address, note.token);
 
       // 1. Fetch all commitments (read-only via simulation).
       setStage("loading-pool");
