@@ -112,7 +112,7 @@ export default function LiveContractReader() {
             <div>
               <p className="text-sm font-bold text-white">GrowthipPool State</p>
               <p className="text-xs text-soft-gray/55">
-                Contract ID: CDFAGP...THPEFZ
+                Contract ID: CA35IG...ZNXPJ
               </p>
             </div>
 

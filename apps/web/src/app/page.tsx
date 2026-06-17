@@ -4,12 +4,12 @@ import LiveContractReader from "@/components/LiveContractReader";
 import FreighterPayDemo from "@/components/FreighterPayDemo";
 const contracts = [
   {
-    label: "Growthip Merkle Verifier v2",
-    value: "CDZWWGYDPXPABB6XX3TJ265ORLQNHZ6W2P5BZUTEK7XUGTSSWAGMB5B4",
+    label: "Growthip Merkle Verifier V3",
+    value: "CD3O37X2FIGAHZSM4KVR7XW72HYZOQ75MJF7IZX4LEA6PCKOHMW3N6D2",
   },
   {
-    label: "Growthip Pool",
-    value: "CDFAGPSKKJCWJEOGHFYBEWSMSVGQSNXBXPQA45MGHL2ZIQDBQTTHPEFZ",
+    label: "Growthip Pool V3",
+    value: "CA35IGCAXCFVTYEUUSIA63RI32J2EK3KQ5WC7O5AQCMQBISOM6VZNXPJ",
   },
   {
     label: "Native XLM Token Contract",
@@ -135,7 +135,7 @@ export default function Home() {
               <div className="space-y-3">
                 <Info
                   label="Current Root"
-                  value="08e4a3225b89097da6fde1da9e0dddac702af715a4213aed88a4ff698bfecb6d"
+                  value="08daffaefc12dee54e8d252685e4e44349dc4d9e9c54c8ecf0e8696622b78fe9"
                 />
                 <Info label="Tip Amount" value="100000000" />
                 <Info label="Total Deposits" value="0" />
@@ -183,7 +183,7 @@ export default function Home() {
         <SectionHeader
           eyebrow="Stellar Testnet"
           title="Deployed contracts and initialized pool state."
-          description="The Growthip verifier and pool are deployed on Stellar Testnet. The pool has been initialized with the v2 Merkle root and native XLM token contract."
+          description="The Growthip V3 verifier and pool are deployed on Stellar Testnet. commitment = Poseidon(secret, nullifier, recipientHash) — recipient binding is now cryptographic, not just contract-level."
         />
 
         <div className="mt-10 grid gap-4">

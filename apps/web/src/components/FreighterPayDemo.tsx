@@ -11,45 +11,47 @@ import {
   signTransaction as freighterSignTransaction,
 } from "@stellar/freighter-api";
 import { Client, networks } from "@/lib/growthipPoolClient";
-import { GROWTHIP_COMMITMENT_HEX } from "@/lib/growthipProof";
+import { GROWTHIP_COMMITMENT_HEX, GROWTHIP_POOL_ID } from "@/lib/growthipProof";
 
-const TOKEN_ID =
-  "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
-
-const POOL_ID =
-  "CDFAGPSKKJCWJEOGHFYBEWSMSVGQSNXBXPQA45MGHL2ZIQDBQTTHPEFZ";
+// Native XLM Stellar Asset Contract on testnet
+const TOKEN_ID = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
 
 const RPC_URL = "https://soroban-testnet.stellar.org";
 const NETWORK_PASSPHRASE = "Test SDF Network ; September 2015";
 
 type PossibleError = string | { message?: string } | undefined;
 
-function getErrorMessage(error: PossibleError) {
+/** Extract a human-readable message from an unknown error shape. */
+function getErrorMessage(error: PossibleError): string {
   if (!error) return "Unknown error";
   if (typeof error === "string") return error;
   return error.message || "Unknown error";
 }
 
-function shortAddress(value: string) {
+/** Shorten a Stellar address for display: GABCDE...FGHIJ */
+function shortAddress(value: string): string {
   if (!value) return "";
   return `${value.slice(0, 6)}...${value.slice(-6)}`;
 }
 
-
 export default function FreighterPayDemo() {
-  const [installed, setInstalled] = useState<boolean | null>(null);
-  const [address, setAddress] = useState("");
-  const [network, setNetwork] = useState("");
-  const [status, setStatus] = useState(
+  const [installed, setInstalled]     = useState<boolean | null>(null);
+  const [address, setAddress]         = useState("");
+  const [network, setNetwork]         = useState("");
+  const [status, setStatus]           = useState(
     "Connect Freighter to prepare a Growthip private tip demo.",
   );
-  const [commitment, setCommitment] = useState("");
+  const [commitment, setCommitment]   = useState("");
   const [privateNote, setPrivateNote] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy]               = useState(false);
 
-  const isTestnet = useMemo(() => {
-    return network.toUpperCase() === "TESTNET";
-  }, [network]);
+  // Derive readiness from wallet state
+  const isTestnet = useMemo(
+    () => network.toUpperCase() === "TESTNET",
+    [network],
+  );
+
+  // ── Wallet connection ──────────────────────────────────────────────────────
 
   async function connectWallet() {
     setBusy(true);
@@ -68,33 +70,25 @@ export default function FreighterPayDemo() {
       }
 
       setInstalled(true);
-
       await setAllowed();
 
       const accessResult = await requestAccess();
-
-      if (accessResult.error) {
-        throw new Error(getErrorMessage(accessResult.error));
-      }
-
+      if (accessResult.error) throw new Error(getErrorMessage(accessResult.error));
       setAddress(accessResult.address);
 
       const networkResult = await getNetwork();
-
-      if (networkResult.error) {
-        throw new Error(getErrorMessage(networkResult.error));
-      }
-
+      if (networkResult.error) throw new Error(getErrorMessage(networkResult.error));
       setNetwork(networkResult.network || "");
+
       setStatus("Freighter connected. You can now prepare or submit a Growthip tip.");
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to connect wallet.";
-      setStatus(message);
+      setStatus(error instanceof Error ? error.message : "Failed to connect wallet.");
     } finally {
       setBusy(false);
     }
   }
+
+  // ── Add XLM token to Freighter ────────────────────────────────────────────
 
   async function addXlmToken() {
     setBusy(true);
@@ -105,19 +99,16 @@ export default function FreighterPayDemo() {
         networkPassphrase: NETWORK_PASSPHRASE,
       });
 
-      if (result.error) {
-        throw new Error(getErrorMessage(result.error));
-      }
-
+      if (result.error) throw new Error(getErrorMessage(result.error));
       setStatus("Native XLM token contract added or confirmed in Freighter.");
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to add token.";
-      setStatus(message);
+      setStatus(error instanceof Error ? error.message : "Failed to add token.");
     } finally {
       setBusy(false);
     }
   }
+
+  // ── Prepare V3 demo tip note ───────────────────────────────────────────────
 
   function prepareDemoTip() {
     if (!address) {
@@ -130,38 +121,35 @@ export default function FreighterPayDemo() {
       return;
     }
 
+    // Use the V3 commitment hex from growthipProof.ts
     setCommitment(GROWTHIP_COMMITMENT_HEX);
     setPrivateNote(
-      `growthip-testnet-note:${GROWTHIP_COMMITMENT_HEX}:fresh-proof-artifact`,
+      `growthip-v3-note:${GROWTHIP_COMMITMENT_HEX}:v3-recipient-bound`,
     );
 
     setStatus(
-      "Fresh proof-compatible private note prepared. This commitment matches the current generated proof artifact.",
+      "V3 proof-compatible private note prepared. " +
+      "This commitment is bound to recipientHash inside the Poseidon hash.",
     );
   }
+
+  // ── Submit deposit_paid to GrowthipPool V3 ────────────────────────────────
 
   async function depositPaid() {
     setBusy(true);
 
     try {
-      if (!address) {
-        throw new Error("Connect Freighter first.");
-      }
-
-      if (!isTestnet) {
-        throw new Error("Switch Freighter to TESTNET first.");
-      }
+      if (!address)    throw new Error("Connect Freighter first.");
+      if (!isTestnet)  throw new Error("Switch Freighter to TESTNET first.");
 
       const demoCommitment = commitment || GROWTHIP_COMMITMENT_HEX;
 
       if (!commitment) {
         setCommitment(demoCommitment);
-        setPrivateNote(
-          `growthip-testnet-note:${demoCommitment}:fresh-proof-artifact`,
-        );
+        setPrivateNote(`growthip-v3-note:${demoCommitment}:v3-recipient-bound`);
       }
 
-      setStatus("Preparing deposit_paid transaction...");
+      setStatus("Preparing deposit_paid transaction for V3 pool...");
 
       const client = new Client({
         ...networks.testnet,
@@ -170,7 +158,7 @@ export default function FreighterPayDemo() {
       });
 
       const tx = await client.deposit_paid({
-        depositor: address,
+        depositor:  address,
         commitment: Buffer.from(demoCommitment, "hex"),
       });
 
@@ -183,28 +171,27 @@ export default function FreighterPayDemo() {
             networkPassphrase: NETWORK_PASSPHRASE,
           });
 
-          if (signed.error) {
-            throw new Error(getErrorMessage(signed.error));
-          }
+          if (signed.error) throw new Error(getErrorMessage(signed.error));
 
           return {
-            signedTxXdr: signed.signedTxXdr,
+            signedTxXdr:   signed.signedTxXdr,
             signerAddress: signed.signerAddress,
           };
         },
       });
 
       setStatus(
-        `Deposit submitted successfully. Result: ${String(sent.result)}. Refresh Live Contract Reader to see totalDeposits increase.`,
+        `Deposit submitted. Result: ${String(sent.result)}. ` +
+        "Refresh Live Contract Reader to see totalDeposits increase.",
       );
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to submit deposit.";
-      setStatus(message);
+      setStatus(error instanceof Error ? error.message : "Failed to submit deposit.");
     } finally {
       setBusy(false);
     }
   }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <section id="pay-demo" className="mx-auto max-w-7xl px-6 py-20 lg:px-8">
@@ -219,19 +206,20 @@ export default function FreighterPayDemo() {
           </h2>
 
           <p className="mt-5 text-base leading-8 text-soft-gray/68">
-            This panel connects Freighter, checks the user network, confirms the
-            native XLM token contract, prepares a private tip note, and submits a
-            real
-            <span className="font-mono text-fresh-green"> deposit_paid </span>
-            transaction to the deployed GrowthipPool contract on Stellar Testnet.
+            This panel connects Freighter, checks the network, confirms the
+            native XLM token contract, prepares a V3 private tip note, and
+            submits a real{" "}
+            <span className="font-mono text-fresh-green">deposit_paid</span>{" "}
+            transaction to the deployed GrowthipPool V3 contract on Stellar
+            Testnet.
           </p>
 
           <div className="mt-8 rounded-3xl border border-coral-red/20 bg-coral-red/10 p-5">
             <p className="text-sm font-bold text-coral-red">Testnet only</p>
             <p className="mt-2 text-sm leading-7 text-soft-gray/75">
               This uses testnet XLM through the native Stellar Asset Contract.
-              Do not use real funds. If the transaction fails, make sure your
-              Freighter account is on TESTNET and funded with testnet XLM.
+              Do not use real funds. Ensure your Freighter account is on
+              TESTNET and funded with testnet XLM via Friendbot.
             </p>
           </div>
         </div>
@@ -259,17 +247,15 @@ export default function FreighterPayDemo() {
           <div className="grid gap-3">
             <PayInfo
               label="Freighter Installed"
-              value={
-                installed === null ? "not checked" : installed ? "yes" : "no"
-              }
+              value={installed === null ? "not checked" : installed ? "yes" : "no"}
             />
             <PayInfo
               label="Connected Wallet"
               value={address ? shortAddress(address) : "not connected"}
             />
-            <PayInfo label="Network" value={network || "unknown"} />
-            <PayInfo label="Tip Amount" value="10 XLM testnet demo" />
-            <PayInfo label="Growthip Pool" value={shortAddress(POOL_ID)} />
+            <PayInfo label="Network"      value={network || "unknown"} />
+            <PayInfo label="Tip Amount"   value="10 XLM testnet demo" />
+            <PayInfo label="Growthip Pool V3" value={shortAddress(GROWTHIP_POOL_ID)} />
           </div>
 
           <div className="mt-5 grid gap-3 md:grid-cols-2">
@@ -315,8 +301,8 @@ export default function FreighterPayDemo() {
 
           {commitment && (
             <div className="mt-5 space-y-3">
-              <PayInfo label="Demo Commitment" value={commitment} />
-              <PayInfo label="Private Note" value={privateNote} />
+              <PayInfo label="V3 Commitment" value={commitment} />
+              <PayInfo label="Private Note"  value={privateNote} />
             </div>
           )}
         </div>

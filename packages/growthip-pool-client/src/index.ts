@@ -34,7 +34,7 @@ if (typeof window !== "undefined") {
 export const networks = {
   testnet: {
     networkPassphrase: "Test SDF Network ; September 2015",
-    contractId: "CDFAGPSKKJCWJEOGHFYBEWSMSVGQSNXBXPQA45MGHL2ZIQDBQTTHPEFZ",
+    contractId: "CA35IGCAXCFVTYEUUSIA63RI32J2EK3KQ5WC7O5AQCMQBISOM6VZNXPJ",
   }
 } as const
 
@@ -114,6 +114,11 @@ export interface Client {
   total_deposits: (options?: MethodOptions) => Promise<AssembledTransaction<u32>>
 
   /**
+   * Construct and simulate a update_verifier transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+   */
+  update_verifier: ({admin, new_verifier}: {admin: string, new_verifier: string}, options?: MethodOptions) => Promise<AssembledTransaction<null>>
+
+  /**
    * Construct and simulate a is_nullifier_used transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
    */
   is_nullifier_used: ({nullifier_hash}: {nullifier_hash: Buffer}, options?: MethodOptions) => Promise<AssembledTransaction<boolean>>
@@ -165,6 +170,7 @@ export class Client extends ContractClient {
         "AAAAAAAAAAAAAAAMdG90YWxfY2xhaW1zAAAAAAAAAAEAAAAE",
         "AAAAAAAAAAAAAAAOZ2V0X2NvbW1pdG1lbnQAAAAAAAEAAAAAAAAABWluZGV4AAAAAAAABAAAAAEAAAPuAAAAIA==",
         "AAAAAAAAAAAAAAAOdG90YWxfZGVwb3NpdHMAAAAAAAAAAAABAAAABA==",
+        "AAAAAAAAAAAAAAAPdXBkYXRlX3ZlcmlmaWVyAAAAAAIAAAAAAAAABWFkbWluAAAAAAAAEwAAAAAAAAAMbmV3X3ZlcmlmaWVyAAAAEwAAAAA=",
         "AAAAAAAAAAAAAAARaXNfbnVsbGlmaWVyX3VzZWQAAAAAAAABAAAAAAAAAA5udWxsaWZpZXJfaGFzaAAAAAAD7gAAACAAAAABAAAAAQ==",
         "AAAAAAAAAAAAAAASZ2V0X3JlY2lwaWVudF9oYXNoAAAAAAABAAAAAAAAAAlyZWNpcGllbnQAAAAAAAATAAAAAQAAA+4AAAAg",
         "AAAAAAAAAAAAAAAScmVnaXN0ZXJfcmVjaXBpZW50AAAAAAACAAAAAAAAAAlyZWNpcGllbnQAAAAAAAATAAAAAAAAAA5yZWNpcGllbnRfaGFzaAAAAAAD7gAAACAAAAAA",
@@ -187,6 +193,7 @@ export class Client extends ContractClient {
         total_claims: this.txFromJSON<u32>,
         get_commitment: this.txFromJSON<Buffer>,
         total_deposits: this.txFromJSON<u32>,
+        update_verifier: this.txFromJSON<null>,
         is_nullifier_used: this.txFromJSON<boolean>,
         get_recipient_hash: this.txFromJSON<Buffer>,
         register_recipient: this.txFromJSON<null>,

@@ -243,7 +243,7 @@ export default function ClaimDemo() {
           </h2>
 
           <p className="mt-5 text-base leading-8 text-soft-gray/68">
-            This section uses the generated proof artifact from the Growthip v2
+            This section uses the generated proof artifact from the Growthip V3 circuit — recipientHash is now cryptographically bound inside commitment
             circuit. It registers your wallet as the recipient for the demo
             recipientHash, then calls
             <span className="font-mono text-fresh-green"> claim_to </span>

@@ -5,6 +5,7 @@ members = [
   "contracts/growthip-note-verifier",
   "contracts/growthip-merkle-verifier",
   "contracts/growthip-merkle-verifier-v2",
+  "contracts/growthip-merkle-verifier-v3",
   "contracts/growthip-pool"
 ]
 
