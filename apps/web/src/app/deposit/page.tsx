@@ -172,6 +172,7 @@ export default function DepositPage() {
             </div>
 
             <AmountSelector
+              key={token.symbol}
               token={token}
               onAmountChange={(ca, da) => { setContractAmount(ca); setDisplayAmount(da); }}
             />
