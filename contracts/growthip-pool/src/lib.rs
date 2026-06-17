@@ -52,6 +52,21 @@ impl GrowthipPool {
             .set(&DataKey::Verifier, &new_verifier);
     }
 
+    /// Upgrade the pool contract WASM (admin only).
+    /// Allows fixing bugs without redeploying and losing state (audit finding H3).
+    pub fn upgrade(env: Env, admin: Address, new_wasm_hash: BytesN<32>) {
+        let stored_admin: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .expect("not initialized");
+        stored_admin.require_auth();
+        if stored_admin != admin {
+            panic!("not admin");
+        }
+        env.deployer().update_current_contract_wasm(new_wasm_hash);
+    }
+
     pub fn update_root(env: Env, admin: Address, new_root: BytesN<32>) {
         let stored_admin: Address = env
             .storage()
@@ -81,11 +96,12 @@ impl GrowthipPool {
             .set(&DataKey::RecipientHash(recipient), &recipient_hash);
     }
 
-    pub fn get_recipient_hash(env: Env, recipient: Address) -> BytesN<32> {
+    /// Returns the registered recipient hash, or None if not registered.
+    /// Returns Option to avoid panicking on read-only simulation (audit finding L1).
+    pub fn get_recipient_hash(env: Env, recipient: Address) -> Option<BytesN<32>> {
         env.storage()
             .persistent()
             .get(&DataKey::RecipientHash(recipient))
-            .expect("recipient hash not found")
     }
 
     pub fn set_token(env: Env, admin: Address, token_addr: Address) {
@@ -132,7 +148,7 @@ impl GrowthipPool {
             .expect("token not set");
         let token_client = token::Client::new(&env, &token_addr);
         token_client.transfer(&depositor, &env.current_contract_address(), &TIP_AMOUNT);
-        Self::deposit(env, commitment)
+        Self::deposit_internal(&env, commitment)
     }
 
     pub fn claim_to(
@@ -177,7 +193,10 @@ impl GrowthipPool {
         true
     }
 
-    pub fn deposit(env: Env, commitment: BytesN<32>) -> u32 {
+    /// Internal commitment storage helper.
+    /// Not public: deposits must go through `deposit_paid` which enforces payment.
+    /// This prevents griefing via free commitment spam (audit finding H1).
+    fn deposit_internal(env: &Env, commitment: BytesN<32>) -> u32 {
         let index: u32 = env
             .storage()
             .instance()
@@ -189,6 +208,10 @@ impl GrowthipPool {
         env.storage()
             .instance()
             .set(&DataKey::TotalDeposits, &(index + 1));
+
+        // Emit privacy-safe event: index only, no depositor or commitment value
+        env.events().publish((soroban_sdk::symbol_short!("deposit"),), index);
+
         index
     }
 
@@ -260,7 +283,7 @@ impl GrowthipPool {
 
         env.storage()
             .persistent()
-            .set(&DataKey::NullifierUsed(nullifier_hash), &true);
+            .set(&DataKey::NullifierUsed(nullifier_hash.clone()), &true);
 
         let total: u32 = env
             .storage()
@@ -270,6 +293,9 @@ impl GrowthipPool {
         env.storage()
             .instance()
             .set(&DataKey::TotalClaims, &(total + 1));
+
+        // Emit privacy-safe event: nullifier_hash only, no recipient address
+        env.events().publish((soroban_sdk::symbol_short!("claim"),), nullifier_hash);
 
         true
     }
@@ -422,22 +448,35 @@ mod test {
     #[test]
     fn test_deposit_stores_commitment() {
         let env = Env::default();
+        env.mock_all_auths();
+
         let verifier_id = env.register(GrowthipMerkleVerifier, ());
         let pool_id     = env.register(GrowthipPool, ());
         let client      = GrowthipPoolClient::new(&env, &pool_id);
         let admin       = Address::generate(&env);
+        let supporter   = Address::generate(&env);
+
+        let token_admin        = Address::generate(&env);
+        let sac                = env.register_stellar_asset_contract_v2(token_admin.clone());
+        let token_addr         = sac.address();
+        let token_admin_client = token::StellarAssetClient::new(&env, &token_addr);
 
         let mut rb = [0u8; 32]; rb[31] = 1;
         let root = BytesN::from_array(&env, &rb);
         client.initialize(&admin, &verifier_id, &root);
+        client.set_token(&admin, &token_addr);
+
+        // Fund supporter for two paid deposits
+        token_admin_client.mint(&supporter, &(TIP_AMOUNT * 2));
 
         let mut c1b = [0u8; 32]; c1b[31] = 11;
         let mut c2b = [0u8; 32]; c2b[31] = 22;
         let c1 = BytesN::from_array(&env, &c1b);
         let c2 = BytesN::from_array(&env, &c2b);
 
-        assert_eq!(client.deposit(&c1), 0);
-        assert_eq!(client.deposit(&c2), 1);
+        // deposit() is now internal; use deposit_paid (audit finding H1)
+        assert_eq!(client.deposit_paid(&supporter, &c1), 0);
+        assert_eq!(client.deposit_paid(&supporter, &c2), 1);
         assert_eq!(client.total_deposits(), 2);
         assert_eq!(client.get_commitment(&0), c1);
         assert_eq!(client.get_commitment(&1), c2);
@@ -735,5 +774,69 @@ mod test {
         // Update to new verifier — simulates switching to V3 verifier
         client.update_verifier(&admin, &verifier_id2);
         // No panic = success
+    }
+
+    // ----------------------------------------------------------------
+    // V3 production-path test
+    // Proves the pool works with the actual V3 verifier + V3 proof,
+    // closing the gap between tested (V2) and deployed (V3) (audit M1).
+    // ----------------------------------------------------------------
+    #[test]
+    fn test_claim_to_with_v3_verifier_and_proof() {
+        use growthip_merkle_verifier_v3::GrowthipMerkleVerifierV3;
+
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let v3_verifier_id = env.register(GrowthipMerkleVerifierV3, ());
+        let pool_id        = env.register(GrowthipPool, ());
+        let client         = GrowthipPoolClient::new(&env, &pool_id);
+
+        let admin     = Address::generate(&env);
+        let supporter = Address::generate(&env);
+        let recipient = Address::generate(&env);
+
+        let token_admin        = Address::generate(&env);
+        let sac                = env.register_stellar_asset_contract_v2(token_admin.clone());
+        let token_addr         = sac.address();
+        let token_client       = token::Client::new(&env, &token_addr);
+        let token_admin_client = token::StellarAssetClient::new(&env, &token_addr);
+
+        // Load V3 artifacts (production circuit)
+        let proof_hex = include_str!("../../../circuits/build/growthip_merkle_note_v3_proof_abc.hex");
+        let pub_hex   = include_str!("../../../circuits/build/growthip_merkle_note_v3_public_inputs.hex");
+
+        let proof_bytes   = bytes_from_hex(&env, proof_hex);
+        let public_inputs = public_inputs_from_hex(&env, pub_hex);
+
+        let root           = public_inputs.get(0).expect("missing root");
+        let nullifier_hash = public_inputs.get(1).expect("missing nullifier hash");
+        let recipient_hash = public_inputs.get(2).expect("missing recipient hash");
+
+        // Initialize pool with V3 verifier and V3 root
+        client.initialize(&admin, &v3_verifier_id, &root);
+        client.set_token(&admin, &token_addr);
+        client.register_recipient(&recipient, &recipient_hash);
+
+        let amount = client.tip_amount();
+        token_admin_client.mint(&supporter, &amount);
+
+        let mut cb = [0u8; 32]; cb[31] = 123;
+        let commitment = BytesN::from_array(&env, &cb);
+        client.deposit_paid(&supporter, &commitment);
+
+        assert_eq!(token_client.balance(&pool_id), amount);
+        assert_eq!(client.is_nullifier_used(&nullifier_hash), false);
+
+        // Claim with real V3 proof — native BN254 Groth16 verification
+        assert_eq!(client.claim_to(&recipient, &proof_bytes, &public_inputs), true);
+        assert_eq!(token_client.balance(&recipient), amount);
+        assert_eq!(token_client.balance(&pool_id), 0);
+        assert_eq!(client.is_nullifier_used(&nullifier_hash), true);
+        assert_eq!(client.total_claims(), 1);
+
+        // Double claim with same V3 proof is blocked
+        assert_eq!(client.claim_to(&recipient, &proof_bytes, &public_inputs), false);
+        assert_eq!(client.total_claims(), 1);
     }
 }

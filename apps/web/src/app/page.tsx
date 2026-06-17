@@ -9,7 +9,7 @@ const contracts = [
   },
   {
     label: "Growthip Pool V3",
-    value: "CA35IGCAXCFVTYEUUSIA63RI32J2EK3KQ5WC7O5AQCMQBISOM6VZNXPJ",
+    value: "CCSYSAWOUWWBAHDLXXBZ4NL7VIXGCHAMYWNZHNUVUQQUMY4TSGC6IV56",
   },
   {
     label: "Native XLM Token Contract",

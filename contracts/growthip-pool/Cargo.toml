@@ -14,3 +14,4 @@ growthip-merkle-verifier-v2 = { path = "../growthip-merkle-verifier-v2" }
 [dev-dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }
 hex = "0.4"
+growthip-merkle-verifier-v3 = { path = "../growthip-merkle-verifier-v3" }

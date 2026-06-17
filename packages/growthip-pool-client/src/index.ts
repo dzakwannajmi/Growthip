@@ -34,7 +34,7 @@ if (typeof window !== "undefined") {
 export const networks = {
   testnet: {
     networkPassphrase: "Test SDF Network ; September 2015",
-    contractId: "CA35IGCAXCFVTYEUUSIA63RI32J2EK3KQ5WC7O5AQCMQBISOM6VZNXPJ",
+    contractId: "CCSYSAWOUWWBAHDLXXBZ4NL7VIXGCHAMYWNZHNUVUQQUMY4TSGC6IV56",
   }
 } as const
 
@@ -59,9 +59,11 @@ export interface Client {
   token: (options?: MethodOptions) => Promise<AssembledTransaction<string>>
 
   /**
-   * Construct and simulate a deposit transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+   * Construct and simulate a upgrade transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+   * Upgrade the pool contract WASM (admin only).
+   * Allows fixing bugs without redeploying and losing state (audit finding H3).
    */
-  deposit: ({commitment}: {commitment: Buffer}, options?: MethodOptions) => Promise<AssembledTransaction<u32>>
+  upgrade: ({admin, new_wasm_hash}: {admin: string, new_wasm_hash: Buffer}, options?: MethodOptions) => Promise<AssembledTransaction<null>>
 
   /**
    * Construct and simulate a claim_to transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
@@ -125,8 +127,10 @@ export interface Client {
 
   /**
    * Construct and simulate a get_recipient_hash transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+   * Returns the registered recipient hash, or None if not registered.
+   * Returns Option to avoid panicking on read-only simulation (audit finding L1).
    */
-  get_recipient_hash: ({recipient}: {recipient: string}, options?: MethodOptions) => Promise<AssembledTransaction<Buffer>>
+  get_recipient_hash: ({recipient}: {recipient: string}, options?: MethodOptions) => Promise<AssembledTransaction<Option<Buffer>>>
 
   /**
    * Construct and simulate a register_recipient transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
@@ -159,7 +163,7 @@ export class Client extends ContractClient {
       new ContractSpec([ "AAAAAgAAAAAAAAAAAAAAB0RhdGFLZXkAAAAACQAAAAAAAAAAAAAABUFkbWluAAAAAAAAAAAAAAAAAAAIVmVyaWZpZXIAAAAAAAAAAAAAAAVUb2tlbgAAAAAAAAAAAAAAAAAAC0N1cnJlbnRSb290AAAAAAEAAAAAAAAADVJlY2lwaWVudEhhc2gAAAAAAAABAAAAEwAAAAEAAAAAAAAADU51bGxpZmllclVzZWQAAAAAAAABAAAD7gAAACAAAAABAAAAAAAAAApDb21taXRtZW50AAAAAAABAAAABAAAAAAAAAAAAAAADVRvdGFsRGVwb3NpdHMAAAAAAAAAAAAAAAAAAAtUb3RhbENsYWltcwA=",
         "AAAAAAAAAAAAAAAFY2xhaW0AAAAAAAACAAAAAAAAAAtwcm9vZl9ieXRlcwAAAAAOAAAAAAAAAA1wdWJsaWNfaW5wdXRzAAAAAAAD6gAAA+4AAAAgAAAAAQAAAAE=",
         "AAAAAAAAAAAAAAAFdG9rZW4AAAAAAAAAAAAAAQAAABM=",
-        "AAAAAAAAAAAAAAAHZGVwb3NpdAAAAAABAAAAAAAAAApjb21taXRtZW50AAAAAAPuAAAAIAAAAAEAAAAE",
+        "AAAAAAAAAHhVcGdyYWRlIHRoZSBwb29sIGNvbnRyYWN0IFdBU00gKGFkbWluIG9ubHkpLgpBbGxvd3MgZml4aW5nIGJ1Z3Mgd2l0aG91dCByZWRlcGxveWluZyBhbmQgbG9zaW5nIHN0YXRlIChhdWRpdCBmaW5kaW5nIEgzKS4AAAAHdXBncmFkZQAAAAACAAAAAAAAAAVhZG1pbgAAAAAAABMAAAAAAAAADW5ld193YXNtX2hhc2gAAAAAAAPuAAAAIAAAAAA=",
         "AAAAAAAAAAAAAAAIY2xhaW1fdG8AAAADAAAAAAAAAAlyZWNpcGllbnQAAAAAAAATAAAAAAAAAAtwcm9vZl9ieXRlcwAAAAAOAAAAAAAAAA1wdWJsaWNfaW5wdXRzAAAAAAAD6gAAA+4AAAAgAAAAAQAAAAE=",
         "AAAAAAAAAAAAAAAJc2V0X3Rva2VuAAAAAAAAAgAAAAAAAAAFYWRtaW4AAAAAAAATAAAAAAAAAAp0b2tlbl9hZGRyAAAAAAATAAAAAA==",
         "AAAAAAAAAAAAAAAKaW5pdGlhbGl6ZQAAAAAAAwAAAAAAAAAFYWRtaW4AAAAAAAATAAAAAAAAAAh2ZXJpZmllcgAAABMAAAAAAAAABHJvb3QAAAPuAAAAIAAAAAA=",
@@ -172,7 +176,7 @@ export class Client extends ContractClient {
         "AAAAAAAAAAAAAAAOdG90YWxfZGVwb3NpdHMAAAAAAAAAAAABAAAABA==",
         "AAAAAAAAAAAAAAAPdXBkYXRlX3ZlcmlmaWVyAAAAAAIAAAAAAAAABWFkbWluAAAAAAAAEwAAAAAAAAAMbmV3X3ZlcmlmaWVyAAAAEwAAAAA=",
         "AAAAAAAAAAAAAAARaXNfbnVsbGlmaWVyX3VzZWQAAAAAAAABAAAAAAAAAA5udWxsaWZpZXJfaGFzaAAAAAAD7gAAACAAAAABAAAAAQ==",
-        "AAAAAAAAAAAAAAASZ2V0X3JlY2lwaWVudF9oYXNoAAAAAAABAAAAAAAAAAlyZWNpcGllbnQAAAAAAAATAAAAAQAAA+4AAAAg",
+        "AAAAAAAAAI9SZXR1cm5zIHRoZSByZWdpc3RlcmVkIHJlY2lwaWVudCBoYXNoLCBvciBOb25lIGlmIG5vdCByZWdpc3RlcmVkLgpSZXR1cm5zIE9wdGlvbiB0byBhdm9pZCBwYW5pY2tpbmcgb24gcmVhZC1vbmx5IHNpbXVsYXRpb24gKGF1ZGl0IGZpbmRpbmcgTDEpLgAAAAASZ2V0X3JlY2lwaWVudF9oYXNoAAAAAAABAAAAAAAAAAlyZWNpcGllbnQAAAAAAAATAAAAAQAAA+gAAAPuAAAAIA==",
         "AAAAAAAAAAAAAAAScmVnaXN0ZXJfcmVjaXBpZW50AAAAAAACAAAAAAAAAAlyZWNpcGllbnQAAAAAAAATAAAAAAAAAA5yZWNpcGllbnRfaGFzaAAAAAAD7gAAACAAAAAA",
         "AAAAAQAAAAAAAAAAAAAADEdyb3RoMTZQcm9vZgAAAAMAAAAAAAAAAWEAAAAAAAPuAAAAQAAAAAAAAAABYgAAAAAAA+4AAACAAAAAAAAAAAFjAAAAAAAD7gAAAEA=",
         "AAAAAAAAAAAAAAAGdmVyaWZ5AAAAAAACAAAAAAAAAAtwcm9vZl9ieXRlcwAAAAAOAAAAAAAAAA1wdWJsaWNfaW5wdXRzAAAAAAAD6gAAA+4AAAAgAAAAAQAAAAE=" ]),
@@ -182,7 +186,7 @@ export class Client extends ContractClient {
   public readonly fromJSON = {
     claim: this.txFromJSON<boolean>,
         token: this.txFromJSON<string>,
-        deposit: this.txFromJSON<u32>,
+        upgrade: this.txFromJSON<null>,
         claim_to: this.txFromJSON<boolean>,
         set_token: this.txFromJSON<null>,
         initialize: this.txFromJSON<null>,
@@ -195,7 +199,7 @@ export class Client extends ContractClient {
         total_deposits: this.txFromJSON<u32>,
         update_verifier: this.txFromJSON<null>,
         is_nullifier_used: this.txFromJSON<boolean>,
-        get_recipient_hash: this.txFromJSON<Buffer>,
+        get_recipient_hash: this.txFromJSON<Option<Buffer>>,
         register_recipient: this.txFromJSON<null>,
         verify: this.txFromJSON<boolean>
   }
