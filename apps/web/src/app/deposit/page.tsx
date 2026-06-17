@@ -108,6 +108,7 @@ export default function DepositPage() {
       const { Client, networks } = PoolClient;
       return new Client({
         ...networks.testnet,
+        contractId: token.poolId,
         rpcUrl: RPC_URL,
         publicKey,
         signTransaction: async (xdr: string) => {
@@ -120,7 +121,7 @@ export default function DepositPage() {
         },
       });
     },
-    [PoolClient],
+    [PoolClient, token],
   );
 
   async function deposit() {

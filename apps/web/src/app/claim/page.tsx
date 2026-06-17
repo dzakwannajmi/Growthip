@@ -86,7 +86,7 @@ export default function ClaimPage() {
       if (!recipient) setRecipient(access.address);
       setStage("idle");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Gagal connect wallet.");
+      setError(err instanceof Error ? err.message : "Failed connect wallet.");
       setStage("error");
     }
   }, [recipient]);
@@ -114,7 +114,7 @@ export default function ClaimPage() {
     try {
       note = JSON.parse(noteJson) as PrivateNote;
     } catch {
-      throw new Error("Private Note bukan JSON yang valid.");
+      throw new Error("Invalid private note format. Please check and try again.");
     }
     if (note.version !== "growthip-v3") {
       throw new Error(`Versi note tidak didukung: ${note.version}`);
@@ -128,7 +128,7 @@ export default function ClaimPage() {
 
   const handleClaim = useCallback(async () => {
     if (!address) {
-      setError("Hubungkan wallet terlebih dahulu.");
+      setError("Please connect your wallet first.");
       return;
     }
     setError(null);
@@ -161,7 +161,7 @@ export default function ClaimPage() {
       const leafIndex = commitments.indexOf(noteCommitment);
       if (leafIndex === -1) {
         throw new Error(
-          "Commitment dari note tidak ditemukan di pool on-chain. " +
+          "Commitment dari note not found in pool on-chain. " +
             "Pastikan deposit sudah terkonfirmasi dan note berasal dari pool ini.",
         );
       }
@@ -213,7 +213,7 @@ export default function ClaimPage() {
           disabled={stage === "connecting"}
           className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
         >
-          {stage === "connecting" ? "Menghubungkan…" : "Connect Wallet"}
+          {stage === "connecting" ? "Connecting…" : "Connect Wallet"}
         </button>
       ) : (
         <>
@@ -275,7 +275,7 @@ export default function ClaimPage() {
 
           {stage === "done" && txHash && (
             <div className="space-y-1 rounded-lg border border-primary/30 bg-primary/5 p-4">
-              <p className="text-sm font-medium text-primary">Klaim berhasil!</p>
+              <p className="text-sm font-medium text-primary">Tip claimed successfully!!</p>
               <p className="break-all font-mono text-xs text-muted-foreground">{txHash}</p>
             </div>
           )}
