@@ -104,6 +104,7 @@ export default function DepositPage() {
 
       setStatus("Approve the transaction in Freighter...");
       await tx.signAndSend({
+        force: true,
         signTransaction: async (xdr: string) => {
           const signed = await freighterSign(xdr, { address, networkPassphrase: NETWORK_PASSPHRASE });
           if (signed.error) throw new Error(String(signed.error));
