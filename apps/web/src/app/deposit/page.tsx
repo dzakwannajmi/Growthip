@@ -358,12 +358,26 @@ export default function DepositPage() {
                 </span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-soft-gray/60">Network fee (est.)</span>
-                <span className="font-semibold text-white">~0.006 XLM</span>
+                <span className="text-soft-gray/60">Commitment storage</span>
+                <span className="font-semibold text-white">~0.004 XLM</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-soft-gray/60">ZK proof generation</span>
-                <span className="font-semibold text-fresh-green">Browser-side</span>
+                <span className="text-soft-gray/60">Base transaction fee</span>
+                <span className="font-semibold text-white">~0.001 XLM</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-soft-gray/60">Recipient registration</span>
+                <span className="font-semibold text-white">~0.003 XLM (once)</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-soft-gray/60">ZK commitment generation</span>
+                <span className="font-semibold text-fresh-green">Browser-side (free)</span>
+              </div>
+              <div className="border-t border-white/10 pt-2 flex justify-between text-xs">
+                <span className="font-semibold text-white">Total est.</span>
+                <span className="font-black text-white">
+                  {fmtDisplay(displayAmount)} {token.symbol} + ~0.008 XLM
+                </span>
               </div>
             </div>
 
