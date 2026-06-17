@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { Buffer } from "buffer";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -11,7 +11,6 @@ import {
   getNetwork,
   signTransaction as freighterSign,
 } from "@stellar/freighter-api";
-import { Client, networks } from "@/lib/growthipPoolClient";
 import { config } from "@/lib/config";
 import { decodeNote, markNoteAsClaimed } from "@/lib/note";
 import {
@@ -19,11 +18,12 @@ import {
   GROWTHIP_PUBLIC_INPUTS_HEX,
 } from "@/lib/growthipProof";
 
-const RPC_URL          = config.network.rpcUrl;
+const RPC_URL           = config.network.rpcUrl;
 const NETWORK_PASSPHRASE = config.network.passphrase;
 
 function ClaimContent() {
-  const params      = useSearchParams();
+  const params = useSearchParams();
+
   const [noteInput, setNoteInput] = useState(params.get("note") ?? "");
   const [address, setAddress]     = useState("");
   const [network, setNetwork]     = useState("");
@@ -33,15 +33,16 @@ function ClaimContent() {
 
   const isTestnet = network.toUpperCase() === "TESTNET";
 
-  const client = useMemo(
-    () =>
-      new Client({
-        ...networks.testnet,
-        rpcUrl: RPC_URL,
-        publicKey: address || undefined,
-      }),
-    [address],
-  );
+  const [PoolClient, setPoolClient] = useState<null | {
+    Client: typeof import("@/lib/growthipPoolClient").Client;
+    networks: typeof import("@/lib/growthipPoolClient").networks;
+  }>(null);
+
+  useEffect(() => {
+    import("@/lib/growthipPoolClient").then((mod) => {
+      setPoolClient({ Client: mod.Client, networks: mod.networks });
+    });
+  }, []);
 
   async function connectWallet() {
     setBusy(true);
@@ -53,8 +54,9 @@ function ClaimContent() {
       }
       await setAllowed();
       const access = await requestAccess();
-      if (access.error) throw new Error(access.error);
+      if (access.error) throw new Error(String(access.error));
       setAddress(access.address);
+
       const net = await getNetwork();
       setNetwork(net.network ?? "");
       setStatus("Wallet connected.");
@@ -74,6 +76,10 @@ function ClaimContent() {
       setStatus("Please paste your private note.");
       return;
     }
+    if (!PoolClient) {
+      setStatus("Client not ready, please wait...");
+      return;
+    }
 
     setBusy(true);
     setStatus("Verifying note...");
@@ -82,14 +88,20 @@ function ClaimContent() {
       const note = decodeNote(noteInput.trim());
       if (!note) {
         setStatus("Invalid note format. Please check and try again.");
-        setBusy(false);
         return;
       }
 
       setStatus("Submitting claim with ZK proof...");
 
-      const proofBytes    = Buffer.from(GROWTHIP_PROOF_HEX, "hex");
-      const publicInputs  = GROWTHIP_PUBLIC_INPUTS_HEX.map((h) =>
+      const { Client, networks } = PoolClient;
+      const client = new Client({
+        ...networks.testnet,
+        rpcUrl: RPC_URL,
+        publicKey: address,
+      });
+
+      const proofBytes   = Buffer.from(GROWTHIP_PROOF_HEX, "hex");
+      const publicInputs = GROWTHIP_PUBLIC_INPUTS_HEX.map((h) =>
         Buffer.from(h, "hex"),
       );
 
@@ -107,14 +119,17 @@ function ClaimContent() {
             address,
             networkPassphrase: NETWORK_PASSPHRASE,
           });
-          if (signed.error) throw new Error(signed.error);
-          return { signedTxXdr: signed.signedTxXdr, signerAddress: signed.signerAddress };
+          if (signed.error) throw new Error(String(signed.error));
+          return {
+            signedTxXdr:   signed.signedTxXdr,
+            signerAddress: signed.signerAddress,
+          };
         },
       });
 
       markNoteAsClaimed(note.nullifierHash);
       setSuccess(true);
-      setStatus("✅ Tip claimed successfully!");
+      setStatus("Tip claimed successfully!");
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Claim failed.");
     } finally {
@@ -128,7 +143,7 @@ function ClaimContent() {
         <p className="text-4xl">🎉</p>
         <p className="mt-4 text-xl font-black text-white">Tip Claimed!</p>
         <p className="mt-2 text-sm text-soft-gray/60">
-          The ZK proof was verified on-chain. Funds have been transferred.
+          ZK proof verified on-chain. Funds transferred to your wallet.
         </p>
         <div className="mt-6 flex justify-center gap-3">
           <Link
@@ -149,16 +164,20 @@ function ClaimContent() {
   }
 
   return (
-    <div className="rounded-[2rem] border border-white/10 bg-rich-black/70 p-6 space-y-4">
-      {/* Wallet status */}
+    <div className="space-y-4 rounded-[2rem] border border-white/10 bg-rich-black/70 p-6">
       {address ? (
         <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
           <span className="text-xs text-soft-gray/60">
             {address.slice(0, 8)}...{address.slice(-6)}
           </span>
-          <span className={`rounded-full px-3 py-1 text-xs font-bold ${
-            isTestnet ? "bg-fresh-green/10 text-fresh-green" : "bg-coral-red/10 text-coral-red"
-          }`}>
+          <span
+            className={
+              "rounded-full px-3 py-1 text-xs font-bold " +
+              (isTestnet
+                ? "bg-fresh-green/10 text-fresh-green"
+                : "bg-coral-red/10 text-coral-red")
+            }
+          >
             {network}
           </span>
         </div>
@@ -172,7 +191,6 @@ function ClaimContent() {
         </button>
       )}
 
-      {/* Note input */}
       <div>
         <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-soft-gray/45">
           Private Note
@@ -186,7 +204,6 @@ function ClaimContent() {
         />
       </div>
 
-      {/* Proof steps */}
       <div className="rounded-2xl border border-white/10 bg-midnight-blue/70 p-4">
         <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-soft-gray/45">
           What happens when you claim
@@ -196,12 +213,12 @@ function ClaimContent() {
             "Note decoded and validated",
             "Groth16 ZK proof verified on Soroban",
             "Merkle root checked on-chain",
-            "Nullifier consumed (prevents double-claim)",
+            "Nullifier consumed — prevents double-claim",
             "Funds transferred to your wallet",
-          ].map((step, i) => (
+          ].map((s, i) => (
             <div key={i} className="flex items-center gap-2">
               <span className="text-neon-violet">→</span>
-              {step}
+              {s}
             </div>
           ))}
         </div>
@@ -226,8 +243,11 @@ export default function ClaimPage() {
   return (
     <main className="min-h-screen">
       <div className="mx-auto max-w-2xl px-6 py-10 lg:px-8">
-        <Link href="/" className="mb-6 flex items-center gap-2 text-sm text-soft-gray/50 hover:text-white">
-          ← Back
+        <Link
+          href="/"
+          className="mb-6 flex items-center gap-2 text-sm text-soft-gray/50 hover:text-white"
+        >
+          Back
         </Link>
         <h1 className="mb-2 text-3xl font-black tracking-tight text-white">
           Claim a Tip

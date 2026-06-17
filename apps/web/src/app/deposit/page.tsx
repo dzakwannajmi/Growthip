@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Buffer } from "buffer";
 import Link from "next/link";
 import {
@@ -10,13 +10,11 @@ import {
   getNetwork,
   signTransaction as freighterSign,
 } from "@stellar/freighter-api";
-// Client imported dynamically inside component to avoid SSR issues
 import { config } from "@/lib/config";
 import { getAvailableTokens, type Token, type TokenSymbol } from "@/lib/tokens";
 import { saveNote, type PrivateNote } from "@/lib/note";
 import TokenSelector from "@/components/TokenSelector";
 import dynamic from "next/dynamic";
-const PrivateNoteDisplay = dynamic(() => import("@/components/PrivateNoteDisplay"), { ssr: false });
 import {
   GROWTHIP_COMMITMENT_HEX,
   GROWTHIP_PUBLIC_INPUTS_HEX,
@@ -24,35 +22,39 @@ import {
   GROWTHIP_RECIPIENT_HASH_HEX,
 } from "@/lib/growthipProof";
 
-const RPC_URL          = config.network.rpcUrl;
+const PrivateNoteDisplay = dynamic(
+  () => import("@/components/PrivateNoteDisplay"),
+  { ssr: false }
+);
+
+const RPC_URL           = config.network.rpcUrl;
 const NETWORK_PASSPHRASE = config.network.passphrase;
 
 type Step = "connect" | "select" | "deposit" | "note";
 
 export default function DepositPage() {
-  const [step, setStep]         = useState<Step>("connect");
-  const [address, setAddress]   = useState("");
-  const [network, setNetwork]   = useState("");
-  const [token, setToken]       = useState<Token>(getAvailableTokens()[0]);
-  const [status, setStatus]     = useState("");
-  const [busy, setBusy]         = useState(false);
-  const [note, setNote]         = useState<PrivateNote | null>(null);
+  const [step, setStep]       = useState<Step>("connect");
+  const [address, setAddress] = useState("");
+  const [network, setNetwork] = useState("");
+  const [token, setToken]     = useState<Token>(getAvailableTokens()[0]);
+  const [status, setStatus]   = useState("");
+  const [busy, setBusy]       = useState(false);
+  const [note, setNote]       = useState<PrivateNote | null>(null);
 
   const isTestnet = network.toUpperCase() === "TESTNET";
 
-  const [client, setClient] = useState<import("@/lib/growthipPoolClient").Client | null>(null);
+  // Lazy-load Stellar client only on client side
+  const [PoolClient, setPoolClient] = useState<null | {
+    Client: typeof import("@/lib/growthipPoolClient").Client;
+    networks: typeof import("@/lib/growthipPoolClient").networks;
+  }>(null);
 
   useEffect(() => {
-    import("@/lib/growthipPoolClient").then(({ Client, networks }) => {
-      setClient(new Client({
-        ...networks.testnet,
-        rpcUrl: RPC_URL,
-        publicKey: address || undefined,
-      }));
+    import("@/lib/growthipPoolClient").then((mod) => {
+      setPoolClient({ Client: mod.Client, networks: mod.networks });
     });
-  }, [address]);
+  }, []);
 
-  // ── Connect wallet ──────────────────────────────────────────────
   async function connectWallet() {
     setBusy(true);
     setStatus("Connecting Freighter...");
@@ -63,12 +65,12 @@ export default function DepositPage() {
         return;
       }
       await setAllowed();
-      const access  = await requestAccess();
-      if (access.error) throw new Error(access.error);
+      const access = await requestAccess();
+      if (access.error) throw new Error(String(access.error));
       setAddress(access.address);
 
       const net = await getNetwork();
-      if (net.error) throw new Error(net.error);
+      if (net.error) throw new Error(String(net.error));
       setNetwork(net.network ?? "");
 
       setStatus("Wallet connected.");
@@ -80,22 +82,28 @@ export default function DepositPage() {
     }
   }
 
-  // ── Deposit ─────────────────────────────────────────────────────
   async function deposit() {
     if (!address || !isTestnet) {
       setStatus("Connect Freighter to Stellar Testnet first.");
       return;
     }
+    if (!PoolClient) {
+      setStatus("Client not ready, please wait...");
+      return;
+    }
     setBusy(true);
     setStatus("Preparing deposit transaction...");
     try {
-      if (!client) { setStatus("Client not ready, please try again."); setBusy(false); return; }
+      const { Client, networks } = PoolClient;
+      const client = new Client({
+        ...networks.testnet,
+        rpcUrl: RPC_URL,
+        publicKey: address,
+      });
+
       const commitment = Buffer.from(GROWTHIP_COMMITMENT_HEX, "hex");
 
-      const tx = await client.deposit_paid({
-        depositor:  address,
-        commitment,
-      });
+      const tx = await client.deposit_paid({ depositor: address, commitment });
 
       setStatus("Approve the transaction in Freighter...");
 
@@ -105,12 +113,14 @@ export default function DepositPage() {
             address,
             networkPassphrase: NETWORK_PASSPHRASE,
           });
-          if (signed.error) throw new Error(signed.error);
-          return { signedTxXdr: signed.signedTxXdr, signerAddress: signed.signerAddress };
+          if (signed.error) throw new Error(String(signed.error));
+          return {
+            signedTxXdr:   signed.signedTxXdr,
+            signerAddress: signed.signerAddress,
+          };
         },
       });
 
-      // Build and save private note
       const newNote: PrivateNote = {
         version:       "growthip-v3",
         secret:        "demo-secret",
@@ -140,19 +150,20 @@ export default function DepositPage() {
   return (
     <main className="min-h-screen">
       <div className="mx-auto max-w-2xl px-6 py-10 lg:px-8">
-        {/* Header */}
-        <Link href="/" className="mb-6 flex items-center gap-2 text-sm text-soft-gray/50 hover:text-white">
-          ← Back
+        <Link
+          href="/"
+          className="mb-6 flex items-center gap-2 text-sm text-soft-gray/50 hover:text-white"
+        >
+          Back
         </Link>
         <h1 className="mb-2 text-3xl font-black tracking-tight text-white">
           Send a Private Tip
         </h1>
         <p className="mb-8 text-sm text-soft-gray/60">
-          Deposit into the Growthip privacy pool. The recipient claims
-          using a private note — no on-chain link between you and them.
+          Deposit into the Growthip privacy pool. The recipient claims using a
+          private note — no on-chain link between you and them.
         </p>
 
-        {/* Testnet warning */}
         <div className="mb-6 rounded-3xl border border-coral-red/20 bg-coral-red/10 p-4">
           <p className="text-sm font-bold text-coral-red">Testnet Only</p>
           <p className="mt-1 text-xs text-soft-gray/70">
@@ -160,7 +171,6 @@ export default function DepositPage() {
           </p>
         </div>
 
-        {/* Step: Connect */}
         {step === "connect" && (
           <div className="rounded-[2rem] border border-white/10 bg-rich-black/70 p-6">
             <p className="mb-4 text-sm text-soft-gray/70">
@@ -179,16 +189,20 @@ export default function DepositPage() {
           </div>
         )}
 
-        {/* Step: Select token */}
         {step === "select" && (
-          <div className="rounded-[2rem] border border-white/10 bg-rich-black/70 p-6 space-y-4">
+          <div className="space-y-4 rounded-[2rem] border border-white/10 bg-rich-black/70 p-6">
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold text-white">
-                Connected: {address.slice(0, 6)}...{address.slice(-6)}
+                {address.slice(0, 6)}...{address.slice(-6)}
               </p>
-              <span className={`rounded-full px-3 py-1 text-xs font-bold ${
-                isTestnet ? "bg-fresh-green/10 text-fresh-green" : "bg-coral-red/10 text-coral-red"
-              }`}>
+              <span
+                className={
+                  "rounded-full px-3 py-1 text-xs font-bold " +
+                  (isTestnet
+                    ? "bg-fresh-green/10 text-fresh-green"
+                    : "bg-coral-red/10 text-coral-red")
+                }
+              >
                 {network || "unknown"}
               </span>
             </div>
@@ -197,10 +211,7 @@ export default function DepositPage() {
               <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-soft-gray/45">
                 Select Token
               </p>
-              <TokenSelector
-                value={token.symbol}
-                onChange={setToken}
-              />
+              <TokenSelector value={token.symbol} onChange={setToken} />
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
@@ -215,20 +226,25 @@ export default function DepositPage() {
               disabled={!isTestnet}
               className="w-full rounded-2xl bg-fresh-green px-5 py-3 text-sm font-black text-midnight-blue transition hover:scale-[1.02] disabled:opacity-50"
             >
-              Continue →
+              Continue
             </button>
           </div>
         )}
 
-        {/* Step: Confirm deposit */}
         {step === "deposit" && (
-          <div className="rounded-[2rem] border border-white/10 bg-rich-black/70 p-6 space-y-4">
+          <div className="space-y-4 rounded-[2rem] border border-white/10 bg-rich-black/70 p-6">
             <p className="text-sm font-semibold text-white">Confirm Deposit</p>
 
             <div className="space-y-2">
-              <InfoRow label="Token"  value={token.name} />
-              <InfoRow label="Amount" value={`${token.tipAmount / Math.pow(10, token.decimals)} ${token.symbol}`} />
-              <InfoRow label="Pool"   value={`${token.poolId.slice(0, 8)}...${token.poolId.slice(-6)}`} />
+              <InfoRow label="Token"   value={token.name} />
+              <InfoRow
+                label="Amount"
+                value={`${token.tipAmount / Math.pow(10, token.decimals)} ${token.symbol}`}
+              />
+              <InfoRow
+                label="Pool"
+                value={`${token.poolId.slice(0, 8)}...${token.poolId.slice(-6)}`}
+              />
               <InfoRow label="Network" value="Stellar Testnet" />
             </div>
 
@@ -237,14 +253,16 @@ export default function DepositPage() {
               disabled={busy}
               className="w-full rounded-2xl bg-fresh-green px-5 py-3 text-sm font-black text-midnight-blue transition hover:scale-[1.02] disabled:opacity-50"
             >
-              {busy ? "Processing..." : `Deposit ${token.tipAmount / Math.pow(10, token.decimals)} ${token.symbol}`}
+              {busy
+                ? "Processing..."
+                : `Deposit ${token.tipAmount / Math.pow(10, token.decimals)} ${token.symbol}`}
             </button>
 
             <button
               onClick={() => setStep("select")}
               className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-bold text-white"
             >
-              ← Back
+              Back
             </button>
 
             {status && (
@@ -253,7 +271,6 @@ export default function DepositPage() {
           </div>
         )}
 
-        {/* Step: Show note */}
         {step === "note" && note && (
           <div className="space-y-4">
             <PrivateNoteDisplay note={note} />
@@ -262,13 +279,13 @@ export default function DepositPage() {
                 href="/claim"
                 className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-center text-sm font-bold text-white"
               >
-                Claim a tip →
+                Claim a tip
               </Link>
               <Link
                 href="/dashboard"
                 className="rounded-2xl bg-neon-violet px-5 py-3 text-center text-sm font-bold text-white"
               >
-                Dashboard →
+                Dashboard
               </Link>
             </div>
           </div>
