@@ -18,7 +18,7 @@ import {
 } from "@/lib/growthipProof";
 
 const RPC_URL = "https://soroban-testnet.stellar.org";
-const NETWORK_PASSPHRASE = "Test SDF Network ; September 2015";
+const NETWORK_PASSPHRASE = process.env.NEXT_PUBLIC_NETWORK_PASSPHRASE || "Test SDF Network ; September 2015";
 
 type PossibleError = string | { message?: string } | undefined;
 

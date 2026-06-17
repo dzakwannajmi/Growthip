@@ -1,270 +1,273 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Buffer } from "buffer";
-import Link from "next/link";
+/**
+ * deposit/page.tsx — Private deposit flow (Growthip V3).
+ *
+ * On deposit we generate a fresh secret + nullifier, derive recipientHash from
+ * the connected Stellar address, and compute the V3 commitment
+ * = Poseidon(secret, nullifier, recipientHash). The commitment is submitted
+ * on-chain; secret/nullifier/recipientHash are persisted ONLY in localStorage.
+ *
+ * SECURITY: secret/nullifier never leave the browser and are never sent to any
+ * server — only the commitment (a hash) goes on-chain.
+ *
+ * Integration: uses the generated growthipPoolClient.ts (deposit) and
+ * @stellar/freighter-api for wallet access. Adjust the `deposit` arg names if
+ * your generated client differs (check the Client interface in
+ * growthipPoolClient.ts).
+ */
+
+import { useCallback, useMemo, useState } from "react";
 import {
   isConnected,
   requestAccess,
-  setAllowed,
-  getNetwork,
-  signTransaction as freighterSign,
+  signTransaction,
 } from "@stellar/freighter-api";
-import { config } from "@/lib/config";
-import { getAvailableTokens, type Token, type TokenSymbol } from "@/lib/tokens";
-import { saveNote, type PrivateNote } from "@/lib/note";
-import TokenSelector from "@/components/TokenSelector";
-import AmountSelector from "@/components/AmountSelector";
-import dynamic from "next/dynamic";
 import {
-  GROWTHIP_COMMITMENT_HEX,
-  GROWTHIP_PUBLIC_INPUTS_HEX,
-  GROWTHIP_NULLIFIER_HASH_HEX,
-  GROWTHIP_RECIPIENT_HASH_HEX,
-} from "@/lib/growthipProof";
+  generateSecret,
+  generateNullifier,
+  computeRecipientHash,
+  computeCommitment,
+  computeNullifierHash,
+  warmPoseidon,
+} from "@/lib/poseidon";
+import { hexToBuffer } from "@/lib/zkp";
+import type { PrivateNote } from "@/lib/note";
 
-const PrivateNoteDisplay = dynamic(
-  () => import("@/components/PrivateNoteDisplay"),
-  { ssr: false }
-);
+// Generated Soroban client + network config.
+import { Client, networks } from "@/lib/growthipPoolClient";
+import { config } from "@/lib/config";
 
-const RPC_URL            = config.network.rpcUrl;
-const NETWORK_PASSPHRASE = config.network.passphrase;
+type Token = "XLM" | "USDC" | "EURC";
+type Stage = "idle" | "connecting" | "preparing" | "submitting" | "done" | "error";
 
-type Step = "connect" | "select" | "deposit" | "note";
+const RPC_URL = "https://soroban-testnet.stellar.org";
+
+/** Decimal field element -> 0x-prefixed 32-byte hex (for note storage). */
+function decimalToHex32(decimal: string): string {
+  const hex = BigInt(decimal).toString(16).padStart(64, "0");
+  if (hex.length > 64) throw new Error("field element too large");
+  return "0x" + hex;
+}
 
 export default function DepositPage() {
-  const [step, setStep]                     = useState<Step>("connect");
-  const [address, setAddress]               = useState("");
-  const [network, setNetwork]               = useState("");
-  const [token, setToken]                   = useState<Token>(getAvailableTokens()[0]);
-  const [contractAmount, setContractAmount] = useState<number>(0);
-  const [displayAmount, setDisplayAmount]   = useState<number>(0);
-  const [status, setStatus]                 = useState("");
-  const [busy, setBusy]                     = useState(false);
-  const [note, setNote]                     = useState<PrivateNote | null>(null);
+  const [address, setAddress] = useState<string | null>(null);
+  const [token, setToken] = useState<Token>("XLM");
+  const [amount, setAmount] = useState("");
+  const [stage, setStage] = useState<Stage>("idle");
+  const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState<PrivateNote | null>(null);
 
-  const isTestnet   = network.toUpperCase() === "TESTNET";
-  const amountReady = contractAmount > 0;
+  const connected = address !== null;
+  const canSubmit = useMemo(
+    () => connected && amount.trim().length > 0 && stage !== "submitting" && stage !== "preparing",
+    [connected, amount, stage],
+  );
 
-  const [PoolClient, setPoolClient] = useState<null | {
-    Client:   typeof import("@/lib/growthipPoolClient").Client;
-    networks: typeof import("@/lib/growthipPoolClient").networks;
-  }>(null);
-
-  useEffect(() => {
-    import("@/lib/growthipPoolClient").then((mod) => {
-      setPoolClient({ Client: mod.Client, networks: mod.networks });
-    });
+  const handleConnect = useCallback(async () => {
+    setError(null);
+    setStage("connecting");
+    try {
+      const { isConnected: hasFreighter } = await isConnected();
+      if (!hasFreighter) throw new Error("Freighter tidak terdeteksi. Pasang ekstensi Freighter.");
+      const access = await requestAccess();
+      if (access.error) throw new Error(access.error);
+      setAddress(access.address);
+      void warmPoseidon();
+      setStage("idle");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal connect wallet.");
+      setStage("error");
+    }
   }, []);
 
-  function handleTokenChange(t: Token) {
-    setToken(t);
-    setContractAmount(0);
-    setDisplayAmount(0);
-  }
+  const buildClient = useCallback(
+    (publicKey: string) =>
+      new Client({
+        ...networks.testnet,
+        rpcUrl: RPC_URL,
+        publicKey,
+        // Sign via Freighter; returns signed XDR.
+        signTransaction: async (xdr: string) => {
+          const res = await signTransaction(xdr, {
+            networkPassphrase: networks.testnet.networkPassphrase,
+            address: publicKey,
+          });
+          if (res.error) throw new Error(res.error);
+          return { signedTxXdr: res.signedTxXdr, signerAddress: publicKey };
+        },
+      }),
+    [],
+  );
 
-  async function connectWallet() {
-    setBusy(true);
-    setStatus("Connecting Freighter...");
-    try {
-      const conn = await isConnected();
-      if (!conn.isConnected) {
-        setStatus("Freighter not installed. Please install it first.");
-        return;
-      }
-      await setAllowed();
-      const access = await requestAccess();
-      if (access.error) throw new Error(String(access.error));
-      setAddress(access.address);
-      const net = await getNetwork();
-      if (net.error) throw new Error(String(net.error));
-      setNetwork(net.network ?? "");
-      setStatus("Wallet connected.");
-      setStep("select");
-    } catch (err) {
-      setStatus(err instanceof Error ? err.message : "Connection failed.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function deposit() {
-    if (!address || !isTestnet) { setStatus("Connect Freighter to Stellar Testnet first."); return; }
-    if (!PoolClient) { setStatus("Client not ready, please wait..."); return; }
-    if (!amountReady) { setStatus("Please select an amount first."); return; }
-
-    // Validate amount is valid multiple of baseUnit
-    const validMultiples = [1, 5, 10, 20].map(m => token.baseUnit * m);
-    if (!validMultiples.includes(contractAmount)) {
-      setStatus(`Invalid amount: ${contractAmount}. Must be 1x/5x/10x/20x of base unit (${token.baseUnit}). Valid: ${validMultiples.join(", ")}`);
-      setBusy(false);
+  const handleDeposit = useCallback(async () => {
+    if (!address) {
+      setError("Hubungkan wallet terlebih dahulu.");
       return;
     }
-
-    setBusy(true);
-    setStatus("Preparing deposit transaction...");
+    setError(null);
+    setStage("preparing");
     try {
-      const { Client, networks } = PoolClient;
-      const client = new Client({ ...networks.testnet, rpcUrl: RPC_URL, publicKey: address });
-      const commitment = Buffer.from(GROWTHIP_COMMITMENT_HEX, "hex");
-      const tx = await client.deposit_paid({ depositor: address, commitment, amount: BigInt(contractAmount) });
+      // 1. Fresh randomness (decimal field elements).
+      const secret = generateSecret();
+      const nullifier = generateNullifier();
 
-      setStatus("Approve the transaction in Freighter...");
-      await tx.signAndSend({
-        force: true,
-        signTransaction: async (xdr: string) => {
-          const signed = await freighterSign(xdr, { address, networkPassphrase: NETWORK_PASSPHRASE });
-          if (signed.error) throw new Error(String(signed.error));
-          return { signedTxXdr: signed.signedTxXdr, signerAddress: signed.signerAddress };
-        },
+      // 2. recipientHash bound to the connected creator address.
+      const recipientHash = await computeRecipientHash(address);
+
+      // 3. V3 commitment binds all three.
+      const commitment = await computeCommitment(secret, nullifier, recipientHash);
+      const nullifierHash = await computeNullifierHash(nullifier);
+      const commitmentHex = decimalToHex32(commitment);
+
+      // 4. Ensure the recipientHash is registered on-chain BEFORE depositing.
+      //    The contract compares the registered hash against the hash exposed
+      //    by the claim proof; without this, claim_to will revert (audit L1).
+      setStage("submitting");
+      const client = buildClient(address);
+      const recipientHashBuf = hexToBuffer(decimalToHex32(recipientHash));
+
+      const existing = await client.get_recipient_hash({ recipient: address });
+      if (existing.result == null) {
+        const regTx = await client.register_recipient({
+          recipient: address,
+          recipient_hash: recipientHashBuf,
+        });
+        await regTx.signAndSend();
+      }
+
+      // 5. Submit the commitment on-chain via deposit_paid (returns leaf index).
+      const tx = await client.deposit_paid({
+        depositor: address,
+        commitment: hexToBuffer(commitmentHex),
+        amount: BigInt(amount),
       });
+      const { result } = await tx.signAndSend();
+      const depositIndex = Number(result); // u32 leaf index
 
+      // 6. Persist the PrivateNote (localStorage only).
       const newNote: PrivateNote = {
-        version: "growthip-v3", secret: "demo-secret", nullifier: "demo-nullifier",
-        recipientHash: GROWTHIP_RECIPIENT_HASH_HEX, commitment: GROWTHIP_COMMITMENT_HEX,
-        nullifierHash: GROWTHIP_NULLIFIER_HASH_HEX, root: GROWTHIP_PUBLIC_INPUTS_HEX[0],
-        token: token.symbol as TokenSymbol, amount: String(contractAmount),
-        timestamp: Date.now(), depositIndex: 0, claimed: false,
+        version: "growthip-v3",
+        secret,
+        nullifier,
+        recipientHash,
+        commitment: commitmentHex,
+        nullifierHash: decimalToHex32(nullifierHash),
+        root: "0x" + "".padStart(64, "0"), // recomputed at claim time
+        token,
+        amount,
+        timestamp: Date.now(),
+        depositIndex,
+        claimed: false,
       };
-
-      saveNote(newNote);
+      saveNoteToStorage(newNote);
       setNote(newNote);
-      setStatus("Deposit successful.");
-      setStep("note");
+      setStage("done");
     } catch (err) {
-      setStatus(err instanceof Error ? err.message : "Deposit failed.");
-    } finally {
-      setBusy(false);
+      console.error(err);
+      setError(err instanceof Error ? err.message : "Deposit gagal.");
+      setStage("error");
     }
-  }
-
-  const fmtDisplay = (n: number) => n % 1 === 0 ? String(n) : n.toFixed(1);
+  }, [address, token, amount, buildClient]);
 
   return (
-    <main className="min-h-screen">
-      <div className="mx-auto max-w-2xl px-6 py-10 lg:px-8">
-        <Link href="/" className="mb-6 flex items-center gap-2 text-sm text-soft-gray/50 hover:text-white">Back</Link>
-        <h1 className="mb-2 text-3xl font-black tracking-tight text-white">Send a Private Tip</h1>
-        <p className="mb-8 text-sm text-soft-gray/60">
-          Deposit into the Growthip privacy pool. The recipient claims using a private note.
+    <div className="mx-auto max-w-md space-y-6 p-6">
+      <header className="space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight">Private Deposit</h1>
+        <p className="text-sm text-muted-foreground">
+          Tip privat ke creator. Secret &amp; nullifier hanya disimpan di browser kamu.
         </p>
+      </header>
 
-        <div className="mb-6 rounded-3xl border border-coral-red/20 bg-coral-red/10 p-4">
-          <p className="text-sm font-bold text-coral-red">Testnet Only</p>
-          <p className="mt-1 text-xs text-soft-gray/70">This uses testnet tokens. Do not use real funds.</p>
-        </div>
+      {!connected ? (
+        <button
+          onClick={handleConnect}
+          disabled={stage === "connecting"}
+          className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
+        >
+          {stage === "connecting" ? "Menghubungkan…" : "Connect Wallet"}
+        </button>
+      ) : (
+        <div className="space-y-4">
+          <p className="truncate rounded-md bg-muted/40 px-3 py-2 font-mono text-xs text-muted-foreground">
+            {address}
+          </p>
 
-        {step === "connect" && (
-          <div className="rounded-[2rem] border border-white/10 bg-rich-black/70 p-6">
-            <p className="mb-4 text-sm text-soft-gray/70">Connect your Freighter wallet to continue.</p>
-            <button onClick={connectWallet} disabled={busy}
-              className="w-full rounded-2xl bg-neon-violet px-5 py-3 text-sm font-black text-white transition hover:scale-[1.02] disabled:opacity-50">
-              {busy ? "Connecting..." : "Connect Freighter"}
-            </button>
-            {status && <p className="mt-3 text-xs text-soft-gray/60">{status}</p>}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Token</label>
+            <div className="grid grid-cols-3 gap-2">
+              {(["XLM", "USDC", "EURC"] as Token[]).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setToken(t)}
+                  className={[
+                    "rounded-lg border px-3 py-2 text-sm transition",
+                    token === t
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:border-primary/50",
+                  ].join(" ")}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
           </div>
-        )}
 
-        {step === "select" && (
-          <div className="space-y-4 rounded-[2rem] border border-white/10 bg-rich-black/70 p-6">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-white">{address.slice(0, 6)}...{address.slice(-6)}</p>
-              <span className={"rounded-full px-3 py-1 text-xs font-bold " + (isTestnet ? "bg-fresh-green/10 text-fresh-green" : "bg-coral-red/10 text-coral-red")}>
-                {network || "unknown"}
-              </span>
-            </div>
-
-            <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-soft-gray/45">Select Token</p>
-              <TokenSelector value={token.symbol} onChange={handleTokenChange} />
-            </div>
-
-            <AmountSelector
-              key={token.symbol}
-              token={token}
-              onAmountChange={(ca, da) => { setContractAmount(ca); setDisplayAmount(da); }}
+          <div className="space-y-2">
+            <label className="text-sm font-medium" htmlFor="amount">Jumlah ({token})</label>
+            <input
+              id="amount"
+              inputMode="decimal"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0"
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
             />
-
-            {/* Live amount preview */}
-            {amountReady && (
-              <div className="rounded-2xl border border-fresh-green/20 bg-fresh-green/5 p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-soft-gray/60">You will deposit</p>
-                    <p className="text-xl font-black text-white">
-                      {fmtDisplay(displayAmount)} {token.symbol}
-                    </p>
-                    <p className="text-xs text-soft-gray/50 mt-1">
-                      + ~0.006 XLM network fee
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-soft-gray/60">Pool</p>
-                    <p className="text-xs font-semibold text-white">
-                      {token.poolId.slice(0, 6)}...{token.poolId.slice(-4)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <button onClick={() => setStep("deposit")} disabled={!isTestnet || !amountReady}
-              className="w-full rounded-2xl bg-fresh-green px-5 py-3 text-sm font-black text-midnight-blue transition hover:scale-[1.02] disabled:opacity-50">
-              {amountReady ? `Continue — ${fmtDisplay(displayAmount)} ${token.symbol}` : "Select an amount to continue"}
-            </button>
+            <p className="text-xs text-muted-foreground">Dalam base units (stroops untuk XLM).</p>
           </div>
-        )}
 
-        {step === "deposit" && (
-          <div className="space-y-4 rounded-[2rem] border border-white/10 bg-rich-black/70 p-6">
-            <p className="text-sm font-semibold text-white">Confirm Deposit</p>
-            <div className="space-y-2">
-              <InfoRow label="Token"   value={token.name} />
-              <InfoRow label="Amount"  value={`${fmtDisplay(displayAmount)} ${token.symbol}`} />
-              <InfoRow label="Pool"    value={`${token.poolId.slice(0, 8)}...${token.poolId.slice(-6)}`} />
-              <InfoRow label="Network" value="Stellar Testnet" />
-            </div>
-            <div className="rounded-2xl border border-neon-violet/20 bg-neon-violet/5 p-4">
-              <p className="text-xs leading-6 text-soft-gray/70">
-                After deposit, you will receive a <span className="font-semibold text-white">private note</span>. Save it — it is the only way to claim this tip.
+          <button
+            onClick={handleDeposit}
+            disabled={!canSubmit}
+            className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {stage === "preparing"
+              ? "Menyiapkan commitment…"
+              : stage === "submitting"
+                ? "Mengirim ke jaringan…"
+                : "Deposit"}
+          </button>
+
+          {error && (
+            <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
+          )}
+
+          {stage === "done" && note && (
+            <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-4">
+              <p className="text-sm font-medium text-primary">
+                Deposit berhasil. Simpan Private Note ini — tanpa note, dana tidak bisa diklaim.
               </p>
+              <textarea
+                readOnly
+                rows={7}
+                value={JSON.stringify(note, null, 2)}
+                onFocus={(e) => e.currentTarget.select()}
+                className="w-full rounded-md border border-border bg-background p-2 font-mono text-xs"
+              />
             </div>
-            <button onClick={deposit} disabled={busy}
-              className="w-full rounded-2xl bg-fresh-green px-5 py-3 text-sm font-black text-midnight-blue transition hover:scale-[1.02] disabled:opacity-50">
-              {busy ? "Processing..." : `Deposit ${fmtDisplay(displayAmount)} ${token.symbol}`}
-            </button>
-            <button onClick={() => setStep("select")}
-              className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-bold text-white">
-              Back
-            </button>
-            {status && <p className="text-xs text-soft-gray/60">{status}</p>}
-          </div>
-        )}
-
-        {step === "note" && note && (
-          <div className="space-y-4">
-            <PrivateNoteDisplay note={note} />
-            <div className="grid grid-cols-2 gap-3">
-              <Link href="/claim" className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-center text-sm font-bold text-white">
-                Claim a tip
-              </Link>
-              <Link href="/dashboard" className="rounded-2xl bg-neon-violet px-5 py-3 text-center text-sm font-bold text-white">
-                Dashboard
-              </Link>
-            </div>
-          </div>
-        )}
-      </div>
-    </main>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
-      <span className="text-xs text-soft-gray/50">{label}</span>
-      <span className="text-xs font-semibold text-white">{value}</span>
-    </div>
-  );
+/** Persist a note to localStorage under a per-commitment key. */
+function saveNoteToStorage(note: PrivateNote): void {
+  if (typeof window === "undefined") return;
+  const KEY = "growthip:notes";
+  const raw = window.localStorage.getItem(KEY);
+  const list: PrivateNote[] = raw ? (JSON.parse(raw) as PrivateNote[]) : [];
+  list.push(note);
+  window.localStorage.setItem(KEY, JSON.stringify(list));
 }
