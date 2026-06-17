@@ -18,7 +18,9 @@ export default function AmountSelector({ token, onAmountChange }: AmountSelector
     setUseCustom(false);
     setSelected(preset);
     setCustom("");
-    onAmountChange(presetToContractAmount(preset, token), preset);
+    const ca = presetToContractAmount(preset, token);
+    console.log("[AmountSelector] preset:", preset, "token:", token.symbol, "baseUnit:", token.baseUnit, "contractAmount:", ca);
+    onAmountChange(ca, preset);
   }
 
   function handleCustom(val: string) {
