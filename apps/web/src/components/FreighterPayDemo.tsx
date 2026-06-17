@@ -166,6 +166,7 @@ export default function FreighterPayDemo() {
       setStatus("Open Freighter and approve the deposit transaction...");
 
       const sent = await tx.signAndSend({
+        force: true,
         signTransaction: async (txXdr: string) => {
           const signed = await freighterSignTransaction(txXdr, {
             address,
