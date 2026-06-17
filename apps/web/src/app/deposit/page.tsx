@@ -10,7 +10,7 @@ import {
   getNetwork,
   signTransaction as freighterSign,
 } from "@stellar/freighter-api";
-import { Client, networks } from "@/lib/growthipPoolClient";
+// Client imported dynamically inside component to avoid SSR issues
 import { config } from "@/lib/config";
 import { getAvailableTokens, type Token, type TokenSymbol } from "@/lib/tokens";
 import { saveNote, type PrivateNote } from "@/lib/note";
@@ -40,15 +40,17 @@ export default function DepositPage() {
 
   const isTestnet = network.toUpperCase() === "TESTNET";
 
-  const client = useMemo(
-    () =>
-      new Client({
+  const [client, setClient] = useState<import("@/lib/growthipPoolClient").Client | null>(null);
+
+  useEffect(() => {
+    import("@/lib/growthipPoolClient").then(({ Client, networks }) => {
+      setClient(new Client({
         ...networks.testnet,
         rpcUrl: RPC_URL,
         publicKey: address || undefined,
-      }),
-    [address],
-  );
+      }));
+    });
+  }, [address]);
 
   // ── Connect wallet ──────────────────────────────────────────────
   async function connectWallet() {
@@ -87,6 +89,7 @@ export default function DepositPage() {
     setBusy(true);
     setStatus("Preparing deposit transaction...");
     try {
+      if (!client) { setStatus("Client not ready, please try again."); setBusy(false); return; }
       const commitment = Buffer.from(GROWTHIP_COMMITMENT_HEX, "hex");
 
       const tx = await client.deposit_paid({
