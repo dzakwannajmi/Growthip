@@ -83,6 +83,14 @@ export function formatAmount(amount: number, token: Token): string {
 }
 
 /** Get contract amount (stroops) from preset display amount */
+/** Convert preset display amount to contract base units.
+ * Uses baseUnit as reference: preset 1 = 1x baseUnit, preset 5 = 5x baseUnit.
+ * XLM: preset 1 -> 10_000_000 stroops (1 XLM)
+ * USDC: preset 0.1 -> 1_000_000 stroops (0.1 USDC)
+ */
 export function presetToContractAmount(preset: number, token: Token): number {
-  return Math.round(preset * Math.pow(10, token.decimals));
+  // Calculate multiplier relative to base denomination
+  const baseHuman = token.baseUnit / Math.pow(10, token.decimals);
+  const multiplier = Math.round(preset / baseHuman);
+  return token.baseUnit * multiplier;
 }

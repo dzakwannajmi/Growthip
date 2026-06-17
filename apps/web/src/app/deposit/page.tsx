@@ -94,6 +94,14 @@ export default function DepositPage() {
     if (!PoolClient) { setStatus("Client not ready, please wait..."); return; }
     if (!amountReady) { setStatus("Please select an amount first."); return; }
 
+    // Validate amount is valid multiple of baseUnit
+    const validMultiples = [1, 5, 10, 20].map(m => token.baseUnit * m);
+    if (!validMultiples.includes(contractAmount)) {
+      setStatus(`Invalid amount: ${contractAmount}. Must be 1x/5x/10x/20x of base unit (${token.baseUnit}). Valid: ${validMultiples.join(", ")}`);
+      setBusy(false);
+      return;
+    }
+
     setBusy(true);
     setStatus("Preparing deposit transaction...");
     try {
