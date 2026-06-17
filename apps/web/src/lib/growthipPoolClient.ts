@@ -33,8 +33,8 @@ if (typeof window !== "undefined") {
 
 export const networks = {
   testnet: {
-    networkPassphrase: process.env.NEXT_PUBLIC_NETWORK_PASSPHRASE || "Test SDF Network ; September 2015",
-    contractId: process.env.NEXT_PUBLIC_POOL_ID || "CATVI7U2JSM6GSQDZRCSS6YG4XW25O5363GPS5DPNTYAZFSL3GLPNBHO",
+    networkPassphrase: "Test SDF Network ; September 2015",
+    contractId: "CBBZRVWU7LZH5LNDY64KQRUUKWXXQJEOWSELU66V3EYEWB53LJ6C2235",
   }
 } as const
 

@@ -152,8 +152,8 @@ export default function ClaimPage() {
       if (total === 0) throw new Error("Pool kosong — belum ada deposit.");
       if (total > MAX_LEAVES) {
         throw new Error(
-          `Pool penuh (${total}/${MAX_LEAVES}). Tree depth 3 hanya mendukung ${MAX_LEAVES} deposit. ` +
-            "Hubungi tim untuk konfigurasi pool yang lebih besar.",
+          `Pool is full (${total}/${MAX_LEAVES}). Tree depth 3 supports max ${MAX_LEAVES} deposits. ` +
+            "A new pool has been deployed — please use the latest version.",
         );
       }
 
