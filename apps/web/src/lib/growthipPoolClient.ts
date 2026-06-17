@@ -37,7 +37,7 @@ if (typeof window !== "undefined") {
 export const networks = {
   testnet: {
     networkPassphrase: process.env.NEXT_PUBLIC_NETWORK_PASSPHRASE || "Test SDF Network ; September 2015",
-    contractId: process.env.NEXT_PUBLIC_POOL_ID || "CCSYSAWOUWWBAHDLXXBZ4NL7VIXGCHAMYWNZHNUVUQQUMY4TSGC6IV56",
+    contractId: process.env.NEXT_PUBLIC_POOL_ID || "CCCABP4VYNT3UWAZM43K3NUSW7KJ2775K4Z5VCX4GVOEB47D5ZL4QJH2",
   }
 } as const
 

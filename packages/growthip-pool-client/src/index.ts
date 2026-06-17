@@ -34,11 +34,11 @@ if (typeof window !== "undefined") {
 export const networks = {
   testnet: {
     networkPassphrase: "Test SDF Network ; September 2015",
-    contractId: "CCSYSAWOUWWBAHDLXXBZ4NL7VIXGCHAMYWNZHNUVUQQUMY4TSGC6IV56",
+    contractId: "CCCABP4VYNT3UWAZM43K3NUSW7KJ2775K4Z5VCX4GVOEB47D5ZL4QJH2",
   }
 } as const
 
-export type DataKey = {tag: "Admin", values: void} | {tag: "Verifier", values: void} | {tag: "Token", values: void} | {tag: "CurrentRoot", values: void} | {tag: "RecipientHash", values: readonly [string]} | {tag: "NullifierUsed", values: readonly [Buffer]} | {tag: "Commitment", values: readonly [u32]} | {tag: "TotalDeposits", values: void} | {tag: "TotalClaims", values: void};
+export type DataKey = {tag: "Admin", values: void} | {tag: "Verifier", values: void} | {tag: "Token", values: void} | {tag: "CurrentRoot", values: void} | {tag: "RecipientHash", values: readonly [string]} | {tag: "NullifierUsed", values: readonly [Buffer]} | {tag: "Commitment", values: readonly [u32]} | {tag: "TotalDeposits", values: void} | {tag: "TotalClaims", values: void} | {tag: "TipAmount", values: void};
 
 
 export interface Groth16Proof {
@@ -78,7 +78,7 @@ export interface Client {
   /**
    * Construct and simulate a initialize transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
    */
-  initialize: ({admin, verifier, root}: {admin: string, verifier: string, root: Buffer}, options?: MethodOptions) => Promise<AssembledTransaction<null>>
+  initialize: ({admin, verifier, root, tip_amount}: {admin: string, verifier: string, root: Buffer, tip_amount: i128}, options?: MethodOptions) => Promise<AssembledTransaction<null>>
 
   /**
    * Construct and simulate a tip_amount transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
@@ -160,13 +160,13 @@ export class Client extends ContractClient {
   }
   constructor(public readonly options: ContractClientOptions) {
     super(
-      new ContractSpec([ "AAAAAgAAAAAAAAAAAAAAB0RhdGFLZXkAAAAACQAAAAAAAAAAAAAABUFkbWluAAAAAAAAAAAAAAAAAAAIVmVyaWZpZXIAAAAAAAAAAAAAAAVUb2tlbgAAAAAAAAAAAAAAAAAAC0N1cnJlbnRSb290AAAAAAEAAAAAAAAADVJlY2lwaWVudEhhc2gAAAAAAAABAAAAEwAAAAEAAAAAAAAADU51bGxpZmllclVzZWQAAAAAAAABAAAD7gAAACAAAAABAAAAAAAAAApDb21taXRtZW50AAAAAAABAAAABAAAAAAAAAAAAAAADVRvdGFsRGVwb3NpdHMAAAAAAAAAAAAAAAAAAAtUb3RhbENsYWltcwA=",
+      new ContractSpec([ "AAAAAgAAAAAAAAAAAAAAB0RhdGFLZXkAAAAACgAAAAAAAAAAAAAABUFkbWluAAAAAAAAAAAAAAAAAAAIVmVyaWZpZXIAAAAAAAAAAAAAAAVUb2tlbgAAAAAAAAAAAAAAAAAAC0N1cnJlbnRSb290AAAAAAEAAAAAAAAADVJlY2lwaWVudEhhc2gAAAAAAAABAAAAEwAAAAEAAAAAAAAADU51bGxpZmllclVzZWQAAAAAAAABAAAD7gAAACAAAAABAAAAAAAAAApDb21taXRtZW50AAAAAAABAAAABAAAAAAAAAAAAAAADVRvdGFsRGVwb3NpdHMAAAAAAAAAAAAAAAAAAAtUb3RhbENsYWltcwAAAAAAAAAAAAAAAAlUaXBBbW91bnQAAAA=",
         "AAAAAAAAAAAAAAAFY2xhaW0AAAAAAAACAAAAAAAAAAtwcm9vZl9ieXRlcwAAAAAOAAAAAAAAAA1wdWJsaWNfaW5wdXRzAAAAAAAD6gAAA+4AAAAgAAAAAQAAAAE=",
         "AAAAAAAAAAAAAAAFdG9rZW4AAAAAAAAAAAAAAQAAABM=",
         "AAAAAAAAAHhVcGdyYWRlIHRoZSBwb29sIGNvbnRyYWN0IFdBU00gKGFkbWluIG9ubHkpLgpBbGxvd3MgZml4aW5nIGJ1Z3Mgd2l0aG91dCByZWRlcGxveWluZyBhbmQgbG9zaW5nIHN0YXRlIChhdWRpdCBmaW5kaW5nIEgzKS4AAAAHdXBncmFkZQAAAAACAAAAAAAAAAVhZG1pbgAAAAAAABMAAAAAAAAADW5ld193YXNtX2hhc2gAAAAAAAPuAAAAIAAAAAA=",
         "AAAAAAAAAAAAAAAIY2xhaW1fdG8AAAADAAAAAAAAAAlyZWNpcGllbnQAAAAAAAATAAAAAAAAAAtwcm9vZl9ieXRlcwAAAAAOAAAAAAAAAA1wdWJsaWNfaW5wdXRzAAAAAAAD6gAAA+4AAAAgAAAAAQAAAAE=",
         "AAAAAAAAAAAAAAAJc2V0X3Rva2VuAAAAAAAAAgAAAAAAAAAFYWRtaW4AAAAAAAATAAAAAAAAAAp0b2tlbl9hZGRyAAAAAAATAAAAAA==",
-        "AAAAAAAAAAAAAAAKaW5pdGlhbGl6ZQAAAAAAAwAAAAAAAAAFYWRtaW4AAAAAAAATAAAAAAAAAAh2ZXJpZmllcgAAABMAAAAAAAAABHJvb3QAAAPuAAAAIAAAAAA=",
+        "AAAAAAAAAAAAAAAKaW5pdGlhbGl6ZQAAAAAABAAAAAAAAAAFYWRtaW4AAAAAAAATAAAAAAAAAAh2ZXJpZmllcgAAABMAAAAAAAAABHJvb3QAAAPuAAAAIAAAAAAAAAAKdGlwX2Ftb3VudAAAAAAACwAAAAA=",
         "AAAAAAAAAAAAAAAKdGlwX2Ftb3VudAAAAAAAAAAAAAEAAAAL",
         "AAAAAAAAAAAAAAALdXBkYXRlX3Jvb3QAAAAAAgAAAAAAAAAFYWRtaW4AAAAAAAATAAAAAAAAAAhuZXdfcm9vdAAAA+4AAAAgAAAAAA==",
         "AAAAAAAAAAAAAAAMY3VycmVudF9yb290AAAAAAAAAAEAAAPuAAAAIA==",

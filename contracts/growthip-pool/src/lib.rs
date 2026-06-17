@@ -4,7 +4,7 @@ use soroban_sdk::{contract, contractimpl, contracttype, token, Address, Bytes, B
 
 use growthip_merkle_verifier_v2::GrowthipMerkleVerifierClient;
 
-const TIP_AMOUNT: i128 = 100_000_000; // 10 XLM, 7 decimals
+// TIP_AMOUNT is now configurable per pool via initialize()
 
 #[derive(Clone)]
 #[contracttype]
@@ -18,6 +18,7 @@ pub enum DataKey {
     Commitment(u32),
     TotalDeposits,
     TotalClaims,
+    TipAmount,
 }
 
 #[contract]
@@ -25,7 +26,7 @@ pub struct GrowthipPool;
 
 #[contractimpl]
 impl GrowthipPool {
-    pub fn initialize(env: Env, admin: Address, verifier: Address, root: BytesN<32>) {
+    pub fn initialize(env: Env, admin: Address, verifier: Address, root: BytesN<32>, tip_amount: i128) {
         if env.storage().instance().has(&DataKey::Admin) {
             panic!("already initialized");
         }
@@ -34,6 +35,7 @@ impl GrowthipPool {
         env.storage().instance().set(&DataKey::CurrentRoot, &root);
         env.storage().instance().set(&DataKey::TotalDeposits, &0u32);
         env.storage().instance().set(&DataKey::TotalClaims, &0u32);
+        env.storage().instance().set(&DataKey::TipAmount, &tip_amount);
     }
 
     // NEW: allows upgrading verifier to v3 without redeploying pool
@@ -135,19 +137,27 @@ impl GrowthipPool {
             .expect("token not set")
     }
 
-    pub fn tip_amount(_env: Env) -> i128 {
-        TIP_AMOUNT
+    pub fn tip_amount(env: Env) -> i128 {
+        env.storage()
+            .instance()
+            .get(&DataKey::TipAmount)
+            .unwrap_or(100_000_000i128)
     }
 
     pub fn deposit_paid(env: Env, depositor: Address, commitment: BytesN<32>) -> u32 {
         depositor.require_auth();
+        let tip_amount: i128 = env
+            .storage()
+            .instance()
+            .get(&DataKey::TipAmount)
+            .unwrap_or(100_000_000i128);
         let token_addr: Address = env
             .storage()
             .instance()
             .get(&DataKey::Token)
             .expect("token not set");
         let token_client = token::Client::new(&env, &token_addr);
-        token_client.transfer(&depositor, &env.current_contract_address(), &TIP_AMOUNT);
+        token_client.transfer(&depositor, &env.current_contract_address(), &tip_amount);
         Self::deposit_internal(&env, commitment)
     }
 
@@ -188,7 +198,12 @@ impl GrowthipPool {
             .get(&DataKey::Token)
             .expect("token not set");
         let token_client = token::Client::new(&env, &token_addr);
-        token_client.transfer(&env.current_contract_address(), &recipient, &TIP_AMOUNT);
+        let tip_amount: i128 = env
+            .storage()
+            .instance()
+            .get(&DataKey::TipAmount)
+            .unwrap_or(100_000_000i128);
+        token_client.transfer(&env.current_contract_address(), &recipient, &tip_amount);
 
         true
     }
@@ -364,7 +379,7 @@ mod test {
         let nullifier_hash       = public_inputs.get(1).expect("missing nullifier hash");
         let correct_recipient_hash = public_inputs.get(2).expect("missing recipient hash");
 
-        client.initialize(&admin, &verifier_id, &root);
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128);
         client.set_token(&admin, &token_addr);
         client.register_recipient(&correct_recipient, &correct_recipient_hash);
 
@@ -421,7 +436,7 @@ mod test {
         let root           = public_inputs.get(0).expect("missing root");
         let recipient_hash = public_inputs.get(2).expect("missing recipient hash");
 
-        client.initialize(&admin, &verifier_id, &root);
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128);
         client.set_token(&admin, &token_addr);
         client.register_recipient(&recipient, &recipient_hash);
 
@@ -463,11 +478,11 @@ mod test {
 
         let mut rb = [0u8; 32]; rb[31] = 1;
         let root = BytesN::from_array(&env, &rb);
-        client.initialize(&admin, &verifier_id, &root);
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128);
         client.set_token(&admin, &token_addr);
 
         // Fund supporter for two paid deposits
-        token_admin_client.mint(&supporter, &(TIP_AMOUNT * 2));
+        token_admin_client.mint(&supporter, &(100_000_000i128 * 2));
 
         let mut c1b = [0u8; 32]; c1b[31] = 11;
         let mut c2b = [0u8; 32]; c2b[31] = 22;
@@ -498,7 +513,7 @@ mod test {
         let root          = public_inputs.get(0).expect("missing root");
         let nullifier_hash = public_inputs.get(1).expect("missing nullifier");
 
-        client.initialize(&admin, &verifier_id, &root);
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128);
 
         assert_eq!(client.claim(&proof_bytes, &public_inputs), true);
         assert_eq!(client.total_claims(), 1);
@@ -524,7 +539,7 @@ mod test {
 
         let mut wr = [0u8; 32]; wr[31] = 99;
         let wrong_root = BytesN::from_array(&env, &wr);
-        client.initialize(&admin, &verifier_id, &wrong_root);
+        client.initialize(&admin, &verifier_id, &wrong_root, &100_000_000i128);
 
         assert_eq!(client.claim(&proof_bytes, &public_inputs), false);
         assert_eq!(client.total_claims(), 0);
@@ -541,8 +556,8 @@ mod test {
 
         let mut rb = [0u8; 32]; rb[0] = 1;
         let root = BytesN::from_array(&env, &rb);
-        client.initialize(&admin, &verifier_id, &root);
-        client.initialize(&admin, &verifier_id, &root); // should panic
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128);
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128); // should panic
     }
 
     #[test]
@@ -562,7 +577,7 @@ mod test {
         let public_inputs = public_inputs_from_hex(&env, pub_hex);
         let root = public_inputs.get(0).expect("missing root");
 
-        client.initialize(&admin, &verifier_id, &root);
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128);
         assert_eq!(client.claim_to(&recipient, &proof_bytes, &public_inputs), false);
         assert_eq!(client.total_claims(), 0);
     }
@@ -580,7 +595,7 @@ mod test {
 
         let mut rb = [0u8; 32]; rb[0] = 1;
         let root = BytesN::from_array(&env, &rb);
-        client.initialize(&admin, &verifier_id, &root);
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128);
 
         let bad_inputs = Vec::new(&env);
         assert_eq!(client.claim(&proof_bytes, &bad_inputs), false);
@@ -603,7 +618,7 @@ mod test {
 
         let mut wr = [0u8; 32]; wr[0] = 9;
         let wrong_root = BytesN::from_array(&env, &wr);
-        client.initialize(&admin, &verifier_id, &wrong_root);
+        client.initialize(&admin, &verifier_id, &wrong_root, &100_000_000i128);
 
         assert_eq!(client.claim(&proof_bytes, &public_inputs), false);
         assert_eq!(client.total_claims(), 0);
@@ -628,7 +643,7 @@ mod test {
 
         let mut rb = [0u8; 32]; rb[0] = 1;
         let root = BytesN::from_array(&env, &rb);
-        client.initialize(&admin, &verifier_id, &root);
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128);
 
         let mut nr = [0u8; 32]; nr[0] = 2;
         let new_root = BytesN::from_array(&env, &nr);
@@ -652,7 +667,7 @@ mod test {
 
         let mut rb = [0u8; 32]; rb[0] = 1;
         let root = BytesN::from_array(&env, &rb);
-        client.initialize(&admin, &verifier_id, &root);
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128);
 
         client.set_token(&attacker, &token_addr); // should panic: not admin
     }
@@ -675,10 +690,10 @@ mod test {
 
         let mut rb = [0u8; 32]; rb[0] = 1;
         let root = BytesN::from_array(&env, &rb);
-        client.initialize(&admin, &verifier_id, &root);
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128);
         client.set_token(&admin, &token_addr);
 
-        token_admin_client.mint(&supporter, &TIP_AMOUNT);
+        token_admin_client.mint(&supporter, &100_000_000i128);
 
         let mut cb = [0u8; 32]; cb[31] = 5;
         let commitment = BytesN::from_array(&env, &cb);
@@ -720,7 +735,7 @@ mod test {
         wrong_root_bytes[1] = 0xdc;
         let wrong_root = BytesN::from_array(&env, &wrong_root_bytes);
 
-        client.initialize(&admin, &verifier_id, &wrong_root);
+        client.initialize(&admin, &verifier_id, &wrong_root, &100_000_000i128);
 
         assert_eq!(client.claim(&proof_bytes, &public_inputs), false);
         assert_eq!(client.total_claims(), 0);
@@ -742,7 +757,7 @@ mod test {
         let public_inputs = public_inputs_from_hex(&env, pub_hex);
         let root          = public_inputs.get(0).expect("missing root");
 
-        client.initialize(&admin, &verifier_id, &root);
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128);
 
         // Replace nullifierHash (index 1) with garbage
         let mut tampered = Vec::new(&env);
@@ -769,7 +784,7 @@ mod test {
 
         let mut rb = [0u8; 32]; rb[0] = 1;
         let root = BytesN::from_array(&env, &rb);
-        client.initialize(&admin, &verifier_id, &root);
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128);
 
         // Update to new verifier — simulates switching to V3 verifier
         client.update_verifier(&admin, &verifier_id2);
@@ -814,7 +829,7 @@ mod test {
         let recipient_hash = public_inputs.get(2).expect("missing recipient hash");
 
         // Initialize pool with V3 verifier and V3 root
-        client.initialize(&admin, &v3_verifier_id, &root);
+        client.initialize(&admin, &v3_verifier_id, &root, &100_000_000i128);
         client.set_token(&admin, &token_addr);
         client.register_recipient(&recipient, &recipient_hash);
 
