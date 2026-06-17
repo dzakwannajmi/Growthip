@@ -101,6 +101,7 @@ export default function DepositPage() {
         publicKey: address,
       });
 
+      if (!client) { setStatus("Client not ready, please try again."); setBusy(false); return; }
       const commitment = Buffer.from(GROWTHIP_COMMITMENT_HEX, "hex");
 
       const tx = await client.deposit_paid({ depositor: address, commitment });
