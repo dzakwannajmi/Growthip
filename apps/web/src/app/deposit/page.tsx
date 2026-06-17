@@ -186,6 +186,29 @@ export default function DepositPage() {
               onAmountChange={(ca, da) => { setContractAmount(ca); setDisplayAmount(da); }}
             />
 
+            {/* Live amount preview */}
+            {amountReady && (
+              <div className="rounded-2xl border border-fresh-green/20 bg-fresh-green/5 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-soft-gray/60">You will deposit</p>
+                    <p className="text-xl font-black text-white">
+                      {fmtDisplay(displayAmount)} {token.symbol}
+                    </p>
+                    <p className="text-xs text-soft-gray/50 mt-1">
+                      + ~0.006 XLM network fee
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-soft-gray/60">Pool</p>
+                    <p className="text-xs font-semibold text-white">
+                      {token.poolId.slice(0, 6)}...{token.poolId.slice(-4)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <button onClick={() => setStep("deposit")} disabled={!isTestnet || !amountReady}
               className="w-full rounded-2xl bg-fresh-green px-5 py-3 text-sm font-black text-midnight-blue transition hover:scale-[1.02] disabled:opacity-50">
               {amountReady ? `Continue — ${fmtDisplay(displayAmount)} ${token.symbol}` : "Select an amount to continue"}

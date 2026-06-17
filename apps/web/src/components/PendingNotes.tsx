@@ -70,7 +70,7 @@ function NoteRow({ note }: { note: PrivateNote }) {
     <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] p-4">
       <div>
         <p className="text-sm font-semibold text-white">
-          {amount} {note.token}
+          {amount}
         </p>
         <p className="text-xs text-soft-gray/50">
           {formatRelativeTime(note.timestamp)}
