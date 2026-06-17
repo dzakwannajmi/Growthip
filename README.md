@@ -45,6 +45,36 @@ Growthip solves this with a ZK privacy pool: supporters deposit into a shared po
 
 ---
 
+## Prior Art and How Growthip Differs
+
+Growthip builds on the Stellar ecosystem's open privacy primitives.
+Two key references exist:
+
+**SDF soroban-examples/privacy-pools** — the official SDF research prototype
+using Soroban pool contracts, Circom Groth16 (BLS12-381), and Merkle tree
+membership proofs with Association Set Providers (ASPs) for compliance.
+
+**NethermindEth/stellar-private-payments** — SDF-promoted proof-of-concept
+by Nethermind, adding private in-pool transfers, browser WASM proving,
+and UTXO-style note semantics.
+
+Growthip acknowledges both as architectural predecessors and extends the
+foundation with four concrete improvements:
+
+1. **Native BN254 (Protocol 25/26)** instead of BLS12-381 — lower on-chain
+   verification cost using Stellar's newest host functions
+2. **V3 circuit recipient binding** — `commitment = Poseidon(secret, nullifier, recipientHash)`
+   binds the recipient at circuit level, not just contract level, preventing
+   recipient substitution even if the note is stolen
+3. **Private deposit()** — prevents free commitment spam (griefing vector
+   present in both reference implementations)
+4. **pool upgrade()** — enables protocol upgrades without losing state,
+   absent in both reference implementations
+
+Application focus: while both references are general-purpose, Growthip
+applies the pattern specifically to creator tipping, with full Freighter
+E2E flow, 23 passing tests, and a working testnet deployment.
+
 ## What Makes Growthip Novel on Stellar
 
 Growthip is the first application on Stellar to:

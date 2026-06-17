@@ -12,11 +12,11 @@ const contracts = [
   },
   {
     label: "Growthip Pool V3",
-    value: config.pool.id,
+    value: config.pool.xlm,
   },
   {
     label: "Native XLM Token Contract",
-    value: config.token.id,
+    value: config.token.xlm,
   },
 ];
 

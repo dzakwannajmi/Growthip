@@ -46,6 +46,6 @@ export const GROWTHIP_DEMO_NOTE = {
 
 // Pool and verifier contract addresses (V3 testnet deployment)
 // Read from environment variables — never hardcode these
-export const GROWTHIP_POOL_ID       = config.pool.id;
+export const GROWTHIP_POOL_ID       = config.pool.xlm;
 export const GROWTHIP_VERIFIER_V3_ID = config.verifier.v3Id;
-export const GROWTHIP_TOKEN_ID       = config.token.id;
+export const GROWTHIP_TOKEN_ID       = config.token.xlm;
