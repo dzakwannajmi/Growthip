@@ -312,17 +312,24 @@ function ClaimContent() {
           Fee Estimate
         </p>
         <div className="flex justify-between text-xs">
-          <span className="text-soft-gray/60">ZK proof verification</span>
-          <span className="text-white">~0.004 XLM</span>
+          <span className="text-soft-gray/60">Groth16 verification (non-refundable)</span>
+          <span className="text-white">~0.0042 XLM</span>
         </div>
         <div className="flex justify-between text-xs">
-          <span className="text-soft-gray/60">Storage (refundable)</span>
-          <span className="text-white">~0.002 XLM</span>
+          <span className="text-soft-gray/60">Nullifier storage (non-refundable)</span>
+          <span className="text-white">~0.0017 XLM</span>
+        </div>
+        <div className="flex justify-between text-xs">
+          <span className="text-soft-gray/60">ZK proof generation</span>
+          <span className="text-fresh-green">Browser-side (free)</span>
         </div>
         <div className="border-t border-white/10 pt-2 flex justify-between text-xs">
           <span className="font-semibold text-white">Total est.</span>
           <span className="font-black text-white">~0.006 XLM</span>
         </div>
+        <p className="text-xs text-soft-gray/40">
+          Based on actual testnet: 0.0032 XLM charged
+        </p>
       </div>
 
       {/* Proving progress */}
