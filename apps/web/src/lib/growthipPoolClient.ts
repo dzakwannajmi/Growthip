@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { Buffer } from "buffer";
 import { Address } from "@stellar/stellar-sdk";
 import {
@@ -32,16 +31,14 @@ if (typeof window !== "undefined") {
 }
 
 
-// Contract ID is read from environment variable.
-// Update NEXT_PUBLIC_POOL_ID in .env.local or Vercel env vars.
 export const networks = {
   testnet: {
-    networkPassphrase: process.env.NEXT_PUBLIC_NETWORK_PASSPHRASE || "Test SDF Network ; September 2015",
-    contractId: process.env.NEXT_PUBLIC_POOL_ID || "CCCABP4VYNT3UWAZM43K3NUSW7KJ2775K4Z5VCX4GVOEB47D5ZL4QJH2",
+    networkPassphrase: "Test SDF Network ; September 2015",
+    contractId: "CATVI7U2JSM6GSQDZRCSS6YG4XW25O5363GPS5DPNTYAZFSL3GLPNBHO",
   }
 } as const
 
-export type DataKey = {tag: "Admin", values: void} | {tag: "Verifier", values: void} | {tag: "Token", values: void} | {tag: "CurrentRoot", values: void} | {tag: "RecipientHash", values: readonly [string]} | {tag: "NullifierUsed", values: readonly [Buffer]} | {tag: "Commitment", values: readonly [u32]} | {tag: "TotalDeposits", values: void} | {tag: "TotalClaims", values: void};
+export type DataKey = {tag: "Admin", values: void} | {tag: "Verifier", values: void} | {tag: "Token", values: void} | {tag: "CurrentRoot", values: void} | {tag: "RecipientHash", values: readonly [string]} | {tag: "NullifierUsed", values: readonly [Buffer]} | {tag: "Commitment", values: readonly [u32]} | {tag: "CommitmentAmount", values: readonly [u32]} | {tag: "TotalDeposits", values: void} | {tag: "TotalClaims", values: void} | {tag: "TipAmount", values: void};
 
 
 export interface Groth16Proof {
@@ -62,9 +59,11 @@ export interface Client {
   token: (options?: MethodOptions) => Promise<AssembledTransaction<string>>
 
   /**
-   * Construct and simulate a deposit transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+   * Construct and simulate a upgrade transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+   * Upgrade the pool contract WASM (admin only).
+   * Allows fixing bugs without redeploying and losing state (audit finding H3).
    */
-  deposit: ({commitment}: {commitment: Buffer}, options?: MethodOptions) => Promise<AssembledTransaction<u32>>
+  upgrade: ({admin, new_wasm_hash}: {admin: string, new_wasm_hash: Buffer}, options?: MethodOptions) => Promise<AssembledTransaction<null>>
 
   /**
    * Construct and simulate a claim_to transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
@@ -79,7 +78,7 @@ export interface Client {
   /**
    * Construct and simulate a initialize transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
    */
-  initialize: ({admin, verifier, root}: {admin: string, verifier: string, root: Buffer}, options?: MethodOptions) => Promise<AssembledTransaction<null>>
+  initialize: ({admin, verifier, root, tip_amount}: {admin: string, verifier: string, root: Buffer, tip_amount: i128}, options?: MethodOptions) => Promise<AssembledTransaction<null>>
 
   /**
    * Construct and simulate a tip_amount transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
@@ -99,7 +98,7 @@ export interface Client {
   /**
    * Construct and simulate a deposit_paid transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
    */
-  deposit_paid: ({depositor, commitment}: {depositor: string, commitment: Buffer}, options?: MethodOptions) => Promise<AssembledTransaction<u32>>
+  deposit_paid: ({depositor, commitment, amount}: {depositor: string, commitment: Buffer, amount: i128}, options?: MethodOptions) => Promise<AssembledTransaction<u32>>
 
   /**
    * Construct and simulate a total_claims transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
@@ -117,19 +116,31 @@ export interface Client {
   total_deposits: (options?: MethodOptions) => Promise<AssembledTransaction<u32>>
 
   /**
+   * Construct and simulate a update_verifier transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+   */
+  update_verifier: ({admin, new_verifier}: {admin: string, new_verifier: string}, options?: MethodOptions) => Promise<AssembledTransaction<null>>
+
+  /**
    * Construct and simulate a is_nullifier_used transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
    */
   is_nullifier_used: ({nullifier_hash}: {nullifier_hash: Buffer}, options?: MethodOptions) => Promise<AssembledTransaction<boolean>>
 
   /**
    * Construct and simulate a get_recipient_hash transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+   * Returns the registered recipient hash, or None if not registered.
+   * Returns Option to avoid panicking on read-only simulation (audit finding L1).
    */
-  get_recipient_hash: ({recipient}: {recipient: string}, options?: MethodOptions) => Promise<AssembledTransaction<Buffer>>
+  get_recipient_hash: ({recipient}: {recipient: string}, options?: MethodOptions) => Promise<AssembledTransaction<Option<Buffer>>>
 
   /**
    * Construct and simulate a register_recipient transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
    */
   register_recipient: ({recipient, recipient_hash}: {recipient: string, recipient_hash: Buffer}, options?: MethodOptions) => Promise<AssembledTransaction<null>>
+
+  /**
+   * Construct and simulate a get_commitment_amount transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+   */
+  get_commitment_amount: ({index}: {index: u32}, options?: MethodOptions) => Promise<AssembledTransaction<i128>>
 
   /**
    * Construct and simulate a verify transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
@@ -154,23 +165,25 @@ export class Client extends ContractClient {
   }
   constructor(public readonly options: ContractClientOptions) {
     super(
-      new ContractSpec([ "AAAAAgAAAAAAAAAAAAAAB0RhdGFLZXkAAAAACQAAAAAAAAAAAAAABUFkbWluAAAAAAAAAAAAAAAAAAAIVmVyaWZpZXIAAAAAAAAAAAAAAAVUb2tlbgAAAAAAAAAAAAAAAAAAC0N1cnJlbnRSb290AAAAAAEAAAAAAAAADVJlY2lwaWVudEhhc2gAAAAAAAABAAAAEwAAAAEAAAAAAAAADU51bGxpZmllclVzZWQAAAAAAAABAAAD7gAAACAAAAABAAAAAAAAAApDb21taXRtZW50AAAAAAABAAAABAAAAAAAAAAAAAAADVRvdGFsRGVwb3NpdHMAAAAAAAAAAAAAAAAAAAtUb3RhbENsYWltcwA=",
+      new ContractSpec([ "AAAAAgAAAAAAAAAAAAAAB0RhdGFLZXkAAAAACwAAAAAAAAAAAAAABUFkbWluAAAAAAAAAAAAAAAAAAAIVmVyaWZpZXIAAAAAAAAAAAAAAAVUb2tlbgAAAAAAAAAAAAAAAAAAC0N1cnJlbnRSb290AAAAAAEAAAAAAAAADVJlY2lwaWVudEhhc2gAAAAAAAABAAAAEwAAAAEAAAAAAAAADU51bGxpZmllclVzZWQAAAAAAAABAAAD7gAAACAAAAABAAAAAAAAAApDb21taXRtZW50AAAAAAABAAAABAAAAAEAAAAAAAAAEENvbW1pdG1lbnRBbW91bnQAAAABAAAABAAAAAAAAAAAAAAADVRvdGFsRGVwb3NpdHMAAAAAAAAAAAAAAAAAAAtUb3RhbENsYWltcwAAAAAAAAAAAAAAAAlUaXBBbW91bnQAAAA=",
         "AAAAAAAAAAAAAAAFY2xhaW0AAAAAAAACAAAAAAAAAAtwcm9vZl9ieXRlcwAAAAAOAAAAAAAAAA1wdWJsaWNfaW5wdXRzAAAAAAAD6gAAA+4AAAAgAAAAAQAAAAE=",
         "AAAAAAAAAAAAAAAFdG9rZW4AAAAAAAAAAAAAAQAAABM=",
-        "AAAAAAAAAAAAAAAHZGVwb3NpdAAAAAABAAAAAAAAAApjb21taXRtZW50AAAAAAPuAAAAIAAAAAEAAAAE",
+        "AAAAAAAAAHhVcGdyYWRlIHRoZSBwb29sIGNvbnRyYWN0IFdBU00gKGFkbWluIG9ubHkpLgpBbGxvd3MgZml4aW5nIGJ1Z3Mgd2l0aG91dCByZWRlcGxveWluZyBhbmQgbG9zaW5nIHN0YXRlIChhdWRpdCBmaW5kaW5nIEgzKS4AAAAHdXBncmFkZQAAAAACAAAAAAAAAAVhZG1pbgAAAAAAABMAAAAAAAAADW5ld193YXNtX2hhc2gAAAAAAAPuAAAAIAAAAAA=",
         "AAAAAAAAAAAAAAAIY2xhaW1fdG8AAAADAAAAAAAAAAlyZWNpcGllbnQAAAAAAAATAAAAAAAAAAtwcm9vZl9ieXRlcwAAAAAOAAAAAAAAAA1wdWJsaWNfaW5wdXRzAAAAAAAD6gAAA+4AAAAgAAAAAQAAAAE=",
         "AAAAAAAAAAAAAAAJc2V0X3Rva2VuAAAAAAAAAgAAAAAAAAAFYWRtaW4AAAAAAAATAAAAAAAAAAp0b2tlbl9hZGRyAAAAAAATAAAAAA==",
-        "AAAAAAAAAAAAAAAKaW5pdGlhbGl6ZQAAAAAAAwAAAAAAAAAFYWRtaW4AAAAAAAATAAAAAAAAAAh2ZXJpZmllcgAAABMAAAAAAAAABHJvb3QAAAPuAAAAIAAAAAA=",
+        "AAAAAAAAAAAAAAAKaW5pdGlhbGl6ZQAAAAAABAAAAAAAAAAFYWRtaW4AAAAAAAATAAAAAAAAAAh2ZXJpZmllcgAAABMAAAAAAAAABHJvb3QAAAPuAAAAIAAAAAAAAAAKdGlwX2Ftb3VudAAAAAAACwAAAAA=",
         "AAAAAAAAAAAAAAAKdGlwX2Ftb3VudAAAAAAAAAAAAAEAAAAL",
         "AAAAAAAAAAAAAAALdXBkYXRlX3Jvb3QAAAAAAgAAAAAAAAAFYWRtaW4AAAAAAAATAAAAAAAAAAhuZXdfcm9vdAAAA+4AAAAgAAAAAA==",
         "AAAAAAAAAAAAAAAMY3VycmVudF9yb290AAAAAAAAAAEAAAPuAAAAIA==",
-        "AAAAAAAAAAAAAAAMZGVwb3NpdF9wYWlkAAAAAgAAAAAAAAAJZGVwb3NpdG9yAAAAAAAAEwAAAAAAAAAKY29tbWl0bWVudAAAAAAD7gAAACAAAAABAAAABA==",
+        "AAAAAAAAAAAAAAAMZGVwb3NpdF9wYWlkAAAAAwAAAAAAAAAJZGVwb3NpdG9yAAAAAAAAEwAAAAAAAAAKY29tbWl0bWVudAAAAAAD7gAAACAAAAAAAAAABmFtb3VudAAAAAAACwAAAAEAAAAE",
         "AAAAAAAAAAAAAAAMdG90YWxfY2xhaW1zAAAAAAAAAAEAAAAE",
         "AAAAAAAAAAAAAAAOZ2V0X2NvbW1pdG1lbnQAAAAAAAEAAAAAAAAABWluZGV4AAAAAAAABAAAAAEAAAPuAAAAIA==",
         "AAAAAAAAAAAAAAAOdG90YWxfZGVwb3NpdHMAAAAAAAAAAAABAAAABA==",
+        "AAAAAAAAAAAAAAAPdXBkYXRlX3ZlcmlmaWVyAAAAAAIAAAAAAAAABWFkbWluAAAAAAAAEwAAAAAAAAAMbmV3X3ZlcmlmaWVyAAAAEwAAAAA=",
         "AAAAAAAAAAAAAAARaXNfbnVsbGlmaWVyX3VzZWQAAAAAAAABAAAAAAAAAA5udWxsaWZpZXJfaGFzaAAAAAAD7gAAACAAAAABAAAAAQ==",
-        "AAAAAAAAAAAAAAASZ2V0X3JlY2lwaWVudF9oYXNoAAAAAAABAAAAAAAAAAlyZWNpcGllbnQAAAAAAAATAAAAAQAAA+4AAAAg",
+        "AAAAAAAAAI9SZXR1cm5zIHRoZSByZWdpc3RlcmVkIHJlY2lwaWVudCBoYXNoLCBvciBOb25lIGlmIG5vdCByZWdpc3RlcmVkLgpSZXR1cm5zIE9wdGlvbiB0byBhdm9pZCBwYW5pY2tpbmcgb24gcmVhZC1vbmx5IHNpbXVsYXRpb24gKGF1ZGl0IGZpbmRpbmcgTDEpLgAAAAASZ2V0X3JlY2lwaWVudF9oYXNoAAAAAAABAAAAAAAAAAlyZWNpcGllbnQAAAAAAAATAAAAAQAAA+gAAAPuAAAAIA==",
         "AAAAAAAAAAAAAAAScmVnaXN0ZXJfcmVjaXBpZW50AAAAAAACAAAAAAAAAAlyZWNpcGllbnQAAAAAAAATAAAAAAAAAA5yZWNpcGllbnRfaGFzaAAAAAAD7gAAACAAAAAA",
+        "AAAAAAAAAAAAAAAVZ2V0X2NvbW1pdG1lbnRfYW1vdW50AAAAAAAAAQAAAAAAAAAFaW5kZXgAAAAAAAAEAAAAAQAAAAs=",
         "AAAAAQAAAAAAAAAAAAAADEdyb3RoMTZQcm9vZgAAAAMAAAAAAAAAAWEAAAAAAAPuAAAAQAAAAAAAAAABYgAAAAAAA+4AAACAAAAAAAAAAAFjAAAAAAAD7gAAAEA=",
         "AAAAAAAAAAAAAAAGdmVyaWZ5AAAAAAACAAAAAAAAAAtwcm9vZl9ieXRlcwAAAAAOAAAAAAAAAA1wdWJsaWNfaW5wdXRzAAAAAAAD6gAAA+4AAAAgAAAAAQAAAAE=" ]),
       options
@@ -179,7 +192,7 @@ export class Client extends ContractClient {
   public readonly fromJSON = {
     claim: this.txFromJSON<boolean>,
         token: this.txFromJSON<string>,
-        deposit: this.txFromJSON<u32>,
+        upgrade: this.txFromJSON<null>,
         claim_to: this.txFromJSON<boolean>,
         set_token: this.txFromJSON<null>,
         initialize: this.txFromJSON<null>,
@@ -190,9 +203,11 @@ export class Client extends ContractClient {
         total_claims: this.txFromJSON<u32>,
         get_commitment: this.txFromJSON<Buffer>,
         total_deposits: this.txFromJSON<u32>,
+        update_verifier: this.txFromJSON<null>,
         is_nullifier_used: this.txFromJSON<boolean>,
-        get_recipient_hash: this.txFromJSON<Buffer>,
+        get_recipient_hash: this.txFromJSON<Option<Buffer>>,
         register_recipient: this.txFromJSON<null>,
+        get_commitment_amount: this.txFromJSON<i128>,
         verify: this.txFromJSON<boolean>
   }
 }

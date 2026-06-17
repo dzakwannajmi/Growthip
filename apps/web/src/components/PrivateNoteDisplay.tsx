@@ -17,7 +17,7 @@ export default function PrivateNoteDisplay({ note, onDismiss }: PrivateNoteDispl
 
   const encoded = encodeNote(note);
   const token   = getToken(note.token);
-  const amount  = token ? formatAmount(Number(note.amount), token.decimals) : note.amount;
+  const amount  = token ? formatAmount(Number(note.amount), token) : note.amount;
 
   async function copyNote() {
     await navigator.clipboard.writeText(encoded);

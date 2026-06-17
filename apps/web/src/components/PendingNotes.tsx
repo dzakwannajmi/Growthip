@@ -63,7 +63,7 @@ export default function PendingNotes() {
 function NoteRow({ note }: { note: PrivateNote }) {
   const token  = getToken(note.token);
   const amount = token
-    ? formatAmount(Number(note.amount), token.decimals)
+    ? formatAmount(Number(note.amount), token)
     : note.amount;
 
   return (

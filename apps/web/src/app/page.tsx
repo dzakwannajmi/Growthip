@@ -42,42 +42,6 @@ export default function Home() {
   return (
     <main className="min-h-screen overflow-hidden">
       <section className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-6 lg:px-8">
-        <nav className="flex items-center justify-between rounded-full border border-white/10 bg-white/[0.04] px-5 py-4 backdrop-blur-xl">
-          <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-full bg-neon-violet text-lg font-black shadow-[0_0_40px_rgba(107,69,243,0.65)]">
-              G
-            </div>
-            <div>
-              <p className="text-sm font-semibold tracking-wide text-white">
-                Growthip
-              </p>
-              <p className="text-xs text-soft-gray/60">
-                Private creator tipping on Stellar
-              </p>
-            </div>
-          </div>
-
-          <div className="hidden items-center gap-6 text-sm text-soft-gray/70 md:flex">
-            <a href="#flow" className="hover:text-white">
-              Flow
-            </a>
-            <a href="#contracts" className="hover:text-white">
-              Testnet
-            </a>
-            <a href="#security" className="hover:text-white">
-              Security
-            </a>
-          </div>
-
-          <a
-            href="https://github.com/dzakwannajmi/Growthip"
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-midnight-blue transition hover:bg-soft-gray"
-          >
-            GitHub
-          </a>
-        </nav>
 
         <div className="grid flex-1 items-center gap-12 py-16 lg:grid-cols-[1.1fr_0.9fr]">
           <div>

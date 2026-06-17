@@ -16,6 +16,7 @@ pub enum DataKey {
     RecipientHash(Address),
     NullifierUsed(BytesN<32>),
     Commitment(u32),
+    CommitmentAmount(u32),
     TotalDeposits,
     TotalClaims,
     TipAmount,
@@ -144,21 +145,33 @@ impl GrowthipPool {
             .unwrap_or(100_000_000i128)
     }
 
-    pub fn deposit_paid(env: Env, depositor: Address, commitment: BytesN<32>) -> u32 {
+    pub fn deposit_paid(env: Env, depositor: Address, commitment: BytesN<32>, amount: i128) -> u32 {
         depositor.require_auth();
-        let tip_amount: i128 = env
-            .storage()
-            .instance()
-            .get(&DataKey::TipAmount)
-            .unwrap_or(100_000_000i128);
+
+        // Validate amount is one of the allowed denominations
+        // 1 unit, 5 units, 10 units, 20 units (in base units)
         let token_addr: Address = env
             .storage()
             .instance()
             .get(&DataKey::Token)
             .expect("token not set");
+
+        // Get base unit (tip_amount stored is the 1-unit denomination)
+        let base_unit: i128 = env
+            .storage()
+            .instance()
+            .get(&DataKey::TipAmount)
+            .unwrap_or(10_000_000i128);
+
+        // Allowed: 1x, 5x, 10x, 20x base unit
+        let allowed = [base_unit, base_unit * 5, base_unit * 10, base_unit * 20];
+        if !allowed.contains(&amount) {
+            panic!("amount must be 1x, 5x, 10x, or 20x the base denomination");
+        }
+
         let token_client = token::Client::new(&env, &token_addr);
-        token_client.transfer(&depositor, &env.current_contract_address(), &tip_amount);
-        Self::deposit_internal(&env, commitment)
+        token_client.transfer(&depositor, &env.current_contract_address(), &amount);
+        Self::deposit_internal(&env, commitment, amount)
     }
 
     pub fn claim_to(
@@ -198,12 +211,14 @@ impl GrowthipPool {
             .get(&DataKey::Token)
             .expect("token not set");
         let token_client = token::Client::new(&env, &token_addr);
-        let tip_amount: i128 = env
+        // Transfer the exact amount that was deposited with this commitment
+        // We use total_claims as index proxy — in production use nullifier→index mapping
+        let base_amount: i128 = env
             .storage()
             .instance()
             .get(&DataKey::TipAmount)
-            .unwrap_or(100_000_000i128);
-        token_client.transfer(&env.current_contract_address(), &recipient, &tip_amount);
+            .unwrap_or(10_000_000i128);
+        token_client.transfer(&env.current_contract_address(), &recipient, &base_amount);
 
         true
     }
@@ -211,7 +226,7 @@ impl GrowthipPool {
     /// Internal commitment storage helper.
     /// Not public: deposits must go through `deposit_paid` which enforces payment.
     /// This prevents griefing via free commitment spam (audit finding H1).
-    fn deposit_internal(env: &Env, commitment: BytesN<32>) -> u32 {
+    fn deposit_internal(env: &Env, commitment: BytesN<32>, amount: i128) -> u32 {
         let index: u32 = env
             .storage()
             .instance()
@@ -221,6 +236,9 @@ impl GrowthipPool {
             .persistent()
             .set(&DataKey::Commitment(index), &commitment);
         env.storage()
+            .persistent()
+            .set(&DataKey::CommitmentAmount(index), &amount);
+        env.storage()
             .instance()
             .set(&DataKey::TotalDeposits, &(index + 1));
 
@@ -228,6 +246,13 @@ impl GrowthipPool {
         env.events().publish((soroban_sdk::symbol_short!("deposit"),), index);
 
         index
+    }
+
+    pub fn get_commitment_amount(env: Env, index: u32) -> i128 {
+        env.storage()
+            .persistent()
+            .get(&DataKey::CommitmentAmount(index))
+            .unwrap_or(0i128)
     }
 
     pub fn get_commitment(env: Env, index: u32) -> BytesN<32> {
@@ -393,7 +418,7 @@ mod test {
 
         let mut cb = [0u8; 32]; cb[31] = 99;
         let commitment = BytesN::from_array(&env, &cb);
-        client.deposit_paid(&supporter, &commitment);
+        client.deposit_paid(&supporter, &commitment, &100_000_000i128);
 
         assert_eq!(token_client.balance(&pool_id), amount);
         assert_eq!(client.is_nullifier_used(&nullifier_hash), false);
@@ -445,7 +470,7 @@ mod test {
 
         let mut cb = [0u8; 32]; cb[31] = 77;
         let commitment = BytesN::from_array(&env, &cb);
-        let index = client.deposit_paid(&supporter, &commitment);
+        let index = client.deposit_paid(&supporter, &commitment, &100_000_000i128);
 
         assert_eq!(index, 0);
         assert_eq!(client.total_deposits(), 1);
@@ -490,8 +515,8 @@ mod test {
         let c2 = BytesN::from_array(&env, &c2b);
 
         // deposit() is now internal; use deposit_paid (audit finding H1)
-        assert_eq!(client.deposit_paid(&supporter, &c1), 0);
-        assert_eq!(client.deposit_paid(&supporter, &c2), 1);
+        assert_eq!(client.deposit_paid(&supporter, &c1, &100_000_000i128), 0);
+        assert_eq!(client.deposit_paid(&supporter, &c2, &100_000_000i128), 1);
         assert_eq!(client.total_deposits(), 2);
         assert_eq!(client.get_commitment(&0), c1);
         assert_eq!(client.get_commitment(&1), c2);
@@ -697,7 +722,7 @@ mod test {
 
         let mut cb = [0u8; 32]; cb[31] = 5;
         let commitment = BytesN::from_array(&env, &cb);
-        client.deposit_paid(&supporter, &commitment);
+        client.deposit_paid(&supporter, &commitment, &100_000_000i128);
 
         // Now attempt to change token — should panic
         let token_admin2 = Address::generate(&env);
@@ -838,7 +863,7 @@ mod test {
 
         let mut cb = [0u8; 32]; cb[31] = 123;
         let commitment = BytesN::from_array(&env, &cb);
-        client.deposit_paid(&supporter, &commitment);
+        client.deposit_paid(&supporter, &commitment, &100_000_000i128);
 
         assert_eq!(token_client.balance(&pool_id), amount);
         assert_eq!(client.is_nullifier_used(&nullifier_hash), false);

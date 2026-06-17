@@ -160,6 +160,7 @@ export default function FreighterPayDemo() {
       const tx = await client.deposit_paid({
         depositor:  address,
         commitment: Buffer.from(demoCommitment, "hex"),
+        amount: BigInt(100_000_000),
       });
 
       setStatus("Open Freighter and approve the deposit transaction...");

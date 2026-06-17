@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { getAvailableTokens, type Token, type TokenSymbol } from "@/lib/tokens";
 
 interface TokenSelectorProps {
@@ -94,16 +93,13 @@ export default function TokenSelector({ value, onChange }: TokenSelectorProps) {
 function TokenLogo({ token }: { token: Token }) {
   return (
     <div className="relative h-6 w-6 overflow-hidden rounded-full bg-white/10">
-      <Image
+      <img
         src={token.logoUrl}
         alt={token.symbol}
         width={24}
         height={24}
-        className="object-cover"
-        onError={(e) => {
-          // Fallback to text if image fails
-          (e.target as HTMLImageElement).style.display = "none";
-        }}
+        className="h-6 w-6 object-cover"
+        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
       />
     </div>
   );
