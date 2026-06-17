@@ -15,7 +15,8 @@ import { config } from "@/lib/config";
 import { getAvailableTokens, type Token, type TokenSymbol } from "@/lib/tokens";
 import { saveNote, type PrivateNote } from "@/lib/note";
 import TokenSelector from "@/components/TokenSelector";
-import PrivateNoteDisplay from "@/components/PrivateNoteDisplay";
+import dynamic from "next/dynamic";
+const PrivateNoteDisplay = dynamic(() => import("@/components/PrivateNoteDisplay"), { ssr: false });
 import {
   GROWTHIP_COMMITMENT_HEX,
   GROWTHIP_PUBLIC_INPUTS_HEX,
