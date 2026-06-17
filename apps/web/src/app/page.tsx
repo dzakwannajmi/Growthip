@@ -1,19 +1,22 @@
 import ProtocolStats from "@/components/ProtocolStats";
+import { config } from "@/lib/config";
 import ClaimDemo from "@/components/ClaimDemo";
 import LiveContractReader from "@/components/LiveContractReader";
 import FreighterPayDemo from "@/components/FreighterPayDemo";
+// Contract addresses are read from environment variables.
+// Update .env.local or Vercel env vars to change addresses without code edits.
 const contracts = [
   {
     label: "Growthip Merkle Verifier V3",
-    value: "CD3O37X2FIGAHZSM4KVR7XW72HYZOQ75MJF7IZX4LEA6PCKOHMW3N6D2",
+    value: config.verifier.v3Id,
   },
   {
     label: "Growthip Pool V3",
-    value: "CCSYSAWOUWWBAHDLXXBZ4NL7VIXGCHAMYWNZHNUVUQQUMY4TSGC6IV56",
+    value: config.pool.id,
   },
   {
     label: "Native XLM Token Contract",
-    value: "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
+    value: config.token.id,
   },
 ];
 

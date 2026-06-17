@@ -32,10 +32,12 @@ if (typeof window !== "undefined") {
 }
 
 
+// Contract ID is read from environment variable.
+// Update NEXT_PUBLIC_POOL_ID in .env.local or Vercel env vars.
 export const networks = {
   testnet: {
-    networkPassphrase: "Test SDF Network ; September 2015",
-    contractId: "CCSYSAWOUWWBAHDLXXBZ4NL7VIXGCHAMYWNZHNUVUQQUMY4TSGC6IV56",
+    networkPassphrase: process.env.NEXT_PUBLIC_NETWORK_PASSPHRASE || "Test SDF Network ; September 2015",
+    contractId: process.env.NEXT_PUBLIC_POOL_ID || "CCSYSAWOUWWBAHDLXXBZ4NL7VIXGCHAMYWNZHNUVUQQUMY4TSGC6IV56",
   }
 } as const
 

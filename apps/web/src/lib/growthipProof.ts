@@ -1,4 +1,7 @@
 // Growthip V3 demo proof artifacts
+// Contract IDs are read from environment variables via config.ts.
+// To update contract addresses, change .env.local or Vercel env vars.
+import { config } from "./config";
 // Generated from: circuits/growthip_merkle_note_v3.circom
 // commitment = Poseidon(secret, nullifier, recipientHash)
 // recipientHash is now cryptographically bound inside commitment
@@ -42,9 +45,7 @@ export const GROWTHIP_DEMO_NOTE = {
 };
 
 // Pool and verifier contract addresses (V3 testnet deployment)
-export const GROWTHIP_POOL_ID =
-  "CCSYSAWOUWWBAHDLXXBZ4NL7VIXGCHAMYWNZHNUVUQQUMY4TSGC6IV56";
-export const GROWTHIP_VERIFIER_V3_ID =
-  "CD3O37X2FIGAHZSM4KVR7XW72HYZOQ75MJF7IZX4LEA6PCKOHMW3N6D2";
-export const GROWTHIP_TOKEN_ID =
-  "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
+// Read from environment variables — never hardcode these
+export const GROWTHIP_POOL_ID       = config.pool.id;
+export const GROWTHIP_VERIFIER_V3_ID = config.verifier.v3Id;
+export const GROWTHIP_TOKEN_ID       = config.token.id;

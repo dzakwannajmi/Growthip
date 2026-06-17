@@ -11,13 +11,13 @@ import {
   signTransaction as freighterSignTransaction,
 } from "@stellar/freighter-api";
 import { Client, networks } from "@/lib/growthipPoolClient";
-import { GROWTHIP_COMMITMENT_HEX, GROWTHIP_POOL_ID } from "@/lib/growthipProof";
+import { GROWTHIP_COMMITMENT_HEX, GROWTHIP_POOL_ID, GROWTHIP_TOKEN_ID } from "@/lib/growthipProof";
+import { config } from "@/lib/config";
 
-// Native XLM Stellar Asset Contract on testnet
-const TOKEN_ID = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
-
-const RPC_URL = "https://soroban-testnet.stellar.org";
-const NETWORK_PASSPHRASE = "Test SDF Network ; September 2015";
+// All contract IDs and network settings come from environment variables via config.ts
+const TOKEN_ID          = GROWTHIP_TOKEN_ID;
+const RPC_URL           = config.network.rpcUrl;
+const NETWORK_PASSPHRASE = config.network.passphrase;
 
 type PossibleError = string | { message?: string } | undefined;
 
