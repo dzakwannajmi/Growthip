@@ -190,7 +190,7 @@ export default function ClaimPage() {
         proof_bytes,
         public_inputs,
       });
-      const sent = await claimTx.signAndSend();
+      const sent = await claimTx.signAndSend({ force: true });
       setTxHash(sent.sendTransactionResponse?.hash ?? "submitted");
 
       // Mark note claimed in storage.
