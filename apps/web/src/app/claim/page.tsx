@@ -111,18 +111,25 @@ export default function ClaimPage() {
 
   const parseNote = useCallback((): PrivateNote => {
     let note: PrivateNote;
+    const raw = noteJson.trim();
     try {
-      note = JSON.parse(noteJson) as PrivateNote;
+      // Support both raw JSON and base64-encoded note
+      if (raw.startsWith("{")) {
+        note = JSON.parse(raw) as PrivateNote;
+      } else {
+        // Try base64 decode (from QR code or copy button)
+        note = JSON.parse(atob(raw)) as PrivateNote;
+      }
     } catch {
       throw new Error("Invalid private note format. Please check and try again.");
     }
     if (note.version !== "growthip-v3") {
-      throw new Error(`Versi note tidak didukung: ${note.version}`);
+      throw new Error(`Unsupported note version: ${note.version}`);
     }
     if (!note.secret || !note.nullifier || !note.recipientHash) {
       throw new Error("Note tidak lengkap (secret/nullifier/recipientHash hilang).");
     }
-    if (note.claimed) throw new Error("Note ini sudah pernah diklaim.");
+    if (note.claimed) throw new Error("This note has already been claimed.");
     return note;
   }, [noteJson]);
 
@@ -161,8 +168,8 @@ export default function ClaimPage() {
       const leafIndex = commitments.indexOf(noteCommitment);
       if (leafIndex === -1) {
         throw new Error(
-          "Commitment dari note not found in pool on-chain. " +
-            "Pastikan deposit sudah terkonfirmasi dan note berasal dari pool ini.",
+          "Commitment not found in pool. " +
+            "Make sure the deposit is confirmed and the note is from this pool.",
         );
       }
 
