@@ -1,25 +1,14 @@
 "use client";
 
-/**
- * claim/page.tsx — Private claim flow (Growthip V3).
- *
- * Steps:
- *   1. Load the PrivateNote (paste).
- *   2. Fetch all commitments from the contract (get_commitment per index).
- *   3. Rebuild the depth-3 Merkle tree and derive the path for the note's leaf.
- *   4. Generate the Groth16 proof in the browser (5–15s, with progress).
- *   5. Submit proof + public inputs via client.claim_to.
- *
- * Integration: uses the generated growthipPoolClient.ts. The claim_to method
- * signature is: claim_to({ recipient, proof_bytes: Buffer, public_inputs: Buffer[] }).
- * Read-only reads (total_deposits / get_commitment) use the simulated result.
- */
-
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, Suspense } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   isConnected,
   requestAccess,
-  signTransaction,
+  setAllowed,
+  getNetwork,
+  signTransaction as freighterSign,
 } from "@stellar/freighter-api";
 import {
   buildMerkleTree,
@@ -30,74 +19,82 @@ import {
   type MerklePath,
 } from "@/lib/merkle";
 import { generateProof, toClaimArgs, type ProofProgress } from "@/lib/zkp";
+import { markNoteAsClaimed } from "@/lib/note";
 import type { PrivateNote } from "@/lib/note";
-
 import { Client, networks } from "@/lib/growthipPoolClient";
+import { config } from "@/lib/config";
+
+const RPC_URL            = config.network.rpcUrl;
+const NETWORK_PASSPHRASE = config.network.passphrase;
 
 type Stage =
-  | "idle"
-  | "connecting"
-  | "loading-pool"
-  | "building-tree"
-  | "proving"
-  | "submitting"
-  | "done"
-  | "error";
+  | "idle" | "connecting" | "loading-pool"
+  | "building-tree" | "proving" | "submitting"
+  | "done" | "error";
 
-const RPC_URL = "https://soroban-testnet.stellar.org";
-
-const PROGRESS_LABEL: Record<ProofProgress, string> = {
-  "loading-wasm": "Memuat sirkuit ZK…",
-  "computing-witness": "Menghitung witness…",
-  "generating-proof": "Membuat zero-knowledge proof…",
-  serializing: "Menyusun proof…",
-  done: "Proof siap",
+const PROGRESS_LABELS: Record<ProofProgress, string> = {
+  "loading-wasm":      "Loading ZK circuit...",
+  "computing-witness": "Computing witness...",
+  "generating-proof":  "Generating zero-knowledge proof...",
+  "serializing":       "Serializing proof...",
+  "done":              "Proof ready",
 };
 
-/** Normalize a contract commitment (Buffer from scValToNative) to decimal. */
+const STAGE_LABELS: Partial<Record<Stage, string>> = {
+  "connecting":    "Connecting...",
+  "loading-pool":  "Loading pool commitments...",
+  "building-tree": "Building Merkle tree...",
+  "proving":       "Generating ZK proof...",
+  "submitting":    "Submitting proof on-chain...",
+};
+
 function commitmentToDecimal(raw: Buffer | Uint8Array | string): string {
   if (typeof raw === "string") return hexToDecimal(raw);
   return bytesToDecimal(raw instanceof Uint8Array ? raw : new Uint8Array(raw));
 }
 
-export default function ClaimPage() {
-  const [address, setAddress] = useState<string | null>(null);
-  const [noteJson, setNoteJson] = useState("");
+function ClaimContent() {
+  const params = useSearchParams();
+
+  const [address, setAddress]   = useState("");
+  const [network, setNetwork]   = useState("");
+  const [noteInput, setNoteInput] = useState(params.get("note") ?? "");
   const [recipient, setRecipient] = useState("");
-  const [stage, setStage] = useState<Stage>("idle");
+  const [stage, setStage]       = useState<Stage>("idle");
   const [progress, setProgress] = useState<ProofProgress | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [txHash, setTxHash] = useState<string | null>(null);
+  const [error, setError]       = useState<string | null>(null);
+  const [txHash, setTxHash]     = useState<string | null>(null);
+
+  const isTestnet = network.toUpperCase() === "TESTNET";
 
   const busy = useMemo(
-    () => ["connecting", "loading-pool", "building-tree", "proving", "submitting"].includes(stage),
+    () => ["connecting","loading-pool","building-tree","proving","submitting"].includes(stage),
     [stage],
   );
 
-  const handleConnect = useCallback(async () => {
+  async function connectWallet() {
     setError(null);
     setStage("connecting");
     try {
-      const { isConnected: hasFreighter } = await isConnected();
-      if (!hasFreighter) throw new Error("Freighter tidak terdeteksi.");
+      const conn = await isConnected();
+      if (!conn.isConnected) throw new Error("Freighter not installed.");
+      await setAllowed();
       const access = await requestAccess();
-      if (access.error) throw new Error(access.error);
+      if (access.error) throw new Error(String(access.error));
       setAddress(access.address);
       if (!recipient) setRecipient(access.address);
+      const net = await getNetwork();
+      setNetwork(net.network ?? "");
       setStage("idle");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed connect wallet.");
+      setError(err instanceof Error ? err.message : "Connection failed.");
       setStage("error");
     }
-  }, [recipient]);
+  }
 
   const getPoolId = useCallback((tokenSymbol: string): string => {
-    if (tokenSymbol === "USDC") {
-      return process.env.NEXT_PUBLIC_POOL_USDC_ID || networks.testnet.contractId;
-    }
-    if (tokenSymbol === "EURC") {
-      return process.env.NEXT_PUBLIC_POOL_EURC_ID || networks.testnet.contractId;
-    }
+    if (tokenSymbol === "USDC") return process.env.NEXT_PUBLIC_POOL_USDC_ID || networks.testnet.contractId;
+    if (tokenSymbol === "EURC") return process.env.NEXT_PUBLIC_POOL_EURC_ID || networks.testnet.contractId;
     return networks.testnet.contractId;
   }, []);
 
@@ -109,62 +106,53 @@ export default function ClaimPage() {
         rpcUrl: RPC_URL,
         publicKey,
         signTransaction: async (xdr: string) => {
-          const res = await signTransaction(xdr, {
-            networkPassphrase: networks.testnet.networkPassphrase,
+          const signed = await freighterSign(xdr, {
             address: publicKey,
+            networkPassphrase: NETWORK_PASSPHRASE,
           });
-          if (res.error) throw new Error(res.error);
-          return { signedTxXdr: res.signedTxXdr, signerAddress: publicKey };
+          if (signed.error) throw new Error(String(signed.error));
+          return { signedTxXdr: signed.signedTxXdr, signerAddress: publicKey };
         },
       }),
-    [],
+    [getPoolId],
   );
 
-  const parseNote = useCallback((): PrivateNote => {
+  function parseNote(): PrivateNote {
+    const raw = noteInput.trim();
     let note: PrivateNote;
-    const raw = noteJson.trim();
     try {
-      // Support both raw JSON and base64-encoded note
-      if (raw.startsWith("{")) {
-        note = JSON.parse(raw) as PrivateNote;
-      } else {
-        // Try base64 decode (from QR code or copy button)
-        note = JSON.parse(atob(raw)) as PrivateNote;
-      }
+      note = raw.startsWith("{")
+        ? (JSON.parse(raw) as PrivateNote)
+        : (JSON.parse(atob(raw)) as PrivateNote);
     } catch {
       throw new Error("Invalid private note format. Please check and try again.");
     }
-    if (note.version !== "growthip-v3") {
-      throw new Error(`Unsupported note version: ${note.version}`);
-    }
-    if (!note.secret || !note.nullifier || !note.recipientHash) {
-      throw new Error("Note tidak lengkap (secret/nullifier/recipientHash hilang).");
-    }
+    if (note.version !== "growthip-v3") throw new Error(`Unsupported note version: ${note.version}`);
+    if (!note.secret || !note.nullifier || !note.recipientHash)
+      throw new Error("Incomplete note — secret/nullifier/recipientHash missing.");
     if (note.claimed) throw new Error("This note has already been claimed.");
     return note;
-  }, [noteJson]);
+  }
 
-  const handleClaim = useCallback(async () => {
-    if (!address) {
-      setError("Please connect your wallet first.");
-      return;
-    }
+  async function handleClaim() {
+    if (!address) { setError("Please connect your wallet first."); return; }
+    if (!isTestnet) { setError("Please switch Freighter to Stellar Testnet."); return; }
     setError(null);
     setTxHash(null);
 
     try {
-      const note = parseNote();
+      const note   = parseNote();
       const client = buildClient(address, note.token);
 
-      // 1. Fetch all commitments (read-only via simulation).
+      // 1. Fetch commitments
       setStage("loading-pool");
       const totalTx = await client.total_deposits();
-      const total = Number(totalTx.result);
-      if (total === 0) throw new Error("Pool kosong — belum ada deposit.");
+      const total   = Number(totalTx.result);
+      if (total === 0) throw new Error("Pool is empty — no deposits found.");
       if (total > MAX_LEAVES) {
         throw new Error(
-          `Pool is full (${total}/${MAX_LEAVES}). Tree depth 3 supports max ${MAX_LEAVES} deposits. ` +
-            "A new pool has been deployed — please use the latest version.",
+          `Pool is full (${total}/${MAX_LEAVES}). Max ${MAX_LEAVES} deposits supported. ` +
+          "A fresh pool may be needed."
         );
       }
 
@@ -174,26 +162,26 @@ export default function ClaimPage() {
         commitments.push(commitmentToDecimal(cTx.result as Buffer));
       }
 
-      // Locate our commitment.
       const noteCommitment = hexToDecimal(note.commitment);
-      const leafIndex = commitments.indexOf(noteCommitment);
+      const leafIndex      = commitments.indexOf(noteCommitment);
       if (leafIndex === -1) {
         throw new Error(
           "Commitment not found in pool. " +
-            "Make sure the deposit is confirmed and the note is from this pool.",
+          "Make sure the deposit is confirmed and the note matches this pool."
         );
       }
 
-      // 2. Rebuild tree + derive path.
+      // 2. Build Merkle tree
       setStage("building-tree");
-      const tree = await buildMerkleTree(commitments);
+      const tree: ReturnType<typeof buildMerkleTree> extends Promise<infer T> ? T : never =
+        await buildMerkleTree(commitments);
       const merklePath: MerklePath = getMerklePathByIndex(tree, leafIndex);
 
-      // 3. Generate the proof.
+      // 3. Generate ZK proof (5-15s)
       setStage("proving");
       const generated = await generateProof(note, merklePath, (p) => setProgress(p));
 
-      // 4. Submit via claim_to.
+      // 4. Submit on-chain
       setStage("submitting");
       const { proof_bytes, public_inputs } = toClaimArgs(generated);
       const claimTx = await client.claim_to({
@@ -202,116 +190,193 @@ export default function ClaimPage() {
         public_inputs,
       });
       const sent = await claimTx.signAndSend({ force: true });
-      setTxHash(sent.sendTransactionResponse?.hash ?? "submitted");
+      const hash = sent.sendTransactionResponse?.hash ?? "submitted";
+      setTxHash(hash);
 
-      // Mark note claimed in storage.
-      markNoteClaimed(note.commitment);
+      markNoteAsClaimed(note.nullifierHash);
       setStage("done");
     } catch (err) {
       console.error(err);
-      setError(err instanceof Error ? err.message : "Klaim gagal.");
+      setError(err instanceof Error ? err.message : "Claim failed.");
       setStage("error");
     } finally {
       setProgress(null);
     }
-  }, [address, recipient, parseNote, buildClient]);
+  }
+
+  // ── Success state ──────────────────────────────────────────────────────────
+  if (stage === "done" && txHash) {
+    return (
+      <div className="rounded-[2rem] border border-fresh-green/30 bg-fresh-green/5 p-8 text-center">
+        <p className="text-4xl">🎉</p>
+        <p className="mt-4 text-xl font-black text-white">Tip Claimed!</p>
+        <p className="mt-2 text-sm text-soft-gray/60">
+          ZK proof verified on-chain. Funds transferred to your wallet.
+        </p>
+        <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-3">
+          <p className="text-xs text-soft-gray/40">Transaction</p>
+          <p className="mt-1 break-all font-mono text-xs text-soft-gray/70">{txHash}</p>
+        </div>
+        <div className="mt-6 flex justify-center gap-3">
+          <Link href="/dashboard" className="rounded-full bg-fresh-green px-5 py-2.5 text-sm font-black text-midnight-blue">
+            Dashboard
+          </Link>
+          <Link href="/deposit" className="rounded-full border border-white/10 bg-white/[0.04] px-5 py-2.5 text-sm font-bold text-white">
+            Send another tip
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="mx-auto max-w-lg space-y-6 p-6">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Claim Tip</h1>
-        <p className="text-sm text-muted-foreground">
-          Tempel Private Note kamu. Proof dibuat sepenuhnya di browser — secret tidak pernah dikirim ke server.
-        </p>
-      </header>
-
-      {!address ? (
-        <button
-          onClick={handleConnect}
-          disabled={stage === "connecting"}
-          className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
-        >
-          {stage === "connecting" ? "Connecting…" : "Connect Wallet"}
-        </button>
+    <div className="space-y-4 rounded-[2rem] border border-white/10 bg-rich-black/70 p-6">
+      {/* Wallet connection */}
+      {address ? (
+        <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+          <span className="font-mono text-xs text-soft-gray/60">
+            {address.slice(0, 8)}...{address.slice(-6)}
+          </span>
+          <span className={
+            "rounded-full px-3 py-1 text-xs font-bold " +
+            (isTestnet ? "bg-fresh-green/10 text-fresh-green" : "bg-coral-red/10 text-coral-red")
+          }>
+            {network || "unknown"}
+          </span>
+        </div>
       ) : (
-        <>
-          <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="note">Private Note (JSON)</label>
-            <textarea
-              id="note"
-              rows={8}
-              value={noteJson}
-              onChange={(e) => setNoteJson(e.target.value)}
-              placeholder='{ "version": "growthip-v3", ... }'
-              disabled={busy}
-              className="w-full rounded-lg border border-border bg-background p-3 font-mono text-xs outline-none focus:border-primary"
-            />
-          </div>
+        <button
+          onClick={connectWallet}
+          disabled={busy}
+          className="w-full rounded-2xl bg-neon-violet px-5 py-3 text-sm font-black text-white disabled:opacity-50"
+        >
+          {busy ? "Connecting..." : "Connect Freighter"}
+        </button>
+      )}
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="recipient">Kirim ke alamat</label>
-            <input
-              id="recipient"
-              value={recipient}
-              onChange={(e) => setRecipient(e.target.value)}
-              placeholder="G..."
-              disabled={busy}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs outline-none focus:border-primary"
-            />
-          </div>
+      {/* Private note input */}
+      <div>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-soft-gray/45">
+          Private Note
+        </p>
+        <textarea
+          value={noteInput}
+          onChange={(e) => setNoteInput(e.target.value)}
+          placeholder='Paste your private note here (JSON or base64)...'
+          rows={5}
+          disabled={busy}
+          className="w-full resize-none rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 font-mono text-xs text-soft-gray/80 outline-none focus:border-neon-violet/50 disabled:opacity-50"
+        />
+      </div>
 
-          <button
-            onClick={handleClaim}
-            disabled={busy || noteJson.trim().length === 0}
-            className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {stage === "loading-pool"
-              ? "Memuat pool…"
-              : stage === "building-tree"
-                ? "Menyusun Merkle tree…"
-                : stage === "proving"
-                  ? progress ? PROGRESS_LABEL[progress] : "Membuat proof…"
-                  : stage === "submitting"
-                    ? "Mengirim klaim…"
-                    : "Generate Proof & Claim"}
-          </button>
+      {/* Recipient address */}
+      <div>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-soft-gray/45">
+          Recipient Wallet
+        </p>
+        <input
+          value={recipient}
+          onChange={(e) => setRecipient(e.target.value)}
+          placeholder="G... (defaults to connected wallet)"
+          disabled={busy}
+          className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 font-mono text-xs text-soft-gray/80 outline-none focus:border-neon-violet/50 disabled:opacity-50"
+        />
+      </div>
 
-          {stage === "proving" && (
-            <div className="space-y-2 rounded-lg border border-border bg-muted/40 p-4">
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-border">
-                <div className="h-full w-1/2 animate-pulse rounded-full bg-primary" />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {progress ? PROGRESS_LABEL[progress] : "Memproses…"} Ini bisa memakan waktu 5–15 detik. Jangan tutup tab.
-              </p>
+      {/* What happens */}
+      <div className="rounded-2xl border border-white/10 bg-midnight-blue/70 p-4">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-soft-gray/45">
+          What happens when you claim
+        </p>
+        <div className="space-y-2 text-xs text-soft-gray/60">
+          {[
+            "Note decoded and validated",
+            "Commitments loaded from blockchain",
+            "Merkle tree rebuilt locally",
+            "Groth16 ZK proof generated in browser (5-15s)",
+            "Proof verified natively on Soroban",
+            "Nullifier consumed — double-claim prevented forever",
+            "Funds transferred to recipient wallet",
+          ].map((s, i) => (
+            <div key={i} className="flex items-start gap-2">
+              <span className="mt-0.5 text-neon-violet">→</span>
+              {s}
             </div>
-          )}
+          ))}
+        </div>
+      </div>
 
-          {error && (
-            <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
-          )}
+      {/* Fee estimate */}
+      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-widest text-soft-gray/45">
+          Fee Estimate
+        </p>
+        <div className="flex justify-between text-xs">
+          <span className="text-soft-gray/60">ZK proof verification</span>
+          <span className="text-white">~0.004 XLM</span>
+        </div>
+        <div className="flex justify-between text-xs">
+          <span className="text-soft-gray/60">Storage (refundable)</span>
+          <span className="text-white">~0.002 XLM</span>
+        </div>
+        <div className="border-t border-white/10 pt-2 flex justify-between text-xs">
+          <span className="font-semibold text-white">Total est.</span>
+          <span className="font-black text-white">~0.006 XLM</span>
+        </div>
+      </div>
 
-          {stage === "done" && txHash && (
-            <div className="space-y-1 rounded-lg border border-primary/30 bg-primary/5 p-4">
-              <p className="text-sm font-medium text-primary">Tip claimed successfully!!</p>
-              <p className="break-all font-mono text-xs text-muted-foreground">{txHash}</p>
-            </div>
-          )}
-        </>
+      {/* Proving progress */}
+      {stage === "proving" && (
+        <div className="rounded-2xl border border-neon-violet/20 bg-neon-violet/5 p-4 space-y-3">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+            <div className="h-full w-1/2 animate-pulse rounded-full bg-neon-violet" />
+          </div>
+          <p className="text-xs text-soft-gray/70">
+            {progress ? PROGRESS_LABELS[progress] : "Processing..."}{" "}
+            <span className="text-soft-gray/40">Do not close this tab.</span>
+          </p>
+        </div>
+      )}
+
+      {/* Claim button */}
+      <button
+        onClick={handleClaim}
+        disabled={busy || !address || !noteInput.trim()}
+        className="w-full rounded-2xl bg-fresh-green px-5 py-3 text-sm font-black text-midnight-blue transition hover:scale-[1.02] disabled:opacity-50"
+      >
+        {busy
+          ? (STAGE_LABELS[stage] ?? "Processing...")
+          : "Generate Proof & Claim"}
+      </button>
+
+      {/* Error */}
+      {error && (
+        <div className="rounded-2xl border border-coral-red/20 bg-coral-red/10 p-4">
+          <p className="text-sm text-coral-red">{error}</p>
+        </div>
       )}
     </div>
   );
 }
 
-/** Mark a note as claimed in localStorage. */
-function markNoteClaimed(commitmentHex: string): void {
-  if (typeof window === "undefined") return;
-  const KEY = "growthip:notes";
-  const raw = window.localStorage.getItem(KEY);
-  if (!raw) return;
-  const list: PrivateNote[] = JSON.parse(raw) as PrivateNote[];
-  const updated = list.map((n) =>
-    n.commitment === commitmentHex ? { ...n, claimed: true, claimedAt: Date.now() } : n,
+export default function ClaimPage() {
+  return (
+    <main className="min-h-screen">
+      <div className="mx-auto max-w-2xl px-6 py-10 lg:px-8">
+        <Link href="/" className="mb-6 flex items-center gap-2 text-sm text-soft-gray/50 hover:text-white">
+          Back
+        </Link>
+        <h1 className="mb-2 text-3xl font-black tracking-tight text-white">
+          Claim a Tip
+        </h1>
+        <p className="mb-8 text-sm text-soft-gray/60">
+          Paste your private note. The ZK proof is generated entirely in your browser —
+          your secret never leaves your device.
+        </p>
+        <Suspense fallback={<div className="text-soft-gray/50">Loading...</div>}>
+          <ClaimContent />
+        </Suspense>
+      </div>
+    </main>
   );
-  window.localStorage.setItem(KEY, JSON.stringify(updated));
 }
