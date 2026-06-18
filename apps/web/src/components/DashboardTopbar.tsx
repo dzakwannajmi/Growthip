@@ -72,31 +72,32 @@ export default function DashboardTopbar() {
                   {/* Futurenet */}
                   <button
                     onClick={() => handleNetworkSelect("futurenet", "Future Net")}
-                    className="flex items-center justify-between p-2.5 rounded-lg hover:bg-[#F5F5F5] transition-colors w-full text-left"
+                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "10px", background: activeNetwork === "futurenet" ? "#F5F5F5" : "transparent", border: "none", cursor: "pointer", width: "100%", transition: "background 0.15s" }}
+                    onMouseEnter={(e) => { if (activeNetwork !== "futurenet") (e.currentTarget as HTMLButtonElement).style.background = "#F5F5F5"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = activeNetwork === "futurenet" ? "#F5F5F5" : "transparent"; }}
                   >
-                    <div className="flex items-center gap-3">
-                      <Icon icon="ph:globe" className="text-green-500 text-lg" />
-                      <span className="text-[13px] font-semibold text-[#171717]">Future Net</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <Icon icon="ph:globe-hemisphere-west-bold" style={{ fontSize: "18px", color: "#22c55e" }} />
+                      <span style={{ fontSize: "14px", fontWeight: 600, color: "#171717" }}>Future Net</span>
                     </div>
                     {activeNetwork === "futurenet" && (
-                      <Icon icon="ph:check-bold" className="text-light-950 dark:text-dark-950" />
+                      <Icon icon="ph:check-bold" style={{ fontSize: "14px", color: "#171717" }} />
                     )}
                   </button>
 
                   {/* Testnet - active */}
                   <button
                     onClick={() => handleNetworkSelect("testnet", "Test Net")}
-                    className={
-                      "flex items-center justify-between p-2.5 rounded-lg hover:bg-[#F5F5F5] transition-colors w-full text-left " +
-                      (activeNetwork === "testnet" ? "bg-[#F5F5F5]" : "")
-                    }
+                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "10px", background: activeNetwork === "testnet" ? "#F5F5F5" : "transparent", border: "none", cursor: "pointer", width: "100%", transition: "background 0.15s" }}
+                    onMouseEnter={(e) => { if (activeNetwork !== "testnet") (e.currentTarget as HTMLButtonElement).style.background = "#F5F5F5"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = activeNetwork === "testnet" ? "#F5F5F5" : "transparent"; }}
                   >
-                    <div className="flex items-center gap-3">
-                      <Icon icon="ph:globe" className="text-pink-500 text-lg" />
-                      <span className="text-[13px] font-semibold text-[#171717]">Test Net</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <Icon icon="ph:globe-hemisphere-east-bold" style={{ fontSize: "18px", color: "#ec4899" }} />
+                      <span style={{ fontSize: "14px", fontWeight: 600, color: "#171717" }}>Test Net</span>
                     </div>
                     {activeNetwork === "testnet" && (
-                      <Icon icon="ph:check-bold" className="text-light-950 dark:text-dark-950" />
+                      <Icon icon="ph:check-bold" style={{ fontSize: "14px", color: "#171717" }} />
                     )}
                   </button>
 
