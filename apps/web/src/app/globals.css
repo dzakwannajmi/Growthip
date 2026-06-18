@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @theme {
+  --font-family-sans: var(--font-plus-jakarta-sans), "Plus Jakarta Sans", sans-serif;
   /* Light palette (from HTML prototype) */
   --color-light-base: #FFFFFF;
   --color-light-50: #FAFAFA;
@@ -51,6 +52,11 @@ html {
 
 body {
   min-height: 100vh;
+  background: #FAFAFA;
+  color: #171717;
+}
+
+.main-gradient {
   background:
     radial-gradient(circle at top left, rgba(107, 69, 243, 0.28), transparent 32rem),
     radial-gradient(circle at top right, rgba(127, 252, 88, 0.12), transparent 28rem),
@@ -68,8 +74,6 @@ body {
 .dark .custom-scroll::-webkit-scrollbar-thumb { background-color: #373737; }
 
 /* Plus Jakarta Sans font */
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
-
 ::selection {
   background: #6b45f3;
   color: #ffffff;
