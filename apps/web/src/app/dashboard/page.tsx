@@ -152,19 +152,23 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 // ══════════════════════════════════════════════════════════════════════════
 export default function DashboardPage() {
   // Wallet state
-  const [address,  setAddress]  = useState(() => {
-    if (typeof window === "undefined") return "";
-    return localStorage.getItem("growthip:wallet") ?? "";
-  });
-  const [network,  setNetwork]  = useState(() => {
-    if (typeof window === "undefined") return "";
-    return localStorage.getItem("growthip:network") ?? "";
-  });
+  const [address,  setAddress]  = useState<string>("");
+  const [network,  setNetwork]  = useState<string>("");
   const [walletBusy, setWalletBusy]   = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [walletStatus, setWalletStatus] = useState("");
 
   const isTestnet = network.toUpperCase() === "TESTNET";
+
+  // Load wallet from localStorage after mount (avoids SSR hydration mismatch)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const addr = localStorage.getItem("growthip:wallet") ?? "";
+    const net  = localStorage.getItem("growthip:network") ?? "";
+    setAddress(addr);
+    setNetwork(net);
+    setRecipient(addr);
+  }, []);
 
   // UI state
   const [copied, setCopied]   = useState(false);
