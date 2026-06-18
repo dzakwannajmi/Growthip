@@ -359,23 +359,56 @@ export default function DashboardPage() {
         <Card>
           <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
             <span style={{ fontSize: "14px", fontWeight: 700, color: "#171717" }}>Your Stealth Balances</span>
-            <Icon icon="ph:info" style={{ fontSize: "12px", color: "#A3A3A3", cursor: "help" }} />
+            <div style={{ position: "relative", display: "inline-flex" }} className="group">
+              <Icon icon="ph:info" style={{ fontSize: "14px", color: "#A3A3A3", cursor: "help" }} />
+              <div style={{
+                position: "absolute", bottom: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)",
+                background: "#0A0A0A", color: "white", fontSize: "12px", fontWeight: 500,
+                padding: "8px 12px", borderRadius: "8px", whiteSpace: "nowrap",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)", zIndex: 50, lineHeight: 1.5,
+                pointerEvents: "none", opacity: 0,
+              }} style={{ transition: "opacity 0.2s" }}>
+                Prices via CoinGecko free API (may be rate-limited). If total seems incorrect, check your wallet directly.
+                If total seems incorrect, check your wallet directly.
+                <div style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", width: 0, height: 0, borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "6px solid #0A0A0A" }} />
+              </div>
+            </div>
           </div>
           <div style={{ marginBottom: "24px" }}>
             <div style={{ display: "flex", alignItems: "flex-end", gap: "8px" }}>
               <span style={{ fontSize: "48px", fontWeight: 800, color: "#0A0A0A", lineHeight: 1 }}>
-                ${(balances.xlm * prices.xlm.usd + balances.usdc * prices.usdc.usd).toFixed(2)}
+                ${address ? (balances.xlm * prices.xlm.usd + balances.usdc * prices.usdc.usd).toFixed(2) : "0.00"}
               </span>
               <span style={{ fontSize: "14px", fontWeight: 600, color: "#737373", marginBottom: "6px" }}>USD</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "6px" }}>
-              <span style={{ display: "flex", alignItems: "center", fontSize: "13px", fontWeight: 700, color: total.isUp ? "#22c55e" : "#ef4444" }}>
-                <Icon icon={total.isUp ? "ph:trend-up-bold" : "ph:trend-down-bold"} style={{ marginRight: "4px" }} />
-                {total.percent}
-              </span>
-              <span style={{ fontSize: "13px", fontWeight: 500, color: total.isUp ? "rgba(34,197,94,0.8)" : "rgba(239,68,68,0.8)" }}>
-                {total.value}
-              </span>
+              {(() => {
+                const totalUsd = balances.xlm * prices.xlm.usd + balances.usdc * prices.usdc.usd;
+                const change24h = prices.xlm.usd_24h_change;
+                const isUp = change24h >= 0;
+                const dollarChange = Math.abs(totalUsd * change24h / 100);
+                return address && totalUsd > 0 ? (
+                  <>
+                    <span style={{ display: "flex", alignItems: "center", fontSize: "13px", fontWeight: 700, color: isUp ? "#22c55e" : "#ef4444" }}>
+                      <Icon icon={isUp ? "ph:trend-up-bold" : "ph:trend-down-bold"} style={{ marginRight: "4px" }} />
+                      {(isUp ? "+" : "") + change24h.toFixed(2)}%
+                    </span>
+                    <span style={{ fontSize: "13px", fontWeight: 500, color: isUp ? "rgba(34,197,94,0.8)" : "rgba(239,68,68,0.8)" }}>
+                      ({isUp ? "+" : "-"}${dollarChange.toFixed(2)})
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span style={{ display: "flex", alignItems: "center", fontSize: "13px", fontWeight: 700, color: total.isUp ? "#22c55e" : "#ef4444" }}>
+                      <Icon icon={total.isUp ? "ph:trend-up-bold" : "ph:trend-down-bold"} style={{ marginRight: "4px" }} />
+                      {total.percent}
+                    </span>
+                    <span style={{ fontSize: "13px", fontWeight: 500, color: total.isUp ? "rgba(34,197,94,0.8)" : "rgba(239,68,68,0.8)" }}>
+                      {total.value}
+                    </span>
+                  </>
+                );
+              })()}
             </div>
           </div>
 
