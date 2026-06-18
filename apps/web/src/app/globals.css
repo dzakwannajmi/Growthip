@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --font-family-sans: var(--font-plus-jakarta-sans), "Plus Jakarta Sans", sans-serif;
+  --font-family-sans: var(--font-plus-jakarta-sans), "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --default-font-family: var(--font-plus-jakarta-sans), "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   /* Light palette (from HTML prototype) */
   --color-light-base: #FFFFFF;
   --color-light-50: #FAFAFA;
@@ -54,6 +55,7 @@ body {
   min-height: 100vh;
   background: #FAFAFA;
   color: #171717;
+  font-family: var(--font-plus-jakarta-sans), "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 }
 
 .main-gradient {
