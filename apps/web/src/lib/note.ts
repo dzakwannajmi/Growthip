@@ -33,6 +33,7 @@ export interface PrivateNote {
   depositIndex:  number;
   claimed:       boolean;
   claimedAt?:    number;
+  txHash?:       string;
 }
 
 const STORAGE_KEY = "growthip:notes:v3";
@@ -87,10 +88,10 @@ export function getClaimedNotes(): PrivateNote[] {
 }
 
 /** Mark a note as claimed by its nullifierHash. */
-export function markNoteAsClaimed(nullifierHash: string): void {
+export function markNoteAsClaimed(nullifierHash: string, txHash?: string): void {
   const notes = getAllNotes().map((n) =>
     n.nullifierHash === nullifierHash
-      ? { ...n, claimed: true, claimedAt: Date.now() }
+      ? { ...n, claimed: true, claimedAt: Date.now(), txHash }
       : n,
   );
   localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));

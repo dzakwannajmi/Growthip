@@ -1,4 +1,5 @@
 "use client";
+import { Icon } from "@iconify/react";
 
 import { useCallback, useMemo, useState, Suspense } from "react";
 import Link from "next/link";
@@ -204,7 +205,7 @@ function ClaimContent() {
       }
 
       setTxHash(hash);
-      markNoteAsClaimed(note.nullifierHash);
+      markNoteAsClaimed(note.nullifierHash, hash);
       setStage("done");
     } catch (err) {
       console.error(err);

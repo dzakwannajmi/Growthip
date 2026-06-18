@@ -125,7 +125,7 @@ export default function ActivityPage() {
                 {/* Action */}
                 {note.claimed ? (
                   <a
-                    href={"https://stellar.expert/explorer/testnet/search?term=" + note.nullifierHash}
+                    href={"https://stellar.expert/explorer/testnet/tx/" + (note.txHash || note.nullifierHash)}
                     target="_blank"
                     rel="noreferrer"
                     style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", fontWeight: 600, color: "#6366f1", textDecoration: "none", flexShrink: 0 }}

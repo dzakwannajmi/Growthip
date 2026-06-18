@@ -320,7 +320,7 @@ export default function DashboardPage() {
 
       const hash = sent.sendTransactionResponse?.hash ?? "submitted";
       setClaimTxHash(hash);
-      markNoteAsClaimed(note.nullifierHash);
+      markNoteAsClaimed(note.nullifierHash, hash);
       setClaimStage("done");
       setNoteInput("");
     } catch (err) {
