@@ -369,7 +369,6 @@ export default function DashboardPage() {
                 pointerEvents: "none", opacity: 0,
               }} style={{ transition: "opacity 0.2s" }}>
                 Prices via CoinGecko free API (may be rate-limited). If total seems incorrect, check your wallet directly.
-                If total seems incorrect, check your wallet directly.
                 <div style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", width: 0, height: 0, borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "6px solid #0A0A0A" }} />
               </div>
             </div>
