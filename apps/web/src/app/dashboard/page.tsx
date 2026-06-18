@@ -523,6 +523,27 @@ export default function DashboardPage() {
                         <span style={{ fontSize: "13px", fontWeight: 600, color: "#0A0A0A" }}>{v}</span>
                       </div>
                     ))}
+                    <div style={{ borderRadius: "12px", border: "1px solid #E5E5E5", background: "white", padding: "14px" }}>
+                      <p style={{ fontSize: "11px", fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "10px" }}>Fee Estimate</p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <span style={{ fontSize: "12px", color: "#737373" }}>Soroban resource fee</span>
+                          <span style={{ fontSize: "12px", fontWeight: 600, color: "#0A0A0A" }}>~0.008 XLM</span>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <span style={{ fontSize: "12px", color: "#737373" }}>Recipient registration (first time)</span>
+                          <span style={{ fontSize: "12px", fontWeight: 600, color: "#0A0A0A" }}>~0.005 XLM</span>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <span style={{ fontSize: "12px", color: "#737373" }}>ZK commitment generation</span>
+                          <span style={{ fontSize: "12px", fontWeight: 600, color: "#22c55e" }}>Browser-side (free)</span>
+                        </div>
+                        <div style={{ borderTop: "1px solid #E5E5E5", paddingTop: "8px", display: "flex", justifyContent: "space-between" }}>
+                          <span style={{ fontSize: "13px", fontWeight: 700, color: "#0A0A0A" }}>Total est.</span>
+                          <span style={{ fontSize: "13px", fontWeight: 800, color: "#0A0A0A" }}>{fmtDisplay(displayAmount)} {sendToken.symbol} + ~0.014 XLM</span>
+                        </div>
+                      </div>
+                    </div>
                     <div style={{ padding: "14px", borderRadius: "12px", border: "1px solid #DDD6FE", background: "#FAF5FF" }}>
                       <p style={{ fontSize: "13px", color: "#525252", lineHeight: 1.6 }}>
                         A fresh <strong>secret</strong> and <strong>nullifier</strong> will be generated. Save your <strong>private note</strong> — it is the only way to claim.
