@@ -75,20 +75,28 @@ function InfoTooltip({ text }: { text: string }) {
       />
       {show && (
         <div style={{
-          position: "absolute", bottom: "calc(100% + 8px)", left: "50%",
-          transform: "translateX(-50%)", background: "#0A0A0A", color: "white",
-          fontSize: "12px", fontWeight: 500, padding: "8px 12px", borderRadius: "8px",
-          whiteSpace: "normal", maxWidth: "260px", width: "260px",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.15)", zIndex: 100, lineHeight: 1.6,
-          pointerEvents: "none",
+          position: "absolute", bottom: "calc(100% + 12px)", left: "0",
+          background: "white", color: "#171717",
+          fontSize: "12px", fontWeight: 500, padding: "10px 14px", borderRadius: "12px",
+          whiteSpace: "normal", maxWidth: "240px", width: "240px",
+          boxShadow: "0 2px 12px rgba(0,0,0,0.12)", zIndex: 100, lineHeight: 1.6,
+          pointerEvents: "none", border: "1px solid #E5E5E5",
         }}>
           {text}
+          {/* Speech bubble pointer - bottom left */}
           <div style={{
-            position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)",
+            position: "absolute", top: "100%", left: "10px",
             width: 0, height: 0,
-            borderLeft: "6px solid transparent",
-            borderRight: "6px solid transparent",
-            borderTop: "6px solid #0A0A0A",
+            borderLeft: "8px solid transparent",
+            borderRight: "8px solid transparent",
+            borderTop: "8px solid #E5E5E5",
+          }} />
+          <div style={{
+            position: "absolute", top: "calc(100% - 1px)", left: "10px",
+            width: 0, height: 0,
+            borderLeft: "8px solid transparent",
+            borderRight: "8px solid transparent",
+            borderTop: "8px solid white",
           }} />
         </div>
       )}
