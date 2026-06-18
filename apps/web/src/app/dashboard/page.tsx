@@ -62,6 +62,40 @@ function encodeNote(note: PrivateNote): string {
   return btoa(JSON.stringify(note));
 }
 
+// ── Tooltip component ─────────────────────────────────────────────────────────
+function InfoTooltip({ text }: { text: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div style={{ position: "relative", display: "inline-flex" }}>
+      <Icon
+        icon="ph:info"
+        style={{ fontSize: "14px", color: "#A3A3A3", cursor: "help" }}
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+      />
+      {show && (
+        <div style={{
+          position: "absolute", bottom: "calc(100% + 8px)", left: "50%",
+          transform: "translateX(-50%)", background: "#0A0A0A", color: "white",
+          fontSize: "12px", fontWeight: 500, padding: "8px 12px", borderRadius: "8px",
+          whiteSpace: "normal", maxWidth: "260px", width: "260px",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)", zIndex: 100, lineHeight: 1.6,
+          pointerEvents: "none",
+        }}>
+          {text}
+          <div style={{
+            position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)",
+            width: 0, height: 0,
+            borderLeft: "6px solid transparent",
+            borderRight: "6px solid transparent",
+            borderTop: "6px solid #0A0A0A",
+          }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Live price simulation ──────────────────────────────────────────────────
 function useLivePrices() {
   const [xlm,  setXlm]  = useState<TokenPrice>({ percent: "+2.45%", isUp: true });
@@ -359,19 +393,7 @@ export default function DashboardPage() {
         <Card>
           <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
             <span style={{ fontSize: "14px", fontWeight: 700, color: "#171717" }}>Your Stealth Balances</span>
-            <div style={{ position: "relative", display: "inline-flex" }} className="group">
-              <Icon icon="ph:info" style={{ fontSize: "14px", color: "#A3A3A3", cursor: "help" }} />
-              <div style={{
-                position: "absolute", bottom: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)",
-                background: "#0A0A0A", color: "white", fontSize: "12px", fontWeight: 500,
-                padding: "8px 12px", borderRadius: "8px", whiteSpace: "nowrap",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.15)", zIndex: 50, lineHeight: 1.5,
-                pointerEvents: "none", opacity: 0, transition: "opacity 0.2s",
-              }}>
-                Prices via CoinGecko free API (may be rate-limited). If total seems incorrect, check your wallet directly.
-                <div style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", width: 0, height: 0, borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "6px solid #0A0A0A" }} />
-              </div>
-            </div>
+            <InfoTooltip text="Prices via CoinGecko free API (may be rate-limited). If balance seems incorrect, check your wallet directly." />
           </div>
           <div style={{ marginBottom: "24px" }}>
             <div style={{ display: "flex", alignItems: "flex-end", gap: "8px" }}>
