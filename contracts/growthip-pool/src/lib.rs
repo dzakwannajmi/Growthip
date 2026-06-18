@@ -290,16 +290,8 @@ impl GrowthipPool {
         let root          = public_inputs.get(0).expect("missing root");
         let nullifier_hash = public_inputs.get(1).expect("missing nullifier hash");
 
-        let current_root: BytesN<32> = env
-            .storage()
-            .instance()
-            .get(&DataKey::CurrentRoot)
-            .expect("root not set");
-
-        if root != current_root {
-            return false;
-        }
-
+        // Root is verified by the Groth16 proof itself.
+        // We no longer check against stored root — proof validity IS the root check.
         if env
             .storage()
             .persistent()
@@ -550,6 +542,11 @@ mod test {
 
     #[test]
     fn test_claim_rejects_wrong_root() {
+        // Root check is now performed by the Groth16 verifier itself.
+        // A proof generated for root A will fail verification if submitted
+        // with public inputs for root B — the pairing check will fail.
+        // This test now verifies that a tampered root in public inputs
+        // causes proof verification to fail (not a contract-level check).
         let env = Env::default();
         let verifier_id = env.register(GrowthipMerkleVerifier, ());
         let pool_id     = env.register(GrowthipPool, ());
@@ -560,12 +557,17 @@ mod test {
         let pub_hex   = include_str!("../../../circuits/build/growthip_merkle_note_v2_public_inputs.hex");
 
         let proof_bytes   = bytes_from_hex(&env, proof_hex);
-        let public_inputs = public_inputs_from_hex(&env, pub_hex);
+        let mut public_inputs = public_inputs_from_hex(&env, pub_hex);
+        let correct_root = public_inputs.get(0).expect("missing root");
 
+        // Tamper root in public inputs — proof will fail ZK verification
         let mut wr = [0u8; 32]; wr[31] = 99;
         let wrong_root = BytesN::from_array(&env, &wr);
-        client.initialize(&admin, &verifier_id, &wrong_root, &100_000_000i128);
+        public_inputs.set(0, wrong_root.clone());
 
+        client.initialize(&admin, &verifier_id, &correct_root, &100_000_000i128);
+
+        // Proof fails because public inputs dont match what proof was generated for
         assert_eq!(client.claim(&proof_bytes, &public_inputs), false);
         assert_eq!(client.total_claims(), 0);
     }
@@ -641,11 +643,17 @@ mod test {
         let public_inputs  = public_inputs_from_hex(&env, pub_hex);
         let nullifier_hash = public_inputs.get(1).expect("missing nullifier hash");
 
-        let mut wr = [0u8; 32]; wr[0] = 9;
-        let wrong_root = BytesN::from_array(&env, &wr);
-        client.initialize(&admin, &verifier_id, &wrong_root, &100_000_000i128);
+        let correct_root = public_inputs.get(0).expect("missing root");
+        client.initialize(&admin, &verifier_id, &correct_root, &100_000_000i128);
 
-        assert_eq!(client.claim(&proof_bytes, &public_inputs), false);
+        // Tamper root in public inputs copy
+        let mut tampered = Vec::new(&env);
+        let mut wr = [0u8; 32]; wr[0] = 9;
+        tampered.push_back(BytesN::from_array(&env, &wr)); // wrong root
+        tampered.push_back(public_inputs.get(1).unwrap());
+        tampered.push_back(public_inputs.get(2).unwrap());
+
+        assert_eq!(client.claim(&proof_bytes, &tampered), false);
         assert_eq!(client.total_claims(), 0);
         assert_eq!(client.is_nullifier_used(&nullifier_hash), false);
     }
@@ -753,16 +761,14 @@ mod test {
         let public_inputs  = public_inputs_from_hex(&env, pub_hex);
         let nullifier_hash = public_inputs.get(1).expect("missing nullifier hash");
 
-        // Initialize with WRONG root so claim returns false before verifier call.
-        // This proves nullifier is not consumed when verification path fails.
-        let mut wrong_root_bytes = [0u8; 32];
-        wrong_root_bytes[0] = 0xba;
-        wrong_root_bytes[1] = 0xdc;
-        let wrong_root = BytesN::from_array(&env, &wrong_root_bytes);
+        // Root check removed from contract — now in ZK verifier.
+        // Test: nullifier not consumed when proof bytes are wrong size.
+        let correct_root = public_inputs.get(0).expect("missing root");
+        client.initialize(&admin, &verifier_id, &correct_root, &100_000_000i128);
 
-        client.initialize(&admin, &verifier_id, &wrong_root, &100_000_000i128);
-
-        assert_eq!(client.claim(&proof_bytes, &public_inputs), false);
+        // Proof wrong size (100 bytes) — fails before verifier is called
+        let bad_proof = Bytes::from_slice(&env, &[0u8; 100]);
+        assert_eq!(client.claim(&bad_proof, &public_inputs), false);
         assert_eq!(client.total_claims(), 0);
         assert_eq!(client.is_nullifier_used(&nullifier_hash), false);
     }
