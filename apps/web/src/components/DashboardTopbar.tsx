@@ -59,24 +59,24 @@ export default function DashboardTopbar() {
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setNetworkOpen(!networkOpen)}
-              className="w-10 h-10 rounded-full bg-light-100 dark:bg-dark-50 border border-light-200 dark:border-dark-100 flex items-center justify-center hover:bg-light-200 dark:hover:bg-dark-100 transition-colors relative"
+              className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#F5F5F5] transition-colors relative" style={{ background: "#F5F5F5", border: "1px solid #E5E5E5" }}
             >
               <Icon icon="ph:globe" className="text-xl text-light-600 dark:text-dark-400" />
               <span className={`absolute top-0 right-0 w-2.5 h-2.5 ${dotColor} rounded-full border-2 border-light-50 dark:border-dark-base`} />
             </button>
 
             {networkOpen && (
-              <div className="absolute right-0 top-full mt-3 w-56 bg-light-50 dark:bg-[#1a1a1a] border border-light-200 dark:border-dark-200 rounded-xl shadow-xl z-50 overflow-hidden font-sans">
-                <div className="p-2 flex flex-col gap-0.5">
+              <div className="absolute right-0 top-full mt-3 z-50" style={{ width: "224px" }}>
+                <div style={{ padding: "8px", display: "flex", flexDirection: "column", gap: "2px", background: "white", borderRadius: "12px", border: "1px solid #E5E5E5" }}>
 
                   {/* Futurenet */}
                   <button
                     onClick={() => handleNetworkSelect("futurenet", "Future Net")}
-                    className="flex items-center justify-between p-2.5 rounded-lg hover:bg-light-100 dark:hover:bg-dark-100 transition-colors w-full text-left"
+                    className="flex items-center justify-between p-2.5 rounded-lg hover:bg-[#F5F5F5] transition-colors w-full text-left"
                   >
                     <div className="flex items-center gap-3">
                       <Icon icon="ph:globe" className="text-green-500 text-lg" />
-                      <span className="text-[13px] font-semibold text-light-900 dark:text-dark-900">Future Net</span>
+                      <span className="text-[13px] font-semibold text-[#171717]">Future Net</span>
                     </div>
                     {activeNetwork === "futurenet" && (
                       <Icon icon="ph:check-bold" className="text-light-950 dark:text-dark-950" />
@@ -87,20 +87,20 @@ export default function DashboardTopbar() {
                   <button
                     onClick={() => handleNetworkSelect("testnet", "Test Net")}
                     className={
-                      "flex items-center justify-between p-2.5 rounded-lg hover:bg-light-100 dark:hover:bg-dark-100 transition-colors w-full text-left " +
-                      (activeNetwork === "testnet" ? "bg-light-100/50 dark:bg-dark-100/50" : "")
+                      "flex items-center justify-between p-2.5 rounded-lg hover:bg-[#F5F5F5] transition-colors w-full text-left " +
+                      (activeNetwork === "testnet" ? "bg-[#F5F5F5]" : "")
                     }
                   >
                     <div className="flex items-center gap-3">
                       <Icon icon="ph:globe" className="text-pink-500 text-lg" />
-                      <span className="text-[13px] font-semibold text-light-900 dark:text-dark-900">Test Net</span>
+                      <span className="text-[13px] font-semibold text-[#171717]">Test Net</span>
                     </div>
                     {activeNetwork === "testnet" && (
                       <Icon icon="ph:check-bold" className="text-light-950 dark:text-dark-950" />
                     )}
                   </button>
 
-                  <div className="h-px bg-light-200 dark:bg-dark-200 my-1 mx-2" />
+                  <div className="h-px my-1 mx-2" style={{ background: "#E5E5E5" }} />
 
                   {/* Mainnet - coming soon */}
                   <button
@@ -109,9 +109,9 @@ export default function DashboardTopbar() {
                   >
                     <div className="flex items-center gap-3">
                       <Icon icon="ph:globe" className="text-pink-600 text-lg" />
-                      <span className="text-[13px] font-semibold text-light-900 dark:text-dark-900">Mainnet</span>
+                      <span className="text-[13px] font-semibold text-[#171717]">Mainnet</span>
                     </div>
-                    <span className="text-[9px] uppercase font-bold text-light-500 dark:text-dark-500 bg-light-200 dark:bg-dark-200 px-1.5 py-0.5 rounded">Soon</span>
+                    <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded" style={{ color: "#737373", background: "#E5E5E5" }}>Soon</span>
                   </button>
 
                   {/* Custom node - coming soon */}
@@ -121,9 +121,9 @@ export default function DashboardTopbar() {
                   >
                     <div className="flex items-center gap-3">
                       <Icon icon="ph:plugs-connected" className="text-light-500 dark:text-dark-500 text-lg" />
-                      <span className="text-[13px] font-semibold text-light-900 dark:text-dark-900">Custom Node</span>
+                      <span className="text-[13px] font-semibold text-[#171717]">Custom Node</span>
                     </div>
-                    <span className="text-[9px] uppercase font-bold text-light-500 dark:text-dark-500 bg-light-200 dark:bg-dark-200 px-1.5 py-0.5 rounded">Soon</span>
+                    <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded" style={{ color: "#737373", background: "#E5E5E5" }}>Soon</span>
                   </button>
                 </div>
               </div>
@@ -131,11 +131,11 @@ export default function DashboardTopbar() {
           </div>
 
           {/* Avatar pill */}
-          <div className="flex items-center gap-3 bg-light-100 dark:bg-dark-50 p-1.5 pr-4 rounded-full border border-light-200 dark:border-dark-100">
+          <div className="flex items-center gap-3 p-1.5 pr-4 rounded-full" style={{ background: "#F5F5F5", border: "1px solid #E5E5E5" }}>
             <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center font-bold text-white text-xs">
               CR
             </div>
-            <span className="text-sm font-semibold text-light-900 dark:text-dark-800 hidden sm:block">
+            <span className="text-sm font-semibold hidden sm:block" style={{ color: "#171717" }}>
               @creator
             </span>
           </div>
