@@ -383,9 +383,17 @@ export default function DashboardPage() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             {[
-              { icon: "cryptocurrency-color:xlm", name: "XLM",  sub: "Stellar Network", price: xlm },
-              { icon: "cryptocurrency-color:usdc", name: "USDC", sub: "USD Coin",        price: usdc },
-            ].map(({ icon, name, sub, price }) => (
+              {
+                icon: "cryptocurrency-color:xlm", name: "XLM", sub: "Stellar Network",
+                balance: balances.xlm, usdValue: balances.xlm * prices.xlm.usd,
+                change: prices.xlm.usd_24h_change, price: prices.xlm.usd,
+              },
+              {
+                icon: "cryptocurrency-color:usdc", name: "USDC", sub: "USD Coin",
+                balance: balances.usdc, usdValue: balances.usdc * prices.usdc.usd,
+                change: prices.usdc.usd_24h_change, price: prices.usdc.usd,
+              },
+            ].map(({ icon, name, sub, balance, usdValue, change, price }) => (
               <div key={name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                   <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#F5F5F5", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -393,17 +401,19 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <div style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>{name}</div>
-                    <div style={{ fontSize: "11px", color: "#737373" }}>{sub}</div>
+                    <div style={{ fontSize: "11px", color: "#737373" }}>
+                      {sub}{price > 0 && <span style={{ marginLeft: "6px", color: "#A3A3A3" }}>${price.toFixed(4)}</span>}
+                    </div>
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>0</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <span style={{ display: "flex", alignItems: "center", fontSize: "10px", fontWeight: 700, color: price.isUp ? "#22c55e" : "#ef4444" }}>
-                      <Icon icon={price.isUp ? "ph:trend-up-bold" : "ph:trend-down-bold"} style={{ marginRight: "2px" }} />
-                      {price.percent}
+                  <div style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>{balance > 0 ? balance.toFixed(2) : "0"}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", justifyContent: "flex-end" }}>
+                    <span style={{ display: "flex", alignItems: "center", fontSize: "10px", fontWeight: 700, color: change >= 0 ? "#22c55e" : "#ef4444" }}>
+                      <Icon icon={change >= 0 ? "ph:trend-up-bold" : "ph:trend-down-bold"} style={{ marginRight: "2px" }} />
+                      {(change >= 0 ? "+" : "") + change.toFixed(2)}%
                     </span>
-                    <span style={{ fontSize: "11px", color: "#737373" }}>$0.00</span>
+                    <span style={{ fontSize: "11px", color: "#737373" }}>${usdValue.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
