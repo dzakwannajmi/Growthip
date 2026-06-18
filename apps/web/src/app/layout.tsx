@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
+import NavbarWrapper from "@/components/NavbarWrapper";
 
 export const metadata: Metadata = {
   title: "Growthip — Private Creator Tipping on Stellar",
@@ -16,10 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body suppressHydrationWarning>
-        <div className="pt-6">
-          <Navbar />
-          {children}
-        </div>
+        <NavbarWrapper>{children}</NavbarWrapper>
       </body>
     </html>
   );
