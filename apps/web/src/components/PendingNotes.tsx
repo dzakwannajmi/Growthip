@@ -35,25 +35,58 @@ export default function PendingNotes() {
   const notes = tab === "pending" ? pending : claimed;
 
   return (
-    <div className="rounded-[2rem] border border-white/10 bg-rich-black/70 p-5 backdrop-blur-xl">
+    <div style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "20px" }}>
       {/* Tabs */}
-      <div className="mb-5 flex gap-2">
-        <TabButton
-          active={tab === "pending"}
-          onClick={() => setTab("pending")}
-          label={`Pending (${pending.length})`}
-        />
-        <TabButton
-          active={tab === "claimed"}
-          onClick={() => setTab("claimed")}
-          label={`Claimed (${claimed.length})`}
-        />
+      <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
+        {(["pending", "claimed"] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            style={{
+              padding: "6px 16px",
+              borderRadius: "999px",
+              fontSize: "14px",
+              fontWeight: tab === t ? 700 : 500,
+              background: tab === t ? "#0A0A0A" : "transparent",
+              color: tab === t ? "white" : "#737373",
+              border: "none",
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+          >
+            {t === "pending" ? `Pending (${pending.length})` : `Claimed (${claimed.length})`}
+          </button>
+        ))}
       </div>
 
       {notes.length === 0 ? (
-        <EmptyState tab={tab} />
+        <div style={{ padding: "40px 0", textAlign: "center" }}>
+          <p style={{ fontSize: "14px", color: "#737373" }}>
+            {tab === "pending"
+              ? "No pending tips. Send a tip to get started."
+              : "No claimed tips yet."}
+          </p>
+          {tab === "pending" && (
+            <Link
+              href="/dashboard/deposit"
+              style={{
+                display: "inline-block",
+                marginTop: "16px",
+                padding: "8px 20px",
+                borderRadius: "999px",
+                background: "#0A0A0A",
+                color: "white",
+                fontSize: "14px",
+                fontWeight: 700,
+                textDecoration: "none",
+              }}
+            >
+              Send a tip
+            </Link>
+          )}
+        </div>
       ) : (
-        <div className="space-y-3">
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {notes.map((note) => (
             <NoteRow key={note.nullifierHash || note.commitment} note={note} />
           ))}
@@ -63,105 +96,75 @@ export default function PendingNotes() {
   );
 }
 
-function EmptyState({ tab }: { tab: "pending" | "claimed" }) {
-  if (tab === "pending") {
-    return (
-      <div className="py-10 text-center">
-        <p className="text-3xl mb-3">🌱</p>
-        <p className="text-sm font-semibold text-white">No pending tips</p>
-        <p className="mt-1 text-xs text-soft-gray/50">
-          Send a tip to get started. Your private notes will appear here.
-        </p>
-        <Link
-          href="/deposit"
-          className="mt-4 inline-block rounded-full bg-fresh-green px-5 py-2 text-sm font-black text-midnight-blue"
-        >
-          Send a tip
-        </Link>
-      </div>
-    );
-  }
-  return (
-    <div className="py-10 text-center">
-      <p className="text-3xl mb-3">✅</p>
-      <p className="text-sm font-semibold text-white">No claimed tips yet</p>
-      <p className="mt-1 text-xs text-soft-gray/50">
-        Claimed tips will appear here after you use a private note to claim.
-      </p>
-    </div>
-  );
-}
-
 function NoteRow({ note }: { note: PrivateNote }) {
   const amount = formatNoteAmount(note);
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-      <div className="flex items-start justify-between gap-3">
-        {/* Left: amount + meta */}
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-black text-white">{amount}</p>
-            <span className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-soft-gray/50">
-              {note.token}
-            </span>
-          </div>
-          <p className="mt-1 text-xs text-soft-gray/50">
-            Deposited {formatRelativeTime(note.timestamp)}
-            {note.depositIndex !== undefined && (
-              <span className="ml-2 text-soft-gray/30">· Index #{note.depositIndex}</span>
-            )}
-          </p>
-          {note.claimed && note.claimedAt && (
-            <p className="mt-0.5 text-xs text-fresh-green/70">
-              Claimed {formatRelativeTime(note.claimedAt)}
-            </p>
-          )}
-          {/* Commitment preview */}
-          <p className="mt-1 font-mono text-xs text-soft-gray/25 truncate max-w-xs">
-            {note.commitment.slice(0, 16)}...
-          </p>
+    <div style={{
+      display: "flex",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+      gap: "12px",
+      padding: "16px",
+      borderRadius: "12px",
+      border: "1px solid #E5E5E5",
+      background: "#FAFAFA",
+    }}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ fontSize: "14px", fontWeight: 800, color: "#0A0A0A" }}>{amount}</span>
+          <span style={{
+            fontSize: "11px",
+            fontWeight: 600,
+            padding: "2px 8px",
+            borderRadius: "999px",
+            background: "#F5F5F5",
+            color: "#525252",
+          }}>{note.token}</span>
         </div>
+        <p style={{ fontSize: "12px", color: "#737373", marginTop: "4px" }}>
+          Deposited {formatRelativeTime(note.timestamp)}
+          {note.depositIndex !== undefined && (
+            <span style={{ color: "#A3A3A3", marginLeft: "8px" }}>· Index #{note.depositIndex}</span>
+          )}
+        </p>
+        {note.claimed && note.claimedAt && (
+          <p style={{ fontSize: "12px", color: "#22c55e", marginTop: "2px" }}>
+            Claimed {formatRelativeTime(note.claimedAt)}
+          </p>
+        )}
+        <p style={{ fontSize: "11px", color: "#D4D4D4", marginTop: "4px", fontFamily: "monospace" }}>
+          {note.commitment.slice(0, 16)}...
+        </p>
+      </div>
 
-        {/* Right: action */}
-        <div className="flex-shrink-0">
-          {note.claimed ? (
-            <span className="rounded-full bg-fresh-green/10 px-3 py-1.5 text-xs font-bold text-fresh-green">
-              ✅ Claimed
-            </span>
-          ) : (
-            <Link
-              href={`/claim?note=${encodeURIComponent(encodeNote(note))}`}
-              className="inline-block rounded-full bg-neon-violet px-4 py-1.5 text-xs font-bold text-white transition hover:scale-[1.02] hover:bg-neon-violet/80"
-            >
-              Claim →
-            </Link>
-          )}
-        </div>
+      <div style={{ flexShrink: 0 }}>
+        {note.claimed ? (
+          <span style={{
+            fontSize: "12px",
+            fontWeight: 700,
+            padding: "6px 12px",
+            borderRadius: "999px",
+            background: "#F0FDF4",
+            color: "#22c55e",
+          }}>✓ Claimed</span>
+        ) : (
+          <Link
+            href={`/dashboard/claim?note=${encodeURIComponent(encodeNote(note))}`}
+            style={{
+              fontSize: "13px",
+              fontWeight: 700,
+              padding: "6px 14px",
+              borderRadius: "999px",
+              background: "#0A0A0A",
+              color: "white",
+              textDecoration: "none",
+            }}
+          >
+            Claim →
+          </Link>
+        )}
       </div>
     </div>
-  );
-}
-
-function TabButton({
-  active,
-  onClick,
-  label,
-}: {
-  active:  boolean;
-  onClick: () => void;
-  label:   string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`rounded-full px-4 py-2 text-sm font-bold transition ${
-        active
-          ? "bg-neon-violet text-white"
-          : "text-soft-gray/60 hover:text-white"
-      }`}
-    >
-      {label}
-    </button>
   );
 }

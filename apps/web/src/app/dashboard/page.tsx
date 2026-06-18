@@ -133,8 +133,8 @@ export default function DashboardMainPage() {
             {/* EURC */}
             <div className="flex items-center justify-between opacity-60">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[#F5F5F5] flex items-center justify-center text-[#525252]">
-                  <Icon icon="fa6-solid:euro-sign" className="text-sm" />
+                <div className="w-8 h-8 rounded-full bg-[#F5F5F5] flex items-center justify-center font-bold text-xs" style={{ color: "#0A0A0A" }}>
+                  €
                 </div>
                 <div>
                   <div className="font-bold text-sm text-light-950 dark:text-dark-900 flex items-center gap-2">

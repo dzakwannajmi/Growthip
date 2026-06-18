@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Buffer } from "buffer";
 import Link from "next/link";
+import { Icon } from "@iconify/react";
 import {
   isConnected,
   requestAccess,
@@ -36,9 +37,17 @@ const NETWORK_PASSPHRASE = config.network.passphrase;
 
 type Step = "connect" | "select" | "deposit" | "note";
 
-/** Decimal field element -> 32-byte hex string (no 0x prefix) */
 function decimalToHex32(decimal: string): string {
   return BigInt(decimal).toString(16).padStart(64, "0");
+}
+
+// Light theme card wrapper
+function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return (
+    <div style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "24px", ...style }}>
+      {children}
+    </div>
+  );
 }
 
 export default function DepositPage() {
@@ -78,21 +87,17 @@ export default function DepositPage() {
     try {
       const conn = await isConnected();
       if (!conn.isConnected) {
-        setStatus("Freighter not installed. Please install it first.");
+        setStatus("Freighter not installed.");
         return;
       }
       await setAllowed();
       const access = await requestAccess();
       if (access.error) throw new Error(String(access.error));
       setAddress(access.address);
-
       const net = await getNetwork();
       if (net.error) throw new Error(String(net.error));
       setNetwork(net.network ?? "");
-
-      // Warm up Poseidon WASM in background
       void warmPoseidon();
-
       setStatus("Wallet connected.");
       setStep("select");
     } catch (err) {
@@ -103,19 +108,19 @@ export default function DepositPage() {
   }
 
   const buildClient = useCallback(
-    (publicKey: string) => {
+    (publicKey: string, tokenSymbol: string = "XLM") => {
       if (!PoolClient) throw new Error("Client not ready");
       const { Client, networks } = PoolClient;
+      const poolId = tokenSymbol === "USDC"
+        ? (process.env.NEXT_PUBLIC_POOL_USDC_ID || networks.testnet.contractId)
+        : networks.testnet.contractId;
       return new Client({
         ...networks.testnet,
-        contractId: token.poolId,
+        contractId: poolId,
         rpcUrl: RPC_URL,
         publicKey,
         signTransaction: async (xdr: string) => {
-          const signed = await freighterSign(xdr, {
-            address: publicKey,
-            networkPassphrase: NETWORK_PASSPHRASE,
-          });
+          const signed = await freighterSign(xdr, { address: publicKey, networkPassphrase: NETWORK_PASSPHRASE });
           if (signed.error) throw new Error(String(signed.error));
           return { signedTxXdr: signed.signedTxXdr, signerAddress: publicKey };
         },
@@ -125,84 +130,37 @@ export default function DepositPage() {
   );
 
   async function deposit() {
-    if (!address || !isTestnet) {
-      setStatus("Connect Freighter to Stellar Testnet first.");
-      return;
-    }
-    if (!PoolClient) {
-      setStatus("Client not ready, please wait...");
-      return;
-    }
-    if (!amountReady) {
-      setStatus("Please select an amount first.");
-      return;
-    }
-
-    // Validate amount is valid multiple of baseUnit
-    const validMultiples = [1, 5, 10, 20].map((m) => token.baseUnit * m);
-    if (!validMultiples.includes(contractAmount)) {
-      setStatus(`Invalid amount. Must be 1x/5x/10x/20x of base unit.`);
-      return;
-    }
-
+    if (!address || !isTestnet || !PoolClient || !amountReady) return;
     setBusy(true);
     setStatus("Generating secret and nullifier...");
     try {
-      // 1. Generate fresh randomness
-      const secret     = generateSecret();
-      const nullifier  = generateNullifier();
-
-      // 2. Derive recipientHash from connected wallet address
+      const secret        = generateSecret();
+      const nullifier     = generateNullifier();
       setStatus("Computing recipient hash...");
-      const recipientHash  = await computeRecipientHash(address);
-      const commitment     = await computeCommitment(secret, nullifier, recipientHash);
-      const nullifierHash  = await computeNullifierHash(nullifier);
-
-      const commitmentHex  = decimalToHex32(commitment);
-      const commitmentBuf  = Buffer.from(commitmentHex, "hex");
-
-      const client = buildClient(address);
-
-      // 3. Auto-register recipientHash on-chain if not already registered
+      const recipientHash = await computeRecipientHash(address);
+      const commitment    = await computeCommitment(secret, nullifier, recipientHash);
+      const nullifierHash = await computeNullifierHash(nullifier);
+      const commitmentHex = decimalToHex32(commitment);
+      const commitmentBuf = Buffer.from(commitmentHex, "hex");
+      const client        = buildClient(address, token.symbol);
       setStatus("Checking recipient registration...");
       const existing = await client.get_recipient_hash({ recipient: address });
       if (existing.result == null) {
-        setStatus("Registering recipient hash on-chain...");
+        setStatus("Registering recipient hash...");
         const recipientHashBuf = Buffer.from(decimalToHex32(recipientHash), "hex");
-        const regTx = await client.register_recipient({
-          recipient:      address,
-          recipient_hash: recipientHashBuf,
-        });
+        const regTx = await client.register_recipient({ recipient: address, recipient_hash: recipientHashBuf });
         await regTx.signAndSend({ force: true });
       }
-
-      // 4. Submit commitment on-chain
       setStatus("Approve the deposit transaction in Freighter...");
-      const tx = await client.deposit_paid({
-        depositor:  address,
-        commitment: commitmentBuf,
-        amount:     BigInt(contractAmount),
-      });
-
+      const tx = await client.deposit_paid({ depositor: address, commitment: commitmentBuf, amount: BigInt(contractAmount) });
       const { result } = await tx.signAndSend({ force: true });
       const depositIndex = Number(result ?? 0);
-
-      // 5. Save private note to localStorage
       const newNote: PrivateNote = {
-        version:       "growthip-v3",
-        secret,
-        nullifier,
-        recipientHash,
-        commitment:    commitmentHex,
-        nullifierHash: decimalToHex32(nullifierHash),
-        root:          "0".padStart(64, "0"),
-        token:         token.symbol as TokenSymbol,
-        amount:        String(contractAmount),
-        timestamp:     Date.now(),
-        depositIndex,
-        claimed:       false,
+        version: "growthip-v3", secret, nullifier, recipientHash,
+        commitment: commitmentHex, nullifierHash: decimalToHex32(nullifierHash),
+        root: "0".padStart(64, "0"), token: token.symbol as TokenSymbol,
+        amount: String(contractAmount), timestamp: Date.now(), depositIndex, claimed: false,
       };
-
       saveNote(newNote);
       setNote(newNote);
       setStatus("Deposit successful.");
@@ -218,69 +176,62 @@ export default function DepositPage() {
   const fmtDisplay = (n: number) => (n % 1 === 0 ? String(n) : n.toFixed(1));
 
   return (
-    <main className="min-h-screen">
-      <div className="mx-auto max-w-2xl px-6 py-10 lg:px-8">
-        <Link
-          href="/"
-          className="mb-6 flex items-center gap-2 text-sm text-soft-gray/50 hover:text-white"
-        >
-          Back
-        </Link>
-        <h1 className="mb-2 text-3xl font-black tracking-tight text-white">
-          Send a Private Tip
-        </h1>
-        <p className="mb-8 text-sm text-soft-gray/60">
-          Deposit into the Growthip privacy pool. A ZK proof is generated in
-          your browser — secret and nullifier never leave your device.
-        </p>
+    <div className="p-4 md:p-8 lg:p-10 w-full" style={{ background: "#FAFAFA" }}>
+      <div style={{ maxWidth: "600px", margin: "0 auto", paddingBottom: "80px", display: "flex", flexDirection: "column", gap: "16px" }}>
 
-        <div className="mb-6 rounded-3xl border border-coral-red/20 bg-coral-red/10 p-4">
-          <p className="text-sm font-bold text-coral-red">Testnet Only</p>
-          <p className="mt-1 text-xs text-soft-gray/70">
-            This uses testnet tokens. Do not use real funds.
+        <div>
+          <h1 style={{ fontSize: "24px", fontWeight: 800, color: "#0A0A0A" }}>Send a Private Tip</h1>
+          <p style={{ fontSize: "14px", color: "#737373", marginTop: "4px" }}>
+            Deposit into the Growthip privacy pool. ZK proof generated in your browser.
           </p>
+        </div>
+
+        {/* Testnet notice */}
+        <div style={{ borderRadius: "12px", border: "1px solid #FCA5A5", background: "#FEF2F2", padding: "12px 16px" }}>
+          <p style={{ fontSize: "13px", fontWeight: 700, color: "#EF4444" }}>Testnet Only</p>
+          <p style={{ fontSize: "12px", color: "#737373", marginTop: "2px" }}>This uses testnet tokens. Do not use real funds.</p>
         </div>
 
         {/* Step: Connect */}
         {step === "connect" && (
-          <div className="rounded-[2rem] border border-white/10 bg-rich-black/70 p-6">
-            <p className="mb-4 text-sm text-soft-gray/70">
+          <Card>
+            <p style={{ fontSize: "14px", color: "#737373", marginBottom: "16px" }}>
               Connect your Freighter wallet to continue.
             </p>
             <button
               onClick={connectWallet}
               disabled={busy}
-              className="w-full rounded-2xl bg-neon-violet px-5 py-3 text-sm font-black text-white transition hover:scale-[1.02] disabled:opacity-50"
+              style={{
+                width: "100%", padding: "12px", borderRadius: "12px",
+                background: "#0A0A0A", color: "white", fontSize: "14px",
+                fontWeight: 700, border: "none", cursor: busy ? "not-allowed" : "pointer",
+                opacity: busy ? 0.5 : 1, transition: "opacity 0.2s",
+              }}
             >
               {busy ? "Connecting..." : "Connect Freighter"}
             </button>
-            {status && (
-              <p className="mt-3 text-xs text-soft-gray/60">{status}</p>
-            )}
-          </div>
+            {status && <p style={{ fontSize: "12px", color: "#737373", marginTop: "12px" }}>{status}</p>}
+          </Card>
         )}
 
-        {/* Step: Select token + amount */}
+        {/* Step: Select */}
         {step === "select" && (
-          <div className="space-y-4 rounded-[2rem] border border-white/10 bg-rich-black/70 p-6">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-white">
-                {address.slice(0, 6)}...{address.slice(-6)}
+          <Card>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+              <p style={{ fontFamily: "monospace", fontSize: "12px", color: "#737373" }}>
+                {address.slice(0, 8)}...{address.slice(-6)}
               </p>
-              <span
-                className={
-                  "rounded-full px-3 py-1 text-xs font-bold " +
-                  (isTestnet
-                    ? "bg-fresh-green/10 text-fresh-green"
-                    : "bg-coral-red/10 text-coral-red")
-                }
-              >
+              <span style={{
+                fontSize: "11px", fontWeight: 700, padding: "4px 10px", borderRadius: "999px",
+                background: isTestnet ? "#F0FDF4" : "#FEF2F2",
+                color: isTestnet ? "#22c55e" : "#EF4444",
+              }}>
                 {network || "unknown"}
               </span>
             </div>
 
-            <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-soft-gray/45">
+            <div style={{ marginBottom: "16px" }}>
+              <p style={{ fontSize: "11px", fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>
                 Select Token
               </p>
               <TokenSelector value={token.symbol} onChange={handleTokenChange} />
@@ -289,27 +240,22 @@ export default function DepositPage() {
             <AmountSelector
               key={token.symbol}
               token={token}
-              onAmountChange={(ca, da) => {
-                setContractAmount(ca);
-                setDisplayAmount(da);
-              }}
+              onAmountChange={(ca, da) => { setContractAmount(ca); setDisplayAmount(da); }}
             />
 
             {amountReady && (
-              <div className="rounded-2xl border border-fresh-green/20 bg-fresh-green/5 p-4">
-                <div className="flex items-center justify-between">
+              <div style={{ marginTop: "16px", padding: "16px", borderRadius: "12px", border: "1px solid #D1FAE5", background: "#F0FDF4" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
-                    <p className="text-xs text-soft-gray/60">You will deposit</p>
-                    <p className="text-xl font-black text-white">
+                    <p style={{ fontSize: "12px", color: "#737373" }}>You will deposit</p>
+                    <p style={{ fontSize: "20px", fontWeight: 800, color: "#0A0A0A" }}>
                       {fmtDisplay(displayAmount)} {token.symbol}
                     </p>
-                    <p className="mt-1 text-xs text-soft-gray/50">
-                      + ~0.006 XLM network fee
-                    </p>
+                    <p style={{ fontSize: "11px", color: "#A3A3A3", marginTop: "2px" }}>+ ~0.008 XLM network fee</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs text-soft-gray/60">Pool</p>
-                    <p className="text-xs font-semibold text-white">
+                  <div style={{ textAlign: "right" }}>
+                    <p style={{ fontSize: "11px", color: "#A3A3A3" }}>Pool</p>
+                    <p style={{ fontSize: "11px", fontWeight: 600, color: "#525252", fontFamily: "monospace" }}>
                       {token.poolId.slice(0, 6)}...{token.poolId.slice(-4)}
                     </p>
                   </div>
@@ -320,117 +266,115 @@ export default function DepositPage() {
             <button
               onClick={() => setStep("deposit")}
               disabled={!isTestnet || !amountReady}
-              className="w-full rounded-2xl bg-fresh-green px-5 py-3 text-sm font-black text-midnight-blue transition hover:scale-[1.02] disabled:opacity-50"
+              style={{
+                width: "100%", marginTop: "16px", padding: "12px", borderRadius: "12px",
+                background: amountReady ? "#0A0A0A" : "#E5E5E5",
+                color: amountReady ? "white" : "#A3A3A3",
+                fontSize: "14px", fontWeight: 700, border: "none",
+                cursor: amountReady ? "pointer" : "not-allowed",
+              }}
             >
-              {amountReady
-                ? `Continue — ${fmtDisplay(displayAmount)} ${token.symbol}`
-                : "Select an amount to continue"}
+              {amountReady ? `Continue — ${fmtDisplay(displayAmount)} ${token.symbol}` : "Select an amount to continue"}
             </button>
-          </div>
+          </Card>
         )}
 
-        {/* Step: Confirm + deposit */}
+        {/* Step: Confirm */}
         {step === "deposit" && (
-          <div className="space-y-4 rounded-[2rem] border border-white/10 bg-rich-black/70 p-6">
-            <p className="text-sm font-semibold text-white">Confirm Deposit</p>
+          <Card>
+            <p style={{ fontSize: "16px", fontWeight: 700, color: "#0A0A0A", marginBottom: "16px" }}>Confirm Deposit</p>
 
-            <div className="space-y-2">
-              <InfoRow label="Token"   value={token.name} />
-              <InfoRow
-                label="Amount"
-                value={`${fmtDisplay(displayAmount)} ${token.symbol}`}
-              />
-              <InfoRow
-                label="Pool"
-                value={`${token.poolId.slice(0, 8)}...${token.poolId.slice(-6)}`}
-              />
-              <InfoRow label="Network" value="Stellar Testnet" />
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "16px" }}>
+              {[
+                ["Token", token.name],
+                ["Amount", `${fmtDisplay(displayAmount)} ${token.symbol}`],
+                ["Pool", `${token.poolId.slice(0, 8)}...${token.poolId.slice(-6)}`],
+                ["Network", "Stellar Testnet"],
+              ].map(([label, value]) => (
+                <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderRadius: "10px", border: "1px solid #E5E5E5", background: "#FAFAFA" }}>
+                  <span style={{ fontSize: "13px", color: "#A3A3A3" }}>{label}</span>
+                  <span style={{ fontSize: "13px", fontWeight: 600, color: "#0A0A0A" }}>{value}</span>
+                </div>
+              ))}
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-widest text-soft-gray/45">
-                Transaction Estimate
+            <div style={{ padding: "16px", borderRadius: "12px", border: "1px solid #E5E5E5", background: "#FAFAFA", marginBottom: "16px" }}>
+              <p style={{ fontSize: "11px", fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "10px" }}>
+                Fee Estimate
               </p>
-              <div className="flex justify-between text-xs">
-                <span className="text-soft-gray/60">Tip amount</span>
-                <span className="font-semibold text-white">
-                  {fmtDisplay(displayAmount)} {token.symbol}
-                </span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-soft-gray/60">Soroban resource fee</span>
-                <span className="font-semibold text-white">~0.008 XLM</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-soft-gray/60">Recipient registration (first time)</span>
-                <span className="font-semibold text-white">~0.005 XLM</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-soft-gray/60">ZK commitment generation</span>
-                <span className="font-semibold text-fresh-green">Browser-side (free)</span>
-              </div>
-              <div className="border-t border-white/10 pt-2 flex justify-between text-xs">
-                <span className="font-semibold text-white">Total est. (first deposit)</span>
-                <span className="font-black text-white">
-                  {fmtDisplay(displayAmount)} {token.symbol} + ~0.014 XLM
-                </span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-soft-gray/50">Subsequent deposits</span>
-                <span className="text-soft-gray/50">
-                  {fmtDisplay(displayAmount)} {token.symbol} + ~0.009 XLM
-                </span>
+              {[
+                ["Soroban resource fee", "~0.008 XLM"],
+                ["Recipient registration (first time)", "~0.005 XLM"],
+                ["ZK commitment generation", "Browser-side (free)"],
+              ].map(([label, value]) => (
+                <div key={label} style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+                  <span style={{ fontSize: "12px", color: "#737373" }}>{label}</span>
+                  <span style={{ fontSize: "12px", fontWeight: 600, color: "#0A0A0A" }}>{value}</span>
+                </div>
+              ))}
+              <div style={{ borderTop: "1px solid #E5E5E5", paddingTop: "8px", marginTop: "8px", display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontSize: "13px", fontWeight: 700, color: "#0A0A0A" }}>Total est. (first deposit)</span>
+                <span style={{ fontSize: "13px", fontWeight: 800, color: "#0A0A0A" }}>{fmtDisplay(displayAmount)} {token.symbol} + ~0.014 XLM</span>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-neon-violet/20 bg-neon-violet/5 p-4">
-              <p className="text-xs leading-6 text-soft-gray/70">
-                A fresh <span className="font-semibold text-white">secret</span> and{" "}
-                <span className="font-semibold text-white">nullifier</span> will be
-                generated in your browser. After deposit, save your{" "}
-                <span className="font-semibold text-white">private note</span> — it is
-                the only way to claim this tip.
+            <div style={{ padding: "16px", borderRadius: "12px", border: "1px solid #DDD6FE", background: "#FAF5FF", marginBottom: "16px" }}>
+              <p style={{ fontSize: "13px", color: "#525252", lineHeight: "1.6" }}>
+                A fresh <strong style={{ color: "#0A0A0A" }}>secret</strong> and <strong style={{ color: "#0A0A0A" }}>nullifier</strong> will be generated in your browser. After deposit, save your <strong style={{ color: "#0A0A0A" }}>private note</strong> — it is the only way to claim this tip.
               </p>
             </div>
 
             <button
               onClick={deposit}
               disabled={busy}
-              className="w-full rounded-2xl bg-fresh-green px-5 py-3 text-sm font-black text-midnight-blue transition hover:scale-[1.02] disabled:opacity-50"
+              style={{
+                width: "100%", padding: "14px", borderRadius: "12px",
+                background: "#0A0A0A", color: "white", fontSize: "14px",
+                fontWeight: 700, border: "none", cursor: busy ? "not-allowed" : "pointer",
+                opacity: busy ? 0.7 : 1,
+              }}
             >
-              {busy
-                ? status || "Processing..."
-                : `Deposit ${fmtDisplay(displayAmount)} ${token.symbol}`}
+              {busy ? (status || "Processing...") : `Deposit ${fmtDisplay(displayAmount)} ${token.symbol}`}
             </button>
 
             <button
               onClick={() => setStep("select")}
               disabled={busy}
-              className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-bold text-white disabled:opacity-50"
+              style={{
+                width: "100%", marginTop: "8px", padding: "12px", borderRadius: "12px",
+                background: "transparent", color: "#525252", fontSize: "14px",
+                fontWeight: 600, border: "1px solid #E5E5E5", cursor: "pointer",
+              }}
             >
               Back
             </button>
 
-            {status && !busy && (
-              <p className="text-xs text-soft-gray/60">{status}</p>
-            )}
-          </div>
+            {status && !busy && <p style={{ fontSize: "12px", color: "#737373", marginTop: "12px" }}>{status}</p>}
+          </Card>
         )}
 
-        {/* Step: Show private note */}
+        {/* Step: Note */}
         {step === "note" && note && (
-          <div className="space-y-4">
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             <PrivateNoteDisplay note={note} />
-            <div className="grid grid-cols-2 gap-3">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
               <Link
-                href="/claim"
-                className="rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-3 text-center text-sm font-bold text-white"
+                href="/dashboard/claim"
+                style={{
+                  display: "block", textAlign: "center", padding: "12px", borderRadius: "12px",
+                  border: "1px solid #E5E5E5", color: "#0A0A0A", fontSize: "14px",
+                  fontWeight: 700, textDecoration: "none",
+                }}
               >
                 Claim a tip
               </Link>
               <Link
                 href="/dashboard"
-                className="rounded-2xl bg-neon-violet px-5 py-3 text-center text-sm font-bold text-white"
+                style={{
+                  display: "block", textAlign: "center", padding: "12px", borderRadius: "12px",
+                  background: "#0A0A0A", color: "white", fontSize: "14px",
+                  fontWeight: 700, textDecoration: "none",
+                }}
               >
                 Dashboard
               </Link>
@@ -438,15 +382,6 @@ export default function DepositPage() {
           </div>
         )}
       </div>
-    </main>
-  );
-}
-
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
-      <span className="text-xs text-soft-gray/50">{label}</span>
-      <span className="text-xs font-semibold text-white">{value}</span>
     </div>
   );
 }
