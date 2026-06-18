@@ -241,16 +241,15 @@ function ClaimContent() {
   }
 
   return (
-    <div className="space-y-4 rounded-[2rem] border border-white/10 bg-rich-black/70 p-6">
+    <div className="" style={{ display: "flex", flexDirection: "column", gap: "16px", borderRadius: "16px", border: "1px solid #E5E5E5", background: "white", padding: "24px" }}>
       {/* Wallet connection */}
       {address ? (
         <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
-          <span className="font-mono text-xs text-soft-gray/60">
+          <span className="font-mono text-xs" style={{ color: "#737373" }}>
             {address.slice(0, 8)}...{address.slice(-6)}
           </span>
           <span className={
-            "rounded-full px-3 py-1 text-xs font-bold " +
-            (isTestnet ? "bg-fresh-green/10 text-fresh-green" : "bg-coral-red/10 text-coral-red")
+            "rounded-full px-3 py-1 text-xs font-bold" style={{ background: isTestnet ? "#F0FDF4" : "#FEF2F2", color: isTestnet ? "#22c55e" : "#EF4444" }}
           }>
             {network || "unknown"}
           </span>
@@ -259,7 +258,7 @@ function ClaimContent() {
         <button
           onClick={connectWallet}
           disabled={busy}
-          className="w-full rounded-2xl bg-neon-violet px-5 py-3 text-sm font-black text-white disabled:opacity-50"
+          className="w-full px-5 py-3 text-sm font-black disabled:opacity-50" style={{ borderRadius: "12px", background: "#0A0A0A", color: "white", border: "none", cursor: "pointer" }}
         >
           {busy ? "Connecting..." : "Connect Freighter"}
         </button>
@@ -267,7 +266,7 @@ function ClaimContent() {
 
       {/* Private note input */}
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-soft-gray/45">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-widest" style={{ color: "#A3A3A3" }}>
           Private Note
         </p>
         <textarea
@@ -276,13 +275,13 @@ function ClaimContent() {
           placeholder='Paste your private note here (JSON or base64)...'
           rows={5}
           disabled={busy}
-          className="w-full resize-none rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 font-mono text-xs text-soft-gray/80 outline-none focus:border-neon-violet/50 disabled:opacity-50"
+          className="w-full resize-none px-4 py-3 font-mono text-xs outline-none disabled:opacity-50" style={{ borderRadius: "12px", border: "1px solid #E5E5E5", background: "#FAFAFA", color: "#0A0A0A" }}
         />
       </div>
 
       {/* Recipient address */}
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-soft-gray/45">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-widest" style={{ color: "#A3A3A3" }}>
           Recipient Wallet
         </p>
         <input
@@ -290,12 +289,12 @@ function ClaimContent() {
           onChange={(e) => setRecipient(e.target.value)}
           placeholder="G... (defaults to connected wallet)"
           disabled={busy}
-          className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 font-mono text-xs text-soft-gray/80 outline-none focus:border-neon-violet/50 disabled:opacity-50"
+          className="w-full px-4 py-3 font-mono text-xs outline-none disabled:opacity-50" style={{ borderRadius: "12px", border: "1px solid #E5E5E5", background: "#FAFAFA", color: "#0A0A0A" }}
         />
       </div>
 
       {/* What happens */}
-      <div className="rounded-2xl border border-white/10 bg-midnight-blue/70 p-4">
+      <div className="" style={{ borderRadius: "12px", border: "1px solid #E5E5E5", background: "#FAFAFA", padding: "16px" }}>
         <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-soft-gray/45">
           What happens when you claim
         </p>
@@ -318,17 +317,17 @@ function ClaimContent() {
       </div>
 
       {/* Fee estimate */}
-      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 space-y-2">
+      <div className="" style={{ borderRadius: "12px", border: "1px solid #E5E5E5", background: "#FAFAFA", padding: "16px" }}>
         <p className="text-xs font-semibold uppercase tracking-widest text-soft-gray/45">
           Fee Estimate
         </p>
         <div className="flex justify-between text-xs">
           <span className="text-soft-gray/60">Groth16 verification (non-refundable)</span>
-          <span className="text-white">~0.0042 XLM</span>
+          <span className="" style={{ color: "#0A0A0A" }}>~0.0042 XLM</span>
         </div>
         <div className="flex justify-between text-xs">
           <span className="text-soft-gray/60">Nullifier storage (non-refundable)</span>
-          <span className="text-white">~0.0017 XLM</span>
+          <span className="" style={{ color: "#0A0A0A" }}>~0.0017 XLM</span>
         </div>
         <div className="flex justify-between text-xs">
           <span className="text-soft-gray/60">ZK proof generation</span>
@@ -345,13 +344,13 @@ function ClaimContent() {
 
       {/* Proving progress */}
       {stage === "proving" && (
-        <div className="rounded-2xl border border-neon-violet/20 bg-neon-violet/5 p-4 space-y-3">
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-            <div className="h-full w-1/2 animate-pulse rounded-full bg-neon-violet" />
+        <div className="" style={{ borderRadius: "12px", border: "1px solid #DDD6FE", background: "#FAF5FF", padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div className="h-1.5 w-full overflow-hidden rounded-full" style={{ background: "#E5E5E5" }}>
+            <div className="h-full w-1/2 animate-pulse rounded-full" style={{ background: "#6366f1" }} />
           </div>
           <p className="text-xs text-soft-gray/70">
             {progress ? PROGRESS_LABELS[progress] : "Processing..."}{" "}
-            <span className="text-soft-gray/40">Do not close this tab.</span>
+            <span className="" style={{ color: "#A3A3A3" }}>Do not close this tab.</span>
           </p>
         </div>
       )}
@@ -360,7 +359,7 @@ function ClaimContent() {
       <button
         onClick={handleClaim}
         disabled={busy || !address || !noteInput.trim()}
-        className="w-full rounded-2xl bg-fresh-green px-5 py-3 text-sm font-black text-midnight-blue transition hover:scale-[1.02] disabled:opacity-50"
+        className="w-full px-5 py-3 text-sm font-black transition disabled:opacity-50" style={{ borderRadius: "12px", background: "#0A0A0A", color: "white", border: "none", cursor: "pointer" }}
       >
         {busy
           ? (STAGE_LABELS[stage] ?? "Processing...")
@@ -369,8 +368,8 @@ function ClaimContent() {
 
       {/* Error */}
       {error && (
-        <div className="rounded-2xl border border-coral-red/20 bg-coral-red/10 p-4">
-          <p className="text-sm text-coral-red">{error}</p>
+        <div className="" style={{ borderRadius: "12px", border: "1px solid #FCA5A5", background: "#FEF2F2", padding: "16px" }}>
+          <p className="text-sm" style={{ color: "#EF4444" }}>{error}</p>
         </div>
       )}
     </div>
@@ -379,15 +378,15 @@ function ClaimContent() {
 
 export default function ClaimPage() {
   return (
-    <main className="min-h-screen">
-      <div className="mx-auto max-w-2xl px-6 py-10 lg:px-8">
-        <Link href="/" className="mb-6 flex items-center gap-2 text-sm text-soft-gray/50 hover:text-white">
+    <main style={{ background: "#FAFAFA", minHeight: "100%" }}>
+      <div style={{ maxWidth: "600px", margin: "0 auto", padding: "32px 24px" }}>
+        <Link href="/" className="mb-6 flex items-center gap-2 text-sm" style={{ color: "#737373" }}>
           Back
         </Link>
-        <h1 className="mb-2 text-3xl font-black tracking-tight text-white">
+        <h1 className="mb-2 text-3xl font-black tracking-tight" style={{ color: "#0A0A0A" }}>
           Claim a Tip
         </h1>
-        <p className="mb-8 text-sm text-soft-gray/60">
+        <p className="mb-8 text-sm" style={{ color: "#737373" }}>
           Paste your private note. The ZK proof is generated entirely in your browser —
           your secret never leaves your device.
         </p>

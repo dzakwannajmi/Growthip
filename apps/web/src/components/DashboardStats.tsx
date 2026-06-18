@@ -31,11 +31,7 @@ async function fetchPoolStats(poolId: string, tokenSymbol: string): Promise<Pool
   const deposits = Number(depositsTx.result ?? 0);
   const claims   = Number(claimsTx.result ?? 0);
   const tipAmt   = Number(tipTx.result ?? 0);
-
-  // Convert tip amount to human readable
-  const human = (tipAmt / Math.pow(10, 7)).toFixed(
-    tokenSymbol === "XLM" ? 0 : 1
-  );
+  const human    = (tipAmt / Math.pow(10, 7)).toFixed(tokenSymbol === "XLM" ? 0 : 1);
 
   return {
     totalDeposits: deposits,
@@ -46,10 +42,24 @@ async function fetchPoolStats(poolId: string, tokenSymbol: string): Promise<Pool
   };
 }
 
+function StatCard({ label, value, sub, valueColor }: {
+  label: string; value: string; sub: string; valueColor?: string;
+}) {
+  return (
+    <div style={{ borderRadius: "16px", border: "1px solid #E5E5E5", background: "white", padding: "20px" }}>
+      <p style={{ fontSize: "11px", fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "4px" }}>
+        {label}
+      </p>
+      <p style={{ fontSize: "24px", fontWeight: 800, color: valueColor || "#0A0A0A" }}>{value}</p>
+      <p style={{ fontSize: "12px", color: "#A3A3A3", marginTop: "4px" }}>{sub}</p>
+    </div>
+  );
+}
+
 export default function DashboardStats() {
-  const [stats, setStats]     = useState<Record<string, PoolStats>>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState("");
+  const [stats, setStats]           = useState<Record<string, PoolStats>>({});
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState("");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const availableTokens = SUPPORTED_TOKENS.filter((t) => t.available);
@@ -72,10 +82,7 @@ export default function DashboardStats() {
     }
   }, []);
 
-  // Initial fetch
   useEffect(() => { refresh(); }, [refresh]);
-
-  // Auto-refresh every 30 seconds
   useEffect(() => {
     const interval = setInterval(refresh, 30_000);
     return () => clearInterval(interval);
@@ -83,10 +90,10 @@ export default function DashboardStats() {
 
   if (loading && Object.keys(stats).length === 0) {
     return (
-      <div className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "repeat(4, 1fr)" }}>
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-24 animate-pulse rounded-3xl bg-white/[0.04]" />
+            <div key={i} style={{ height: "96px", borderRadius: "16px", background: "#F5F5F5" }} />
           ))}
         </div>
       </div>
@@ -95,80 +102,57 @@ export default function DashboardStats() {
 
   if (error) {
     return (
-      <div className="rounded-3xl border border-coral-red/20 bg-coral-red/10 p-4 text-sm text-coral-red">
+      <div style={{ borderRadius: "12px", border: "1px solid #FCA5A5", background: "#FEF2F2", padding: "16px", fontSize: "14px", color: "#EF4444" }}>
         {error}
-        <button onClick={refresh} className="ml-3 underline">Retry</button>
+        <button onClick={refresh} style={{ marginLeft: "12px", textDecoration: "underline", background: "none", border: "none", color: "#EF4444", cursor: "pointer" }}>
+          Retry
+        </button>
       </div>
     );
   }
 
-  // Aggregate totals across all pools
-  const allStats = Object.values(stats);
+  const allStats      = Object.values(stats);
   const totalDeposits = allStats.reduce((s, p) => s + p.totalDeposits, 0);
   const totalClaims   = allStats.reduce((s, p) => s + p.totalClaims, 0);
-  const claimRate     = totalDeposits > 0
-    ? Math.round((totalClaims / totalDeposits) * 100)
-    : 0;
+  const claimRate     = totalDeposits > 0 ? Math.round((totalClaims / totalDeposits) * 100) : 0;
 
   return (
-    <div className="space-y-4">
+    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       {/* Aggregate stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          label="Total Deposits"
-          value={String(totalDeposits)}
-          sub="anonymous tips sent"
-          color="text-neon-violet"
-        />
-        <StatCard
-          label="Total Claims"
-          value={String(totalClaims)}
-          sub="tips claimed"
-          color="text-fresh-green"
-        />
-        <StatCard
-          label="Unclaimed Tips"
-          value={String(totalDeposits - totalClaims)}
-          sub="waiting to be claimed"
-          color="text-white"
-        />
-        <StatCard
-          label="Claim Rate"
-          value={`${claimRate}%`}
-          sub="of tips claimed"
-          color={claimRate > 50 ? "text-fresh-green" : "text-neon-violet"}
-        />
+      <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "repeat(2, 1fr)", gridAutoRows: "1fr" }}
+        className="md:grid-cols-4">
+        <StatCard label="Total Deposits"  value={String(totalDeposits)} sub="anonymous tips sent"      valueColor="#6366f1" />
+        <StatCard label="Total Claims"    value={String(totalClaims)}   sub="tips claimed"             valueColor="#22c55e" />
+        <StatCard label="Unclaimed Tips"  value={String(totalDeposits - totalClaims)} sub="waiting to be claimed" valueColor="#0A0A0A" />
+        <StatCard label="Claim Rate"      value={`${claimRate}%`}       sub="of tips claimed"          valueColor={claimRate > 50 ? "#22c55e" : "#6366f1"} />
       </div>
 
       {/* Per-token breakdown */}
       {availableTokens.length > 1 && (
-        <div className="grid gap-3 md:grid-cols-2">
+        <div style={{ display: "grid", gap: "12px", gridTemplateColumns: "repeat(2, 1fr)" }}>
           {availableTokens.map((token) => {
             const s = stats[token.symbol];
             if (!s) return null;
             return (
-              <div
-                key={token.symbol}
-                className="rounded-3xl border border-white/10 bg-white/[0.04] p-4"
-              >
-                <div className="mb-3 flex items-center justify-between">
-                  <p className="text-sm font-bold text-white">{token.symbol} Pool</p>
-                  <span className="rounded-full bg-neon-violet/10 px-3 py-1 text-xs font-semibold text-neon-violet">
+              <div key={token.symbol} style={{ borderRadius: "16px", border: "1px solid #E5E5E5", background: "white", padding: "16px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+                  <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>{token.symbol} Pool</p>
+                  <span style={{ borderRadius: "999px", background: "#EEF2FF", padding: "4px 12px", fontSize: "12px", fontWeight: 600, color: "#6366f1" }}>
                     {s.tipAmount}
                   </span>
                 </div>
-                <div className="grid grid-cols-3 gap-2 text-center">
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", textAlign: "center" }}>
                   <div>
-                    <p className="text-lg font-black text-white">{s.totalDeposits}</p>
-                    <p className="text-xs text-soft-gray/50">deposits</p>
+                    <p style={{ fontSize: "18px", fontWeight: 800, color: "#0A0A0A" }}>{s.totalDeposits}</p>
+                    <p style={{ fontSize: "11px", color: "#A3A3A3" }}>deposits</p>
                   </div>
                   <div>
-                    <p className="text-lg font-black text-fresh-green">{s.totalClaims}</p>
-                    <p className="text-xs text-soft-gray/50">claims</p>
+                    <p style={{ fontSize: "18px", fontWeight: 800, color: "#22c55e" }}>{s.totalClaims}</p>
+                    <p style={{ fontSize: "11px", color: "#A3A3A3" }}>claims</p>
                   </div>
                   <div>
-                    <p className="text-lg font-black text-white">{s.claimRate}%</p>
-                    <p className="text-xs text-soft-gray/50">claimed</p>
+                    <p style={{ fontSize: "18px", fontWeight: 800, color: "#0A0A0A" }}>{s.claimRate}%</p>
+                    <p style={{ fontSize: "11px", color: "#A3A3A3" }}>claimed</p>
                   </div>
                 </div>
               </div>
@@ -178,36 +162,23 @@ export default function DashboardStats() {
       )}
 
       {/* Last updated + refresh */}
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-soft-gray/40">
-          {lastUpdated
-            ? `Updated ${lastUpdated.toLocaleTimeString()}`
-            : "Loading..."}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <p style={{ fontSize: "12px", color: "#A3A3A3" }}>
+          {lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : "Loading..."}
         </p>
         <button
           onClick={refresh}
           disabled={loading}
-          className="rounded-full border border-white/10 px-3 py-1 text-xs text-soft-gray/60 transition hover:text-white disabled:opacity-50"
+          style={{
+            borderRadius: "999px", border: "1px solid #E5E5E5",
+            padding: "4px 12px", fontSize: "12px", color: "#525252",
+            background: "white", cursor: loading ? "not-allowed" : "pointer",
+            opacity: loading ? 0.5 : 1,
+          }}
         >
           {loading ? "Refreshing..." : "Refresh"}
         </button>
       </div>
-    </div>
-  );
-}
-
-function StatCard({
-  label, value, sub, color,
-}: {
-  label: string; value: string; sub: string; color: string;
-}) {
-  return (
-    <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl">
-      <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-soft-gray/45">
-        {label}
-      </p>
-      <p className={`text-2xl font-black ${color}`}>{value}</p>
-      <p className="mt-1 text-xs text-soft-gray/50">{sub}</p>
     </div>
   );
 }
