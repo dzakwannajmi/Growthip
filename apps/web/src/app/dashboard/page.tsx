@@ -150,8 +150,14 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 // ══════════════════════════════════════════════════════════════════════════
 export default function DashboardPage() {
   // Wallet state
-  const [address,  setAddress]  = useState("");
-  const [network,  setNetwork]  = useState("");
+  const [address,  setAddress]  = useState(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem("growthip:wallet") ?? "";
+  });
+  const [network,  setNetwork]  = useState(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem("growthip:network") ?? "";
+  });
   const [walletBusy, setWalletBusy] = useState(false);
   const [walletStatus, setWalletStatus] = useState("");
 
@@ -241,9 +247,11 @@ export default function DashboardPage() {
       const access = await requestAccess();
       if (access.error) throw new Error(String(access.error));
       setAddress(access.address);
+      localStorage.setItem("growthip:wallet", access.address);
       setRecipient(access.address);
       const net = await getNetwork();
       setNetwork(net.network ?? "");
+      localStorage.setItem("growthip:network", net.network ?? "");
       void warmPoseidon();
       setWalletStatus("Connected!");
       refetchBalances();
@@ -526,13 +534,39 @@ export default function DashboardPage() {
           /* Wallet connected - show Send/Withdraw tabs */
           <Card style={{ padding: 0 }}>
             {/* Wallet info bar */}
-            <div style={{ padding: "16px 24px", borderBottom: "1px solid #E5E5E5", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontFamily: "monospace", fontSize: "12px", color: "#737373" }}>
-                {address.slice(0, 8)}...{address.slice(-6)}
-              </span>
-              <span style={{ fontSize: "11px", fontWeight: 700, padding: "4px 10px", borderRadius: "999px", background: isTestnet ? "#F0FDF4" : "#FEF2F2", color: isTestnet ? "#22c55e" : "#ef4444" }}>
-                {network === "TESTNET" ? "Testnet" : network === "FUTURENET" ? "Futurenet" : network}
-              </span>
+            <div style={{ padding: "14px 20px", borderBottom: "1px solid #E5E5E5", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#F5F5F5", border: "1px solid #E5E5E5", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Icon icon="ph:wallet-bold" style={{ fontSize: "16px", color: "#525252" }} />
+                </div>
+                <span style={{ fontFamily: "monospace", fontSize: "12px", color: "#525252", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {address.slice(0, 6)}...{address.slice(-4)}
+                </span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+                <span style={{ fontSize: "11px", fontWeight: 700, padding: "4px 10px", borderRadius: "999px", background: isTestnet ? "#F0FDF4" : "#FEF2F2", color: isTestnet ? "#22c55e" : "#ef4444" }}>
+                  {network === "TESTNET" ? "Testnet" : network === "FUTURENET" ? "Futurenet" : network}
+                </span>
+                <button
+                  onClick={() => {}}
+                  title="Swap wallet (coming soon)"
+                  style={{ width: 32, height: 32, borderRadius: "8px", border: "1px solid #E5E5E5", background: "#FAFAFA", cursor: "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.5 }}
+                >
+                  <Icon icon="ph:arrows-left-right-bold" style={{ fontSize: "14px", color: "#525252" }} />
+                </button>
+                <button
+                  onClick={() => {
+                    setAddress("");
+                    setNetwork("");
+                    localStorage.removeItem("growthip:wallet");
+                    localStorage.removeItem("growthip:network");
+                  }}
+                  title="Disconnect wallet"
+                  style={{ width: 32, height: 32, borderRadius: "8px", border: "1px solid #E5E5E5", background: "#FAFAFA", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                >
+                  <Icon icon="ph:sign-out-bold" style={{ fontSize: "14px", color: "#525252" }} />
+                </button>
+              </div>
             </div>
 
             {/* Tabs */}
