@@ -65,7 +65,10 @@ export function useWalletBalances(address: string) {
   const [loading, setLoading]   = useState(false);
 
   const fetch_ = useCallback(async () => {
-    if (!address) return;
+    if (!address) {
+      setBalances({ xlm: 0, usdc: 0, eurc: 0 });
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch(`${HORIZON}/accounts/${address}`);
