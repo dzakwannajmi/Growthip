@@ -452,7 +452,7 @@ export default function DashboardPage() {
                 {address.slice(0, 8)}...{address.slice(-6)}
               </span>
               <span style={{ fontSize: "11px", fontWeight: 700, padding: "4px 10px", borderRadius: "999px", background: isTestnet ? "#F0FDF4" : "#FEF2F2", color: isTestnet ? "#22c55e" : "#ef4444" }}>
-                {network}
+                {network === "TESTNET" ? "Testnet" : network === "FUTURENET" ? "Futurenet" : network}
               </span>
             </div>
 
@@ -470,7 +470,7 @@ export default function DashboardPage() {
                     transition: "all 0.2s",
                   }}
                 >
-                  {tab === "send" ? "💸 Send Tip" : "🔐 Withdraw Tip"}
+                  {tab === "send" ? "Send Tip" : "Withdraw"}
                 </button>
               ))}
             </div>
@@ -691,62 +691,7 @@ export default function DashboardPage() {
           </div>
         </Card>
 
-        {/* Your Tips */}
-        {(pending.length > 0 || claimed.length > 0) && (
-          <Card style={{ padding: 0 }}>
-            <div style={{ padding: "20px 24px", borderBottom: "1px solid #E5E5E5" }}>
-              <h2 style={{ fontSize: "14px", fontWeight: 700, color: "#171717" }}>Your Tips</h2>
-            </div>
-            <div style={{ padding: "16px" }}>
-              {pending.length > 0 && (
-                <>
-                  <p style={{ fontSize: "11px", fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>
-                    Pending ({pending.length})
-                  </p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "16px" }}>
-                    {pending.slice(0, 5).map((note) => (
-                      <div key={note.nullifierHash} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderRadius: "12px", border: "1px solid #E5E5E5", background: "#FAFAFA" }}>
-                        <div>
-                          <span style={{ fontSize: "14px", fontWeight: 800, color: "#0A0A0A" }}>{formatAmount(note)}</span>
-                          <p style={{ fontSize: "12px", color: "#737373", marginTop: "2px" }}>
-                            {formatRelativeTime(note.timestamp)}
-                            {note.depositIndex !== undefined && <span style={{ color: "#A3A3A3", marginLeft: "8px" }}>· #{note.depositIndex}</span>}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => { setActiveTab("withdraw"); setNoteInput(JSON.stringify(note)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                          style={{ padding: "6px 14px", borderRadius: "999px", background: "#0A0A0A", color: "white", fontSize: "13px", fontWeight: 700, border: "none", cursor: "pointer" }}
-                        >
-                          Claim →
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-              {claimed.length > 0 && (
-                <>
-                  <p style={{ fontSize: "11px", fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>
-                    Claimed ({claimed.length})
-                  </p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    {claimed.slice(0, 3).map((note) => (
-                      <div key={note.nullifierHash} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderRadius: "12px", border: "1px solid #E5E5E5", background: "#FAFAFA" }}>
-                        <div>
-                          <span style={{ fontSize: "14px", fontWeight: 800, color: "#0A0A0A" }}>{formatAmount(note)}</span>
-                          <p style={{ fontSize: "12px", color: "#737373", marginTop: "2px" }}>
-                            {note.claimedAt ? `Claimed ${formatRelativeTime(note.claimedAt)}` : "Claimed"}
-                          </p>
-                        </div>
-                        <span style={{ fontSize: "12px", fontWeight: 700, padding: "6px 12px", borderRadius: "999px", background: "#F0FDF4", color: "#22c55e" }}>✓ Done</span>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          </Card>
-        )}
+
 
       </div>
     </div>

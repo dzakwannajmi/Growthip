@@ -10,17 +10,15 @@ interface AmountSelectorProps {
 }
 
 export default function AmountSelector({ token, onAmountChange }: AmountSelectorProps) {
-  const [selected, setSelected]   = useState<number | null>(null);
-  const [custom, setCustom]       = useState("");
+  const [selected, setSelected] = useState<number | null>(null);
+  const [custom, setCustom]     = useState("");
   const [useCustom, setUseCustom] = useState(false);
 
   function selectPreset(preset: number) {
     setUseCustom(false);
     setSelected(preset);
     setCustom("");
-    const ca = presetToContractAmount(preset, token);
-    console.log("[AmountSelector] preset:", preset, "token:", token.symbol, "baseUnit:", token.baseUnit, "contractAmount:", ca);
-    onAmountChange(ca, preset);
+    onAmountChange(presetToContractAmount(preset, token), preset);
   }
 
   function handleCustom(val: string) {
@@ -41,31 +39,41 @@ export default function AmountSelector({ token, onAmountChange }: AmountSelector
   })();
 
   return (
-    <div className="space-y-3">
-      <p className="text-xs font-semibold uppercase tracking-widest text-soft-gray/45">
+    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+      <p style={{ fontSize: "11px", fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.1em" }}>
         Tip Amount
       </p>
 
-      <div className="grid grid-cols-4 gap-2">
-        {token.presets.map((preset) => (
-          <button
-            key={preset}
-            type="button"
-            onClick={() => selectPreset(preset)}
-            className={
-              "rounded-2xl border py-3 text-sm font-bold transition " +
-              (selected === preset && !useCustom
-                ? "border-fresh-green bg-fresh-green/10 text-fresh-green"
-                : "border-white/10 bg-white/[0.04] text-soft-gray/70 hover:border-white/20 hover:text-white")
-            }
-          >
-            {fmtPreset(preset)}
-            <span className="ml-1 text-xs opacity-60">{token.symbol}</span>
-          </button>
-        ))}
+      {/* Preset buttons */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px" }}>
+        {token.presets.map((preset) => {
+          const active = selected === preset && !useCustom;
+          return (
+            <button
+              key={preset}
+              type="button"
+              onClick={() => selectPreset(preset)}
+              style={{
+                borderRadius: "10px",
+                border: active ? "2px solid #0A0A0A" : "1px solid #E5E5E5",
+                background: active ? "#0A0A0A" : "white",
+                color: active ? "white" : "#525252",
+                padding: "10px 4px",
+                fontSize: "13px",
+                fontWeight: 700,
+                cursor: "pointer",
+                transition: "all 0.15s",
+              }}
+            >
+              {fmtPreset(preset)}
+              <span style={{ fontSize: "11px", opacity: 0.7, marginLeft: "2px" }}>{token.symbol}</span>
+            </button>
+          );
+        })}
       </div>
 
-      <div className="relative">
+      {/* Custom input */}
+      <div style={{ position: "relative" }}>
         <input
           type="number"
           placeholder="Custom amount..."
@@ -73,26 +81,27 @@ export default function AmountSelector({ token, onAmountChange }: AmountSelector
           onChange={(e) => { setUseCustom(true); setSelected(null); handleCustom(e.target.value); }}
           min="0"
           step="0.1"
-          className={
-            "w-full rounded-2xl border bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition " +
-            (useCustom && custom
-              ? isValidCustom
-                ? "border-fresh-green/50"
-                : "border-coral-red/50"
-              : "border-white/10 focus:border-neon-violet/50")
-          }
+          style={{
+            width: "100%", borderRadius: "10px", padding: "10px 52px 10px 14px",
+            fontSize: "13px", color: "#0A0A0A", background: "#FAFAFA",
+            border: useCustom && custom
+              ? isValidCustom ? "1px solid #22c55e" : "1px solid #ef4444"
+              : "1px solid #E5E5E5",
+            outline: "none",
+          }}
         />
-        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-soft-gray/50">
+        <span style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#A3A3A3", fontWeight: 600 }}>
           {token.symbol}
         </span>
       </div>
 
-      {useCustom && custom && (
-        isValidCustom
-          ? <p className="text-xs text-fresh-green">Valid amount selected</p>
-          : <p className="text-xs text-coral-red">
-              Must be one of: {token.presets.map((p) => `${fmtPreset(p)} ${token.symbol}`).join(", ")}
-            </p>
+      {useCustom && custom && !isValidCustom && (
+        <p style={{ fontSize: "12px", color: "#ef4444" }}>
+          Must be one of: {token.presets.map((p) => `${fmtPreset(p)} ${token.symbol}`).join(", ")}
+        </p>
+      )}
+      {useCustom && custom && isValidCustom && (
+        <p style={{ fontSize: "12px", color: "#22c55e" }}>Valid amount</p>
       )}
     </div>
   );

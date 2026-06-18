@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Icon } from "@iconify/react";
 import { getAvailableTokens, type Token, type TokenSymbol } from "@/lib/tokens";
 
 interface TokenSelectorProps {
@@ -8,99 +9,77 @@ interface TokenSelectorProps {
   onChange: (token: Token) => void;
 }
 
+const TOKEN_ICONS: Record<string, string> = {
+  XLM:  "cryptocurrency-color:xlm",
+  USDC: "cryptocurrency-color:usdc",
+  EURC: "cryptocurrency-color:eur",
+};
+
 export default function TokenSelector({ value, onChange }: TokenSelectorProps) {
   const [open, setOpen] = useState(false);
-  const tokens = getAvailableTokens();
+  const tokens   = getAvailableTokens();
   const selected = tokens.find((t) => t.symbol === value) ?? tokens[0];
 
   return (
-    <div className="relative">
+    <div style={{ position: "relative" }}>
       {/* Trigger */}
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/[0.08]"
+        style={{
+          display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between",
+          gap: "12px", borderRadius: "12px", border: "1px solid #E5E5E5",
+          background: "white", padding: "12px 16px", fontSize: "14px",
+          fontWeight: 600, color: "#0A0A0A", cursor: "pointer",
+          transition: "background 0.15s",
+        }}
       >
-        <div className="flex items-center gap-2">
-          <TokenLogo token={selected} />
-          <span>{selected.symbol}</span>
-          <span className="text-soft-gray/50">— {selected.name}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <Icon icon={TOKEN_ICONS[selected.symbol] || "ph:coin-bold"} style={{ fontSize: "24px" }} />
+          <span style={{ fontWeight: 700 }}>{selected.symbol}</span>
+          <span style={{ color: "#A3A3A3", fontWeight: 500 }}>— {selected.name}</span>
         </div>
-        <svg
-          className={`h-4 w-4 text-soft-gray/50 transition-transform ${open ? "rotate-180" : ""}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        <Icon
+          icon="ph:caret-down-bold"
+          style={{ fontSize: "16px", color: "#A3A3A3", transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
+        />
       </button>
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute top-full z-20 mt-2 w-full overflow-hidden rounded-2xl border border-white/10 bg-midnight-blue shadow-2xl">
+        <div style={{
+          position: "absolute", top: "calc(100% + 8px)", left: 0, right: 0,
+          zIndex: 50, borderRadius: "12px", border: "1px solid #E5E5E5",
+          background: "white", boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+          overflow: "hidden",
+        }}>
           {tokens.map((token) => (
             <button
               key={token.symbol}
               type="button"
-              onClick={() => {
-                onChange(token);
-                setOpen(false);
+              onClick={() => { onChange(token); setOpen(false); }}
+              style={{
+                display: "flex", width: "100%", alignItems: "center", gap: "12px",
+                padding: "12px 16px", fontSize: "14px", fontWeight: 600,
+                background: token.symbol === value ? "#F5F5F5" : "white",
+                color: token.symbol === value ? "#0A0A0A" : "#525252",
+                border: "none", cursor: "pointer", textAlign: "left",
+                borderBottom: "1px solid #F5F5F5",
+                transition: "background 0.15s",
               }}
-              className={`flex w-full items-center gap-3 px-4 py-3 text-sm transition hover:bg-white/[0.06] ${
-                token.symbol === value
-                  ? "bg-white/[0.04] text-fresh-green"
-                  : "text-soft-gray/80"
-              }`}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#F5F5F5"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = token.symbol === value ? "#F5F5F5" : "white"; }}
             >
-              <TokenLogo token={token} />
-              <span className="font-semibold">{token.symbol}</span>
-              <span className="text-soft-gray/50">{token.name}</span>
+              <Icon icon={TOKEN_ICONS[token.symbol] || "ph:coin-bold"} style={{ fontSize: "24px" }} />
+              <span style={{ fontWeight: 700 }}>{token.symbol}</span>
+              <span style={{ color: "#A3A3A3", fontWeight: 500 }}>{token.name}</span>
               {token.symbol === value && (
-                <svg className="ml-auto h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
+                <Icon icon="ph:check-bold" style={{ marginLeft: "auto", fontSize: "14px", color: "#22c55e" }} />
               )}
             </button>
           ))}
-          {/* USDC/EURC coming soon if not available */}
-          {["USDC", "EURC"].map((symbol) => {
-            const available = tokens.some((t) => t.symbol === symbol);
-            if (available) return null;
-            return (
-              <div
-                key={symbol}
-                className="flex items-center gap-3 px-4 py-3 text-sm text-soft-gray/30"
-              >
-                <div className="h-6 w-6 rounded-full bg-white/10" />
-                <span className="font-semibold">{symbol}</span>
-                <span className="ml-auto rounded-full bg-white/5 px-2 py-0.5 text-xs">
-                  Coming soon
-                </span>
-              </div>
-            );
-          })}
         </div>
       )}
-    </div>
-  );
-}
-
-function TokenLogo({ token }: { token: Token }) {
-  return (
-    <div className="relative h-6 w-6 overflow-hidden rounded-full bg-white/10">
-      <img
-        src={token.logoUrl}
-        alt={token.symbol}
-        width={24}
-        height={24}
-        className="h-6 w-6 object-cover"
-        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-      />
     </div>
   );
 }
