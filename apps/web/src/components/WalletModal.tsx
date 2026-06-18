@@ -139,13 +139,12 @@ export default function WalletModal({ onClose, onSelectFreighter, connecting }: 
         <div style={{ height: "1px", background: "#F5F5F5" }} />
         <div style={{ padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
           <span style={{ fontSize: "13px", color: "#A3A3A3" }}>{"Don't have a wallet?"}</span>
-          
+          <a
             href="https://www.freighter.app"
             target="_blank"
             rel="noreferrer noopener"
             style={{ fontSize: "13px", fontWeight: 700, color: "#0A0A0A", textDecoration: "none" }}
-            Get Freighter →
-          </div>
+          </a>
         </div>
     </div>
   );
