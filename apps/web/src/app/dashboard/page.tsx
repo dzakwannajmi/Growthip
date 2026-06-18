@@ -169,6 +169,7 @@ export default function DashboardPage() {
   const [sendBusy, setSendBusy]             = useState(false);
   const [sendStatus, setSendStatus]         = useState("");
   const [sentNote, setSentNote]             = useState<PrivateNote | null>(null);
+  const [copiedNote, setCopiedNote]         = useState(false);
 
   // Withdraw (claim) state
   const [noteInput, setNoteInput]     = useState("");
@@ -660,10 +661,13 @@ export default function DashboardPage() {
                     <button
                       onClick={() => {
                         navigator.clipboard.writeText(JSON.stringify(sentNote));
+                        setCopiedNote(true);
+                        setTimeout(() => setCopiedNote(false), 2000);
                       }}
-                      style={{ width: "100%", padding: "12px", borderRadius: "12px", background: "#0A0A0A", color: "white", fontSize: "14px", fontWeight: 700, border: "none", cursor: "pointer" }}
+                      style={{ width: "100%", padding: "12px", borderRadius: "12px", background: copiedNote ? "#22c55e" : "#0A0A0A", color: "white", fontSize: "14px", fontWeight: 700, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", transition: "background 0.2s" }}
                     >
-                      Copy Note
+                      <Icon icon={copiedNote ? "ph:check-bold" : "ph:copy-simple-bold"} style={{ fontSize: "18px" }} />
+                      {copiedNote ? "Copied!" : "Copy Note"}
                     </button>
                     <button
                       onClick={() => { setSendStep("select"); setContractAmount(0); setDisplayAmount(0); setSentNote(null); setActiveTab("withdraw"); setNoteInput(JSON.stringify(sentNote)); }}
