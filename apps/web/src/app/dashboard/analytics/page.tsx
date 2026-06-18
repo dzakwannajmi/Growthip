@@ -12,7 +12,7 @@ import {
 } from "@/lib/note";
 import { getToken } from "@/lib/tokens";
 
-type Period = "all" | "week" | "month" | "year";
+
 
 interface PoolStats {
   totalDeposits: number;
@@ -53,7 +53,7 @@ const TOKEN_ICONS: Record<string, string> = {
 };
 
 export default function AnalyticsPage() {
-  const [period, setPeriod]   = useState<Period>("all");
+
   const [stats, setStats]     = useState<Record<string, PoolStats>>({});
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState<PrivateNote[]>([]);
@@ -88,12 +88,7 @@ export default function AnalyticsPage() {
   const totalClaims   = allStats.reduce((s, p) => s + p.totalClaims, 0);
   const totalPending  = totalDeposits - totalClaims;
 
-  const PERIODS: { key: Period; label: string }[] = [
-    { key: "all",   label: "All Time" },
-    { key: "week",  label: "This Week" },
-    { key: "month", label: "This Month" },
-    { key: "year",  label: "This Year" },
-  ];
+
 
   // Summary cards
   const summaryCards = [
@@ -144,29 +139,10 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* Period filter */}
-        <div style={{ display: "flex", gap: "8px" }}>
-          {PERIODS.map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setPeriod(key)}
-              style={{
-                padding: "6px 16px", borderRadius: "8px", fontSize: "13px",
-                fontWeight: period === key ? 700 : 500,
-                background: period === key ? "#0A0A0A" : "white",
-                color: period === key ? "white" : "#525252",
-                border: `1px solid ${period === key ? "#0A0A0A" : "#E5E5E5"}`,
-                cursor: "pointer", transition: "all 0.15s",
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+
 
         {/* Summary cards */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "16px" }}
-          className="md:grid-cols-4">
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
           {summaryCards.map((card) => (
             <div key={card.label} style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "20px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
@@ -194,7 +170,7 @@ export default function AnalyticsPage() {
               {availableTokens.map((token) => {
                 const s = stats[token.symbol];
                 const tipHuman = s ? (s.tipAmount / Math.pow(10, 7)).toFixed(token.symbol === "XLM" ? 0 : 1) : "0";
-                const totalReceived = s ? Number(s.totalDeposits) * Number(tipHuman) : 0;
+                const totalReceived = s ? parseFloat((Number(s.totalDeposits) * parseFloat(tipHuman)).toFixed(4)) : 0;
                 return (
                   <div key={token.symbol} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
