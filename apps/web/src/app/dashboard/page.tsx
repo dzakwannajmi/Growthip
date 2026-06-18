@@ -29,6 +29,7 @@ import {
   type MerklePath,
 } from "@/lib/merkle";
 import { config } from "@/lib/config";
+import WalletModal from "@/components/WalletModal";
 import { getAvailableTokens, type Token, type TokenSymbol } from "@/lib/tokens";
 import { saveNote, getPendingNotes, getClaimedNotes, markNoteAsClaimed, formatRelativeTime, type PrivateNote } from "@/lib/note";
 import TokenSelector from "@/components/TokenSelector";
@@ -101,6 +102,7 @@ function InfoTooltip({ text }: { text: string }) {
         </div>
       )}
     </div>
+
   );
 }
 
@@ -158,7 +160,8 @@ export default function DashboardPage() {
     if (typeof window === "undefined") return "";
     return localStorage.getItem("growthip:network") ?? "";
   });
-  const [walletBusy, setWalletBusy] = useState(false);
+  const [walletBusy, setWalletBusy]   = useState(false);
+  const [showWalletModal, setShowWalletModal] = useState(false);
   const [walletStatus, setWalletStatus] = useState("");
 
   const isTestnet = network.toUpperCase() === "TESTNET";
@@ -435,17 +438,7 @@ export default function DashboardPage() {
                       ({isUp ? "+" : "-"}${dollarChange.toFixed(2)})
                     </span>
                   </>
-                ) : (
-                  <>
-                    <span style={{ display: "flex", alignItems: "center", fontSize: "13px", fontWeight: 700, color: total.isUp ? "#22c55e" : "#ef4444" }}>
-                      <Icon icon={total.isUp ? "ph:trend-up-bold" : "ph:trend-down-bold"} style={{ marginRight: "4px" }} />
-                      {total.percent}
-                    </span>
-                    <span style={{ fontSize: "13px", fontWeight: 500, color: total.isUp ? "rgba(34,197,94,0.8)" : "rgba(239,68,68,0.8)" }}>
-                      {total.value}
-                    </span>
-                  </>
-                );
+                ) : null;
               })()}
             </div>
           </div>
@@ -518,15 +511,15 @@ export default function DashboardPage() {
               <span style={{ fontSize: "14px", fontWeight: 700, color: "#171717" }}>Wallet Connection</span>
             </div>
             <p style={{ fontSize: "13px", color: "#525252", marginBottom: "20px" }}>
-              Connect Freighter to send or withdraw tips.
+              Connect your wallet to send or withdraw tips.
             </p>
             <button
-              onClick={connectWallet}
+              onClick={() => setShowWalletModal(true)}
               disabled={walletBusy}
               style={{ width: "100%", padding: "12px", borderRadius: "12px", background: "#0A0A0A", color: "white", fontSize: "14px", fontWeight: 700, border: "none", cursor: walletBusy ? "not-allowed" : "pointer", opacity: walletBusy ? 0.6 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
             >
               <Icon icon="ph:wallet" style={{ fontSize: "18px" }} />
-              {walletBusy ? "Connecting..." : "Connect Freighter"}
+              {walletBusy ? "Connecting..." : "Connect Wallet"}
             </button>
             {walletStatus && <p style={{ fontSize: "12px", color: "#737373", marginTop: "12px" }}>{walletStatus}</p>}
           </Card>
@@ -830,6 +823,16 @@ export default function DashboardPage() {
 
 
 
+      {showWalletModal && (
+        <WalletModal
+          onClose={() => setShowWalletModal(false)}
+          onSelectFreighter={async () => {
+            setShowWalletModal(false);
+            await connectWallet();
+          }}
+          connecting={walletBusy}
+        />
+      )}
       </div>
     </div>
   );
