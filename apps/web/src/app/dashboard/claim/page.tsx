@@ -248,9 +248,10 @@ function ClaimContent() {
           <span className="font-mono text-xs" style={{ color: "#737373" }}>
             {address.slice(0, 8)}...{address.slice(-6)}
           </span>
-          <span className={
-            "rounded-full px-3 py-1 text-xs font-bold" style={{ background: isTestnet ? "#F0FDF4" : "#FEF2F2", color: isTestnet ? "#22c55e" : "#EF4444" }}
-          }>
+          <span
+            className="rounded-full px-3 py-1 text-xs font-bold"
+            style={{ background: isTestnet ? "#F0FDF4" : "#FEF2F2", color: isTestnet ? "#22c55e" : "#EF4444" }}
+          >
             {network || "unknown"}
           </span>
         </div>
