@@ -7,15 +7,11 @@ import { Icon } from "@iconify/react";
 
 const NAV_ITEMS = [
   { href: "/dashboard",           icon: "ph:house-line-bold",       label: "Dashboard" },
-  { href: "/dashboard/notes",     icon: "ph:note-bold",             label: "My Notes" },
   { href: "/dashboard/activity",  icon: "ph:activity-bold",         label: "Activities" },
   { href: "/dashboard/analytics", icon: "ph:chart-bar-bold",        label: "Analytics", premium: true },
 ];
 
-const ACTION_ITEMS = [
-  { href: "/dashboard/deposit",   icon: "ph:paper-plane-tilt-bold", label: "Send Tip" },
-  { href: "/dashboard/claim",     icon: "ph:lock-key-bold",         label: "Claim Tip" },
-];
+const ACTION_ITEMS: { href: string; icon: string; label: string }[] = [];
 
 function SpeechBubble({ label, show, premium }: { label: string; show: boolean; premium?: boolean }) {
   if (!show) return null;
@@ -131,16 +127,7 @@ export default function DashboardSidebar() {
             <NavLink key={item.href} item={item} collapsed={collapsed} hovered={hovered} setHovered={setHovered} />
           ))}
 
-          {/* Divider */}
-          <div
-            style={collapsed ? { width: 48, margin: "8px auto" } : { margin: "8px 16px" }}
-            className="h-px bg-[#E5E5E5]"
-          />
 
-          {/* Action items */}
-          {ACTION_ITEMS.map((item) => (
-            <NavLink key={item.href} item={item} collapsed={collapsed} hovered={hovered} setHovered={setHovered} />
-          ))}
 
           {/* Back to Home */}
           <div
