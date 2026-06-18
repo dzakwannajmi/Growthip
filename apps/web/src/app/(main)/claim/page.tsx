@@ -191,8 +191,19 @@ function ClaimContent() {
       });
       const sent = await claimTx.signAndSend({ force: true });
       const hash = sent.sendTransactionResponse?.hash ?? "submitted";
-      setTxHash(hash);
 
+      // claim_to returns bool — false means verification failed
+      const claimResult = sent.result;
+      if (claimResult === false) {
+        throw new Error(
+          "Claim rejected by contract. Possible causes: " +
+          "commitment not found in current pool, nullifier already used, " +
+          "or proof does not match current Merkle root. " +
+          "Try depositing again with a fresh note."
+        );
+      }
+
+      setTxHash(hash);
       markNoteAsClaimed(note.nullifierHash);
       setStage("done");
     } catch (err) {
