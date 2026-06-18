@@ -15,25 +15,30 @@ function WalletAvatar() {
   const [address, setAddress] = useState("");
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const addr = localStorage.getItem("growthip:wallet") ?? "";
-      setAddress(addr);
-      // Listen for storage changes
-      const handler = () => setAddress(localStorage.getItem("growthip:wallet") ?? "");
-      window.addEventListener("storage", handler);
-      // Also poll every second for same-tab changes
-      const interval = setInterval(handler, 1000);
-      return () => { window.removeEventListener("storage", handler); clearInterval(interval); };
-    }
+    if (typeof window === "undefined") return;
+    const load = () => setAddress(localStorage.getItem("growthip:wallet") ?? "");
+    load();
+    const interval = setInterval(load, 1000);
+    return () => clearInterval(interval);
   }, []);
 
-  const initials = address ? address.slice(0, 2).toUpperCase() : "?";
-  const shortAddr = address ? `${address.slice(0, 4)}...${address.slice(-4)}` : "Not connected";
+  const shortAddr = address
+    ? `${address.slice(0, 4)}...${address.slice(-4)}`
+    : "Not connected";
+
+  // Dicebear pixel-art avatar — unique per address, similar to Freighter
+  const avatarUrl = address
+    ? `https://api.dicebear.com/9.x/pixel-art/svg?seed=${address}&size=32`
+    : null;
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "6px 14px 6px 6px", borderRadius: "999px", background: "#F5F5F5", border: "1px solid #E5E5E5" }}>
-      <div style={{ width: 32, height: 32, borderRadius: "50%", background: address ? "#0A0A0A" : "#E5E5E5", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: "12px", color: address ? "white" : "#A3A3A3", fontFamily: "monospace" }}>
-        {initials}
+      <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", background: "#E5E5E5", flexShrink: 0 }}>
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="avatar" width={32} height={32} style={{ width: 32, height: 32 }} />
+        ) : (
+          <div style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", color: "#A3A3A3" }}>?</div>
+        )}
       </div>
       <span style={{ fontSize: "13px", fontWeight: 600, color: "#171717" }} className="hidden sm:block">
         {shortAddr}
