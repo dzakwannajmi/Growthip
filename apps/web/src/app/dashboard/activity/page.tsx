@@ -124,7 +124,7 @@ export default function ActivityPage() {
 
                 {/* Action */}
                 {note.claimed ? (
-                  
+                  <a
                     href={"https://stellar.expert/explorer/testnet/search?term=" + note.nullifierHash}
                     target="_blank"
                     rel="noreferrer"
