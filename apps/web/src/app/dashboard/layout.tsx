@@ -1,15 +1,17 @@
 import type { ReactNode } from "react";
 import DashboardSidebar from "@/components/DashboardSidebar";
+import DashboardTopbar from "@/components/DashboardTopbar";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-light-50 dark:bg-dark-base">
       <DashboardSidebar />
-      <main className="flex-1 overflow-y-auto px-0 py-0">
-        <div className="min-h-full">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <DashboardTopbar />
+        <main className="flex-1 overflow-hidden">
           {children}
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

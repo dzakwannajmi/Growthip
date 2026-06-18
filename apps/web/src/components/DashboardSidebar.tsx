@@ -10,39 +10,32 @@ import {
   Lock,
   BarChart3,
   Home,
-  ChevronLeft,
-  ChevronRight,
-  Menu,
+  Activity,
+  Settings,
+  Crown,
 } from "lucide-react";
 
 const NAV_ITEMS = [
-  {
-    group: "Overview",
-    items: [
-      { href: "/dashboard/analytics", icon: BarChart3,      label: "Analytics" },
-      { href: "/dashboard/notes",     icon: FileText,        label: "My Notes" },
-    ],
-  },
-  {
-    group: "Actions",
-    items: [
-      { href: "/dashboard/deposit",   icon: Send,            label: "Send Tip" },
-      { href: "/dashboard/claim",     icon: Lock,            label: "Claim Tip" },
-    ],
-  },
+  { href: "/dashboard",          icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/dashboard/notes",    icon: FileText,        label: "My Notes" },
+  { href: "/dashboard/activity", icon: Activity,        label: "Activity" },
+  { href: "/dashboard/analytics",icon: BarChart3,       label: "Analytics", premium: true },
 ];
 
-interface TooltipProps {
-  label: string;
-  visible: boolean;
-}
+const BOTTOM_ITEMS = [
+  { href: "/dashboard/deposit",  icon: Send,  label: "Send Tip" },
+  { href: "/dashboard/claim",    icon: Lock,  label: "Claim Tip" },
+  { href: "/dashboard/settings", icon: Settings, label: "Settings" },
+];
 
-function Tooltip({ label, visible }: TooltipProps) {
-  if (!visible) return null;
+interface TooltipProps { label: string; show: boolean }
+
+function SpeechBubble({ label, show }: TooltipProps) {
+  if (!show) return null;
   return (
-    <div className="absolute top-1/2 -translate-y-1/2 left-[calc(100%+12px)] flex items-center pointer-events-none z-[100]">
-      <div className="w-0 h-0 border-y-[6px] border-y-transparent border-r-[8px] border-r-white/20" />
-      <div className="bg-white/10 backdrop-blur-xl text-white text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-lg border border-white/10">
+    <div className="absolute top-1/2 -translate-y-1/2 left-[calc(100%+8px)] flex items-center pointer-events-none z-[100]">
+      <div className="w-0 h-0 border-y-[6px] border-y-transparent border-r-[8px] border-r-light-200 dark:border-r-dark-300" />
+      <div className="bg-light-200 dark:bg-dark-300 text-dark-base dark:text-light-50 text-[13px] font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-md">
         {label}
       </div>
     </div>
@@ -50,19 +43,19 @@ function Tooltip({ label, visible }: TooltipProps) {
 }
 
 export default function DashboardSidebar() {
-  const pathname  = usePathname();
-  const [open, setOpen] = useState(true);
-  const [hovered, setHovered] = useState<string | null>(null);
+  const pathname                = usePathname();
+  const [open, setOpen]         = useState(true);
+  const [hovered, setHovered]   = useState<string | null>(null);
 
   return (
     <aside
-      style={{ width: open ? "224px" : "72px" }}
-      className="sticky top-0 h-screen flex-shrink-0 flex flex-col border-r border-white/10 bg-rich-black backdrop-blur-xl transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-visible"
+      style={{ width: open ? "256px" : "88px" }}
+      className="relative h-full flex-shrink-0 flex flex-col bg-light-base dark:bg-dark-base border-r border-light-200 dark:border-dark-100 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
     >
-      {/* Header / Logo */}
+      {/* Header / Brand */}
       <div
-        className="flex items-center border-b border-white/10 px-4 py-5 shrink-0"
-        style={{ gap: open ? "12px" : "0", justifyContent: open ? "flex-start" : "center" }}
+        className="px-6 py-6 flex items-center gap-3 shrink-0 relative z-20"
+        style={{ justifyContent: open ? "flex-start" : "center", paddingLeft: open ? undefined : "0", paddingRight: open ? undefined : "0" }}
       >
         <div
           className="relative group flex-shrink-0"
@@ -71,138 +64,126 @@ export default function DashboardSidebar() {
         >
           <button
             onClick={() => setOpen(!open)}
-            className="w-9 h-9 rounded-full bg-neon-violet flex items-center justify-center text-white font-black text-sm shadow-[0_0_20px_rgba(107,69,243,0.5)] hover:scale-110 transition-transform"
+            className="relative w-10 h-10 rounded-full hover:bg-light-200 dark:hover:bg-dark-100 flex items-center justify-center flex-shrink-0 transition-colors cursor-pointer text-light-950 dark:text-dark-900"
           >
-            {open ? <ChevronLeft size={16} /> : <span className="font-black">G</span>}
+            <span className="font-extrabold text-xl font-sans">G</span>
           </button>
-          {!open && (
-            <Tooltip label="Open sidebar" visible={hovered === "logo"} />
-          )}
+          <SpeechBubble label={open ? "Close sidebar" : "Open sidebar"} show={hovered === "logo"} />
         </div>
-
         {open && (
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-black text-white truncate">Growthip</p>
-            <p className="text-xs text-soft-gray/45 truncate">Private tipping</p>
-          </div>
-        )}
-
-        {open && (
-          <button
-            onClick={() => setOpen(false)}
-            className="flex-shrink-0 p-1.5 rounded-lg text-soft-gray/40 hover:bg-white/[0.06] hover:text-white transition-colors"
-          >
-            <Menu size={14} />
-          </button>
+          <span className="font-extrabold text-light-950 dark:text-dark-950 text-xl tracking-tight cursor-default">
+            Growthip
+          </span>
         )}
       </div>
 
       {/* Nav */}
-      <nav
-        className="flex-1 px-2 py-4 space-y-4"
+      <div
+        className="flex-1 flex flex-col justify-between pb-4"
         style={{ overflowY: open ? "auto" : "visible" }}
       >
-        {NAV_ITEMS.map((group) => (
-          <div key={group.group}>
-            {open && (
-              <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-widest text-soft-gray/30">
-                {group.group}
-              </p>
-            )}
-            {!open && <div className="h-px bg-white/5 mx-2 mb-2" />}
-            <div className="space-y-0.5">
-              {group.items.map((item) => {
-                const active = pathname === item.href;
-                const Icon   = item.icon;
-                return (
-                  <div
-                    key={item.href}
-                    className="relative group"
-                    onMouseEnter={() => !open && setHovered(item.href)}
-                    onMouseLeave={() => setHovered(null)}
-                  >
-                    <Link
-                      href={item.href}
-                      className={
-                        "flex items-center rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-150 " +
-                        (open ? "gap-3" : "justify-center w-10 h-10 mx-auto") + " " +
-                        (active
-                          ? "bg-neon-violet/15 text-neon-violet"
-                          : "text-soft-gray/55 hover:bg-white/[0.05] hover:text-white")
-                      }
-                    >
-                      <Icon size={18} className="flex-shrink-0" />
-                      {open && <span className="whitespace-nowrap">{item.label}</span>}
-                    </Link>
-                    {!open && (
-                      <Tooltip label={item.label} visible={hovered === item.href} />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+        <nav className="flex flex-col gap-1 px-3">
+          {NAV_ITEMS.map((item) => {
+            const active = pathname === item.href || (item.href === "/dashboard" && pathname === "/dashboard");
+            const Icon   = item.icon;
+            return (
+              <div
+                key={item.href}
+                className="relative group"
+                onMouseEnter={() => !open && setHovered(item.href)}
+                onMouseLeave={() => setHovered(null)}
+              >
+                <Link
+                  href={item.href}
+                  className={
+                    "nav-item w-full relative flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors " +
+                    (!open ? "justify-center px-0 py-0 w-12 h-12 mx-auto" : "pl-4") + " " +
+                    (active
+                      ? "bg-light-200 dark:bg-dark-100 text-light-950 dark:text-dark-950 font-bold"
+                      : "text-light-600 dark:text-dark-400 hover:bg-light-100 dark:hover:bg-dark-50 font-medium")
+                  }
+                >
+                  <Icon size={18} className="flex-shrink-0" />
+                  {open && (
+                    <div className="flex items-center justify-between w-full">
+                      <span className="whitespace-nowrap">{item.label}</span>
+                      {item.premium && <Crown size={13} className="text-light-950 dark:text-dark-950" />}
+                    </div>
+                  )}
+                </Link>
+                {!open && <SpeechBubble label={item.label} show={hovered === item.href} />}
+              </div>
+            );
+          })}
+
+          {/* Divider */}
+          <div className={
+            "h-px bg-light-200 dark:bg-dark-100 my-2 " +
+            (open ? "mx-4" : "w-12 mx-auto")
+          } />
+
+          {BOTTOM_ITEMS.map((item) => {
+            const active = pathname === item.href;
+            const Icon   = item.icon;
+            return (
+              <div
+                key={item.href}
+                className="relative group"
+                onMouseEnter={() => !open && setHovered(item.href)}
+                onMouseLeave={() => setHovered(null)}
+              >
+                <Link
+                  href={item.href}
+                  className={
+                    "nav-item w-full relative flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors " +
+                    (!open ? "justify-center px-0 py-0 w-12 h-12 mx-auto" : "pl-4") + " " +
+                    (active
+                      ? "bg-light-200 dark:bg-dark-100 text-light-950 dark:text-dark-950 font-bold"
+                      : "text-light-600 dark:text-dark-400 hover:bg-light-100 dark:hover:bg-dark-50 font-medium")
+                  }
+                >
+                  <Icon size={18} className="flex-shrink-0" />
+                  {open && <span className="whitespace-nowrap">{item.label}</span>}
+                </Link>
+                {!open && <SpeechBubble label={item.label} show={hovered === item.href} />}
+              </div>
+            );
+          })}
+
+          {/* Back to Home */}
+          <div
+            className="relative group"
+            onMouseEnter={() => !open && setHovered("home")}
+            onMouseLeave={() => setHovered(null)}
+          >
+            <Link
+              href="/"
+              className={
+                "nav-item w-full relative flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-light-600 dark:text-dark-400 hover:bg-light-100 dark:hover:bg-dark-50 transition-colors " +
+                (!open ? "justify-center px-0 py-0 w-12 h-12 mx-auto" : "pl-4")
+              }
+            >
+              <Home size={18} className="flex-shrink-0" />
+              {open && <span className="whitespace-nowrap">Back to Home</span>}
+            </Link>
+            {!open && <SpeechBubble label="Back to Home" show={hovered === "home"} />}
           </div>
-        ))}
-      </nav>
+        </nav>
 
-      {/* Footer */}
-      <div className="border-t border-white/10 px-2 py-3 space-y-0.5 shrink-0">
-        {/* Testnet indicator */}
-        <div
-          className={
-            "flex items-center gap-2 rounded-xl px-3 py-2 " +
-            (!open ? "justify-center" : "")
-          }
-        >
-          <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-fresh-green animate-pulse" />
-          {open && (
-            <span className="text-xs text-soft-gray/45 whitespace-nowrap">
-              Stellar Testnet
-            </span>
-          )}
-        </div>
-
-        {/* GitHub */}
-        <div
-          className="relative group"
-          onMouseEnter={() => !open && setHovered("github")}
-          onMouseLeave={() => setHovered(null)}
-        >
-          <a
-            href="https://github.com/dzakwannajmi/Growthip"
-            target="_blank"
-            rel="noreferrer"
-            className={
-              "flex items-center rounded-xl px-3 py-2.5 text-sm font-semibold text-soft-gray/55 transition-all hover:bg-white/[0.05] hover:text-white " +
-              (open ? "gap-3" : "justify-center w-10 h-10 mx-auto")
-            }
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="flex-shrink-0">
-              <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z" />
-            </svg>
-            {open && <span className="whitespace-nowrap">GitHub</span>}
-          </a>
-          {!open && <Tooltip label="GitHub" visible={hovered === "github"} />}
-        </div>
-
-        {/* Back to Home */}
-        <div
-          className="relative group"
-          onMouseEnter={() => !open && setHovered("home")}
-          onMouseLeave={() => setHovered(null)}
-        >
-          <Link
-            href="/"
-            className={
-              "flex items-center rounded-xl px-3 py-2.5 text-sm font-semibold text-soft-gray/55 transition-all hover:bg-white/[0.05] hover:text-white " +
-              (open ? "gap-3" : "justify-center w-10 h-10 mx-auto")
-            }
-          >
-            <Home size={16} className="flex-shrink-0" />
-            {open && <span className="whitespace-nowrap">Back to Home</span>}
-          </Link>
-          {!open && <Tooltip label="Back to Home" visible={hovered === "home"} />}
-        </div>
+        {/* Profile footer */}
+        {open && (
+          <div className="px-3 mt-4">
+            <button className="w-full relative group flex items-center gap-3 p-3 rounded-xl hover:bg-light-100 dark:hover:bg-dark-50 transition-colors">
+              <div className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center font-bold text-white text-sm flex-shrink-0 overflow-hidden">
+                C
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-sm font-bold text-light-950 dark:text-dark-950 leading-tight">@creator</span>
+                <span className="text-[10px] text-light-500 dark:text-dark-500 leading-tight mt-0.5">Free Plan</span>
+              </div>
+            </button>
+          </div>
+        )}
       </div>
     </aside>
   );

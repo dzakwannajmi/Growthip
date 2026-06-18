@@ -1,6 +1,33 @@
 @import "tailwindcss";
 
 @theme {
+  /* Light palette (from HTML prototype) */
+  --color-light-base: #FFFFFF;
+  --color-light-50: #FAFAFA;
+  --color-light-100: #F5F5F5;
+  --color-light-200: #E5E5E5;
+  --color-light-300: #D4D4D4;
+  --color-light-400: #A3A3A3;
+  --color-light-500: #737373;
+  --color-light-600: #525252;
+  --color-light-700: #404040;
+  --color-light-800: #262626;
+  --color-light-900: #171717;
+  --color-light-950: #0A0A0A;
+
+  /* Dark palette (from HTML prototype) */
+  --color-dark-base: #000000;
+  --color-dark-50: #0A0A0A;
+  --color-dark-100: #171717;
+  --color-dark-200: #262626;
+  --color-dark-300: #373737;
+  --color-dark-400: #525252;
+  --color-dark-500: #8A8A8A;
+  --color-dark-600: #A3A3A3;
+  --color-dark-700: #D4D4D4;
+  --color-dark-800: #E5E5E5;
+  --color-dark-900: #F5F5F5;
+  --color-dark-950: #FAFAFA;
   --color-soft-gray: #efefef;
   --color-charcoal-gray: #5b5a59;
   --color-dark-indigo: #0a061b;
@@ -30,6 +57,18 @@ body {
     linear-gradient(135deg, #030028 0%, #0a061b 46%, #020e0d 100%);
   color: #efefef;
 }
+
+/* Custom Scrollbar */
+.custom-scroll::-webkit-scrollbar { width: 6px; }
+.custom-scroll::-webkit-scrollbar-track { background: transparent; }
+.custom-scroll::-webkit-scrollbar-thumb {
+  background-color: #D4D4D4;
+  border-radius: 10px;
+}
+.dark .custom-scroll::-webkit-scrollbar-thumb { background-color: #373737; }
+
+/* Plus Jakarta Sans font */
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
 
 ::selection {
   background: #6b45f3;
