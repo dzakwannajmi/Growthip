@@ -104,3 +104,19 @@ body {
   margin: 0 auto;
   border-radius: 12px;
 }
+
+/* Scrollbar for dashboard */
+.custom-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #D4D4D4 transparent;
+}
+.custom-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+  background-color: #D4D4D4;
+  border-radius: 10px;
+}
