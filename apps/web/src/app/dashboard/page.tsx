@@ -49,26 +49,26 @@ export default function DashboardMainPage() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto custom-scroll p-4 md:p-8 lg:p-10 w-full bg-light-50 dark:bg-dark-base">
+    <div className="p-4 md:p-8 lg:p-10 w-full" style={{ background: "#FAFAFA" }}>
       <div className="max-w-[700px] mx-auto pb-20 flex flex-col gap-6">
 
         {/* Header */}
         <div className="mb-2">
-          <h1 className="text-2xl font-extrabold text-light-950 dark:text-dark-950">Dashboard</h1>
+          <h1 className="text-2xl font-extrabold text-[#0A0A0A]">Dashboard</h1>
           <p className="text-sm text-light-600 dark:text-dark-500">Welcome back, @creator!</p>
         </div>
 
         {/* Stealth Balances */}
-        <div className="w-full bg-light-base dark:bg-dark-50 rounded-2xl border border-light-200 dark:border-dark-100 p-6">
+        <div className="w-full bg-white rounded-2xl border border-[#E5E5E5] p-6">
           <div className="flex items-center gap-2 mb-1">
-            <h2 className="font-bold text-sm text-light-900 dark:text-dark-900">Your Stealth Balances</h2>
+            <h2 className="font-bold text-sm text-[#171717]">Your Stealth Balances</h2>
             <Icon icon="ph:info" className="text-light-400 dark:text-dark-500 text-xs cursor-help" />
           </div>
 
           <div className="mb-6 flex flex-col gap-1.5">
             <div className="flex items-end gap-2">
-              <span className="text-5xl font-extrabold text-light-950 dark:text-dark-950 tracking-tight">$0.00</span>
-              <span className="text-sm font-semibold text-light-500 dark:text-dark-600 mb-1.5">USD</span>
+              <span className="text-5xl font-extrabold text-[#0A0A0A] tracking-tight">$0.00</span>
+              <span className="text-sm font-semibold text-[#737373] mb-1.5">USD</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className={`flex items-center text-[13px] font-bold transition-colors duration-500 ${total.isUp ? "text-green-500" : "text-red-500"}`}>
@@ -81,28 +81,28 @@ export default function DashboardMainPage() {
             </div>
           </div>
 
-          <h3 className="text-xs font-semibold text-light-500 dark:text-dark-600 uppercase tracking-widest mb-4">Tokens</h3>
+          <h3 className="text-xs font-semibold text-[#737373] uppercase tracking-widest mb-4">Tokens</h3>
 
           <div className="space-y-5">
             {/* XLM */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-light-100 dark:bg-dark-100 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-[#F5F5F5] flex items-center justify-center">
                   <Icon icon="cryptocurrency-color:xlm" className="text-xl" />
                 </div>
                 <div>
-                  <div className="font-bold text-sm text-light-950 dark:text-dark-900">XLM</div>
-                  <div className="text-[11px] text-light-500 dark:text-dark-600">Stellar Network</div>
+                  <div className="font-bold text-sm text-[#0A0A0A]">XLM</div>
+                  <div className="text-[11px] text-[#737373]">Stellar Network</div>
                 </div>
               </div>
               <div className="text-right flex flex-col items-end">
-                <div className="font-bold text-sm text-light-950 dark:text-dark-900">0</div>
+                <div className="font-bold text-sm text-[#0A0A0A]">0</div>
                 <div className="flex items-center gap-2">
                   <span className={`flex items-center text-[10px] font-bold transition-colors ${xlm.isUp ? "text-green-500" : "text-red-500"}`}>
                     <Icon icon={xlm.isUp ? "ph:trend-up-bold" : "ph:trend-down-bold"} className="mr-0.5" />
                     {xlm.percent}
                   </span>
-                  <div className="text-[11px] text-light-500 dark:text-dark-600">$0.00</div>
+                  <div className="text-[11px] text-[#737373]">$0.00</div>
                 </div>
               </div>
             </div>
@@ -110,22 +110,22 @@ export default function DashboardMainPage() {
             {/* USDC */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-light-100 dark:bg-dark-100 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-[#F5F5F5] flex items-center justify-center">
                   <Icon icon="cryptocurrency-color:usdc" className="text-xl" />
                 </div>
                 <div>
-                  <div className="font-bold text-sm text-light-950 dark:text-dark-900">USDC</div>
-                  <div className="text-[11px] text-light-500 dark:text-dark-600">USD Coin</div>
+                  <div className="font-bold text-sm text-[#0A0A0A]">USDC</div>
+                  <div className="text-[11px] text-[#737373]">USD Coin</div>
                 </div>
               </div>
               <div className="text-right flex flex-col items-end">
-                <div className="font-bold text-sm text-light-950 dark:text-dark-900">0</div>
+                <div className="font-bold text-sm text-[#0A0A0A]">0</div>
                 <div className="flex items-center gap-2">
                   <span className={`flex items-center text-[10px] font-bold transition-colors ${usdc.isUp ? "text-green-500" : "text-red-500"}`}>
                     <Icon icon={usdc.isUp ? "ph:trend-up-bold" : "ph:trend-down-bold"} className="mr-0.5" />
                     {usdc.percent}
                   </span>
-                  <div className="text-[11px] text-light-500 dark:text-dark-600">$0.00</div>
+                  <div className="text-[11px] text-[#737373]">$0.00</div>
                 </div>
               </div>
             </div>
@@ -133,73 +133,73 @@ export default function DashboardMainPage() {
             {/* EURC */}
             <div className="flex items-center justify-between opacity-60">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-light-100 dark:bg-dark-100 flex items-center justify-center text-light-600 dark:text-dark-400">
+                <div className="w-8 h-8 rounded-full bg-[#F5F5F5] flex items-center justify-center text-[#525252]">
                   <Icon icon="fa6-solid:euro-sign" className="text-sm" />
                 </div>
                 <div>
                   <div className="font-bold text-sm text-light-950 dark:text-dark-900 flex items-center gap-2">
                     EURC
-                    <span className="px-1.5 py-0.5 rounded bg-light-200 dark:bg-dark-200 text-light-600 dark:text-dark-400 text-[9px] font-bold uppercase tracking-wider">Coming Soon</span>
+                    <span className="px-1.5 py-0.5 rounded bg-[#E5E5E5] text-[#525252] text-[9px] font-bold uppercase tracking-wider">Coming Soon</span>
                   </div>
-                  <div className="text-[11px] text-light-500 dark:text-dark-600">Euro Coin</div>
+                  <div className="text-[11px] text-[#737373]">Euro Coin</div>
                 </div>
               </div>
               <div className="text-right">
-                <div className="font-bold text-sm text-light-950 dark:text-dark-900">-</div>
-                <div className="text-[11px] text-light-500 dark:text-dark-600">€0.00</div>
+                <div className="font-bold text-sm text-[#0A0A0A]">-</div>
+                <div className="text-[11px] text-[#737373]">€0.00</div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Wallet Connection */}
-        <div className="w-full bg-light-base dark:bg-dark-50 rounded-2xl border border-light-200 dark:border-dark-100 p-6">
-          <h2 className="font-bold text-sm text-light-900 dark:text-dark-900 flex items-center gap-2 mb-1">
+        <div className="w-full bg-white rounded-2xl border border-[#E5E5E5] p-6">
+          <h2 className="font-bold text-sm text-[#171717] flex items-center gap-2 mb-1">
             <Icon icon="ph:wallet-bold" className="text-lg" /> Wallet Connection
           </h2>
-          <p className="text-[13px] text-light-600 dark:text-dark-500 mb-5">
+          <p className="text-[13px] text-[#525252] mb-5">
             Connect a wallet to withdraw your tips and upgrade to Premium.
           </p>
-          <button className="w-full bg-light-950 dark:bg-dark-950 text-light-base dark:text-dark-base font-bold text-sm py-3 rounded-xl hover:opacity-90 flex items-center justify-center gap-2 transition-opacity">
+          <button className="w-full bg-[#0A0A0A] text-white font-bold text-sm py-3 rounded-xl hover:opacity-90 flex items-center justify-center gap-2 transition-opacity">
             <Icon icon="ph:wallet" className="text-lg" /> Connect Wallet
           </button>
         </div>
 
         {/* Personal Link */}
-        <div className="w-full bg-light-base dark:bg-dark-50 rounded-2xl border border-light-200 dark:border-dark-100 p-6">
+        <div className="w-full bg-white rounded-2xl border border-[#E5E5E5] p-6">
           <div className="flex justify-between items-start mb-6">
             <div>
-              <h2 className="font-bold text-sm text-light-900 dark:text-dark-900 mb-0.5">Your Personal Link</h2>
-              <p className="text-[13px] text-light-600 dark:text-dark-500">Share to get paid</p>
+              <h2 className="font-bold text-sm text-[#171717] mb-0.5">Your Personal Link</h2>
+              <p className="text-[13px] text-[#525252]">Share to get paid</p>
             </div>
-            <button className="px-3 py-1.5 border border-light-200 dark:border-dark-200 rounded-lg text-xs font-semibold text-light-700 dark:text-dark-400 hover:bg-light-100 dark:hover:bg-dark-100 transition-colors flex items-center gap-1">
+            <button className="px-3 py-1.5 border border-[#E5E5E5] rounded-lg text-xs font-semibold text-[#404040] hover:bg-[#F5F5F5] transition-colors flex items-center gap-1">
               <Icon icon="ph:pencil-simple-bold" /> Edit Profile
             </button>
           </div>
 
-          <div className="bg-light-50 dark:bg-dark-100 rounded-xl p-4 border border-light-200 dark:border-dark-200 flex items-center gap-4 mb-4">
+          <div className="bg-[#FAFAFA] rounded-xl p-4 border border-[#E5E5E5] flex items-center gap-4 mb-4">
             <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center font-bold text-white text-lg">CR</div>
             <div>
-              <div className="font-bold text-sm text-light-950 dark:text-dark-950">@creator</div>
-              <div className="text-[13px] text-light-500 dark:text-dark-500">growthip.vercel.app/tip/creator</div>
+              <div className="font-bold text-sm text-[#0A0A0A]">@creator</div>
+              <div className="text-[13px] text-[#737373]">growthip.vercel.app/tip/creator</div>
             </div>
           </div>
 
           <div className="flex gap-2">
             <button
               onClick={copyLink}
-              className="flex-1 bg-light-50 dark:bg-dark-100 hover:bg-light-100 dark:hover:bg-dark-200 border border-light-200 dark:border-dark-200 text-light-900 dark:text-dark-900 font-semibold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2 text-[13px]"
+              className="flex-1 bg-[#FAFAFA] hover:bg-[#F5F5F5] border border-[#E5E5E5] text-[#171717] font-semibold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2 text-[13px]"
             >
               <Icon icon="ph:copy-simple-bold" className="text-lg" />
               {copied ? "Copied!" : "Copy Link"}
             </button>
-            <button className="w-12 h-11 flex items-center justify-center bg-light-50 dark:bg-dark-100 hover:bg-light-100 dark:hover:bg-dark-200 border border-light-200 dark:border-dark-200 rounded-xl transition-colors text-light-700 dark:text-dark-400">
+            <button className="w-12 h-11 flex items-center justify-center bg-[#FAFAFA] hover:bg-[#F5F5F5] border border-[#E5E5E5] rounded-xl transition-colors text-[#404040]">
               <Icon icon="ph:share-network-bold" className="text-lg" />
             </button>
-            <button className="w-12 h-11 flex items-center justify-center bg-light-50 dark:bg-dark-100 hover:bg-light-100 dark:hover:bg-dark-200 border border-light-200 dark:border-dark-200 rounded-xl transition-colors text-light-700 dark:text-dark-400">
+            <button className="w-12 h-11 flex items-center justify-center bg-[#FAFAFA] hover:bg-[#F5F5F5] border border-[#E5E5E5] rounded-xl transition-colors text-[#404040]">
               <Icon icon="ph:qr-code-bold" className="text-lg" />
             </button>
-            <button className="w-12 h-11 flex items-center justify-center bg-light-50 dark:bg-dark-100 hover:bg-light-100 dark:hover:bg-dark-200 border border-light-200 dark:border-dark-200 rounded-xl transition-colors text-light-700 dark:text-dark-400">
+            <button className="w-12 h-11 flex items-center justify-center bg-[#FAFAFA] hover:bg-[#F5F5F5] border border-[#E5E5E5] rounded-xl transition-colors text-[#404040]">
               <Icon icon="ph:arrow-square-out-bold" className="text-lg" />
             </button>
           </div>

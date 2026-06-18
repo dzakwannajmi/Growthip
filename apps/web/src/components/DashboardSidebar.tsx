@@ -12,16 +12,15 @@ const NAV_ITEMS = [
   { href: "/dashboard/analytics", icon: "ph:chart-bar-bold",        label: "Analytics", premium: true },
 ];
 
-const BOTTOM_ITEMS = [
+const ACTION_ITEMS = [
   { href: "/dashboard/deposit",   icon: "ph:paper-plane-tilt-bold", label: "Send Tip" },
   { href: "/dashboard/claim",     icon: "ph:lock-key-bold",         label: "Claim Tip" },
-  { href: "/dashboard/settings",  icon: "ph:gear-six-bold",         label: "Settings" },
 ];
 
 function SpeechBubble({ label, show, premium }: { label: string; show: boolean; premium?: boolean }) {
   if (!show) return null;
   return (
-    <div className="absolute top-1/2 -translate-y-1/2 left-[calc(100%+8px)] flex items-center pointer-events-none z-[100]">
+    <div className="absolute top-1/2 -translate-y-1/2 left-[calc(100%+16px)] flex items-center pointer-events-none z-[100]">
       <div className="w-0 h-0 border-y-[6px] border-y-transparent border-r-[8px] border-r-[#E5E5E5]" />
       <div className="bg-[#E5E5E5] text-[#0A0A0A] text-[13px] font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-md flex items-center gap-1.5">
         {label}
@@ -31,12 +30,53 @@ function SpeechBubble({ label, show, premium }: { label: string; show: boolean; 
   );
 }
 
-export default function DashboardSidebar() {
-  const pathname              = usePathname();
-  const [open, setOpen]       = useState(true);
-  const [hovered, setHovered] = useState<string | null>(null);
+function NavLink({ item, collapsed, hovered, setHovered }: {
+  item: { href: string; icon: string; label: string; premium?: boolean };
+  collapsed: boolean;
+  hovered: string | null;
+  setHovered: (v: string | null) => void;
+}) {
+  const pathname = usePathname();
+  const active   = pathname === item.href;
 
-  const collapsed = !open;
+  return (
+    <div
+      className="relative group"
+      onMouseEnter={() => setHovered(item.href)}
+      onMouseLeave={() => setHovered(null)}
+    >
+      <Link
+        href={item.href}
+        style={collapsed
+          ? { width: 48, height: 48, justifyContent: "center", padding: 0, margin: "0 auto", display: "flex", alignItems: "center", borderRadius: 12 }
+          : {}
+        }
+        className={[
+          "flex items-center gap-3 rounded-xl transition-colors text-sm",
+          collapsed ? "" : "px-4 py-3 w-full",
+          active
+            ? "bg-[#E5E5E5] text-[#0A0A0A] font-bold"
+            : "text-[#525252] hover:bg-[#F5F5F5] font-medium",
+        ].join(" ")}
+      >
+        <Icon icon={item.icon} className="text-xl flex-shrink-0" />
+        {!collapsed && (
+          <div className="flex items-center justify-between w-full">
+            <span className="whitespace-nowrap">{item.label}</span>
+            {item.premium && <Icon icon="ph:crown-simple-fill" className="text-[#0A0A0A] text-sm" />}
+          </div>
+        )}
+      </Link>
+      {collapsed && <SpeechBubble label={item.label} show={hovered === item.href} premium={item.premium} />}
+    </div>
+  );
+}
+
+export default function DashboardSidebar() {
+  const [open, setOpen]         = useState(true);
+  const [hovered, setHovered]   = useState<string | null>(null);
+  const [logoHover, setLogoHover] = useState(false);
+  const collapsed               = !open;
 
   return (
     <aside
@@ -47,67 +87,49 @@ export default function DashboardSidebar() {
       }}
       className="relative h-full flex-shrink-0 flex flex-col bg-white border-r border-[#E5E5E5]"
     >
-      {/* Brand header */}
+      {/* Brand */}
       <div
         className="px-6 py-6 flex items-center gap-3 shrink-0 relative z-20"
         style={{ justifyContent: collapsed ? "center" : "flex-start", padding: collapsed ? "24px 0" : undefined }}
       >
         <div
-          className="relative group"
-          onMouseEnter={() => setHovered("logo")}
-          onMouseLeave={() => setHovered(null)}
+          className="relative"
+          onMouseEnter={() => setLogoHover(true)}
+          onMouseLeave={() => setLogoHover(false)}
         >
           <button
             onClick={() => setOpen(!open)}
             className="w-10 h-10 rounded-full hover:bg-[#F5F5F5] flex items-center justify-center transition-colors cursor-pointer text-[#0A0A0A]"
           >
-            <span className="font-extrabold text-xl">G</span>
+            {logoHover
+              ? <Icon icon="ph:sidebar-simple" className="text-2xl" />
+              : <span className="font-extrabold text-xl">G</span>
+            }
           </button>
-          {collapsed && <SpeechBubble label="Open sidebar" show={hovered === "logo"} />}
+          {collapsed && (
+            <div className="absolute top-1/2 -translate-y-1/2 left-[calc(100%+16px)] flex items-center pointer-events-none z-[100]" style={{ display: logoHover ? "flex" : "none" }}>
+              <div className="w-0 h-0 border-y-[6px] border-y-transparent border-r-[8px] border-r-[#E5E5E5]" />
+              <div className="bg-[#E5E5E5] text-[#0A0A0A] text-[13px] font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-md">
+                Buka sidebar
+              </div>
+            </div>
+          )}
         </div>
         {!collapsed && (
           <span className="font-extrabold text-[#0A0A0A] text-xl tracking-tight">Growthip</span>
         )}
       </div>
 
-      {/* Nav body */}
+      {/* Nav */}
       <div
-        className="flex-1 flex flex-col justify-between pb-4"
+        className="flex-1 flex flex-col pb-4"
         style={{ overflowY: collapsed ? "visible" : "auto" }}
       >
-        <nav className="flex flex-col gap-1 px-3">
-          {NAV_ITEMS.map((item) => {
-            const active = pathname === item.href;
-            return (
-              <div
-                key={item.href}
-                className="relative group"
-                onMouseEnter={() => setHovered(item.href)}
-                onMouseLeave={() => setHovered(null)}
-              >
-                <Link
-                  href={item.href}
-                  style={collapsed ? { width: 48, height: 48, justifyContent: "center", padding: 0, margin: "0 auto", display: "flex", alignItems: "center", borderRadius: 12 } : {}}
-                  className={[
-                    "flex items-center gap-3 rounded-xl transition-colors text-sm",
-                    collapsed ? "" : "px-4 py-3 w-full",
-                    active
-                      ? "bg-[#E5E5E5] text-[#0A0A0A] font-bold"
-                      : "text-[#525252] hover:bg-[#F5F5F5] font-medium",
-                  ].join(" ")}
-                >
-                  <Icon icon={item.icon} className="text-xl flex-shrink-0" />
-                  {!collapsed && (
-                    <div className="flex items-center justify-between w-full">
-                      <span className="whitespace-nowrap">{item.label}</span>
-                      {item.premium && <Icon icon="ph:crown-simple-fill" className="text-[#0A0A0A] text-sm" />}
-                    </div>
-                  )}
-                </Link>
-                {collapsed && <SpeechBubble label={item.label} show={hovered === item.href} premium={item.premium} />}
-              </div>
-            );
-          })}
+        <nav className="flex flex-col gap-1 px-3 flex-1">
+          {/* Main nav */}
+          {NAV_ITEMS.map((item) => (
+            <NavLink key={item.href} item={item} collapsed={collapsed} hovered={hovered} setHovered={setHovered} />
+          ))}
 
           {/* Divider */}
           <div
@@ -115,33 +137,10 @@ export default function DashboardSidebar() {
             className="h-px bg-[#E5E5E5]"
           />
 
-          {BOTTOM_ITEMS.map((item) => {
-            const active = pathname === item.href;
-            return (
-              <div
-                key={item.href}
-                className="relative group"
-                onMouseEnter={() => setHovered(item.href)}
-                onMouseLeave={() => setHovered(null)}
-              >
-                <Link
-                  href={item.href}
-                  style={collapsed ? { width: 48, height: 48, justifyContent: "center", padding: 0, margin: "0 auto", display: "flex", alignItems: "center", borderRadius: 12 } : {}}
-                  className={[
-                    "flex items-center gap-3 rounded-xl transition-colors text-sm",
-                    collapsed ? "" : "px-4 py-3 w-full",
-                    active
-                      ? "bg-[#E5E5E5] text-[#0A0A0A] font-bold"
-                      : "text-[#525252] hover:bg-[#F5F5F5] font-medium",
-                  ].join(" ")}
-                >
-                  <Icon icon={item.icon} className="text-xl flex-shrink-0" />
-                  {!collapsed && <span className="whitespace-nowrap">{item.label}</span>}
-                </Link>
-                {collapsed && <SpeechBubble label={item.label} show={hovered === item.href} />}
-              </div>
-            );
-          })}
+          {/* Action items */}
+          {ACTION_ITEMS.map((item) => (
+            <NavLink key={item.href} item={item} collapsed={collapsed} hovered={hovered} setHovered={setHovered} />
+          ))}
 
           {/* Back to Home */}
           <div
@@ -151,7 +150,10 @@ export default function DashboardSidebar() {
           >
             <Link
               href="/"
-              style={collapsed ? { width: 48, height: 48, justifyContent: "center", padding: 0, margin: "0 auto", display: "flex", alignItems: "center", borderRadius: 12 } : {}}
+              style={collapsed
+                ? { width: 48, height: 48, justifyContent: "center", padding: 0, margin: "0 auto", display: "flex", alignItems: "center", borderRadius: 12 }
+                : {}
+              }
               className={[
                 "flex items-center gap-3 rounded-xl transition-colors text-sm font-medium text-[#525252] hover:bg-[#F5F5F5]",
                 collapsed ? "" : "px-4 py-3 w-full",
@@ -166,7 +168,7 @@ export default function DashboardSidebar() {
 
         {/* Premium card */}
         {!collapsed && (
-          <div className="px-3 mt-4">
+          <div className="px-3 mt-2">
             <div className="rounded-2xl bg-[#0A0A0A] text-white p-4">
               <div className="flex items-center gap-2 font-bold text-sm mb-1">
                 <Icon icon="ph:star-four-bold" />
@@ -188,15 +190,42 @@ export default function DashboardSidebar() {
           </div>
         )}
 
-        {/* Profile */}
-        <div className="px-3 mt-4">
+        {/* Settings + Profile - bottom of sidebar */}
+        <div className="px-3 mt-3 space-y-1">
+          {/* Settings */}
+          <div
+            className="relative group"
+            onMouseEnter={() => setHovered("settings")}
+            onMouseLeave={() => setHovered(null)}
+          >
+            <Link
+              href="/dashboard/settings"
+              style={collapsed
+                ? { width: 48, height: 48, justifyContent: "center", padding: 0, margin: "0 auto", display: "flex", alignItems: "center", borderRadius: 12 }
+                : {}
+              }
+              className={[
+                "flex items-center gap-3 rounded-xl transition-colors text-sm font-medium text-[#525252] hover:bg-[#F5F5F5]",
+                collapsed ? "" : "px-4 py-3 w-full",
+              ].join(" ")}
+            >
+              <Icon icon="ph:gear-six-bold" className="text-xl flex-shrink-0" />
+              {!collapsed && <span className="whitespace-nowrap">Settings</span>}
+            </Link>
+            {collapsed && <SpeechBubble label="Settings" show={hovered === "settings"} />}
+          </div>
+
+          {/* Profile */}
           <div
             className="relative group"
             onMouseEnter={() => setHovered("profile")}
             onMouseLeave={() => setHovered(null)}
           >
             <button
-              style={collapsed ? { width: 48, height: 48, justifyContent: "center", padding: 0, margin: "0 auto", display: "flex", alignItems: "center", borderRadius: 12 } : {}}
+              style={collapsed
+                ? { width: 48, height: 48, justifyContent: "center", padding: 0, margin: "0 auto", display: "flex", alignItems: "center", borderRadius: 12 }
+                : {}
+              }
               className={[
                 "flex items-center gap-3 rounded-xl hover:bg-[#F5F5F5] transition-colors",
                 collapsed ? "" : "w-full p-3",
