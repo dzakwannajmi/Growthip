@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { usePrices, useWalletBalances } from "@/lib/useMarket";
 import { Buffer } from "buffer";
 import { Icon } from "@iconify/react";
 import {
@@ -142,6 +143,8 @@ export default function DashboardPage() {
   const [claimed, setClaimed] = useState<PrivateNote[]>([]);
 
   const { xlm, usdc, total } = useLivePrices();
+  const { prices }                = usePrices();
+  const { balances, refetch: refetchBalances } = useWalletBalances(address);
 
   // Pool client
   const [PoolClient, setPoolClient] = useState<null | {
@@ -200,6 +203,7 @@ export default function DashboardPage() {
       setNetwork(net.network ?? "");
       void warmPoseidon();
       setWalletStatus("Connected!");
+      refetchBalances();
     } catch (err) {
       setWalletStatus(err instanceof Error ? err.message : "Failed.");
     } finally {
@@ -359,7 +363,9 @@ export default function DashboardPage() {
           </div>
           <div style={{ marginBottom: "24px" }}>
             <div style={{ display: "flex", alignItems: "flex-end", gap: "8px" }}>
-              <span style={{ fontSize: "48px", fontWeight: 800, color: "#0A0A0A", lineHeight: 1 }}>$0.00</span>
+              <span style={{ fontSize: "48px", fontWeight: 800, color: "#0A0A0A", lineHeight: 1 }}>
+                ${(balances.xlm * prices.xlm.usd + balances.usdc * prices.usdc.usd).toFixed(2)}
+              </span>
               <span style={{ fontSize: "14px", fontWeight: 600, color: "#737373", marginBottom: "6px" }}>USD</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "6px" }}>
