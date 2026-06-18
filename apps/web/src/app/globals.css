@@ -74,3 +74,27 @@ body {
   background: #6b45f3;
   color: #ffffff;
 }
+
+/* Nav Item Styling (matching HTML prototype) */
+.nav-item { transition: all 0.2s ease; }
+.nav-item.active {
+  background-color: #E5E5E5;
+  color: #0A0A0A;
+  font-weight: 700;
+}
+.dark .nav-item.active {
+  background-color: #171717;
+  color: #FAFAFA;
+}
+.nav-item:not(.active) { padding-left: 16px; }
+
+/* Sidebar collapsed nav items */
+.sidebar-collapsed .nav-item {
+  justify-content: center;
+  padding-left: 0 !important;
+  padding-right: 0;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto;
+  border-radius: 12px;
+}
