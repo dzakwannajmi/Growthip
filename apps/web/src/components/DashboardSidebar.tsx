@@ -31,20 +31,22 @@ export default function DashboardSidebar() {
       className="sticky top-0 h-screen flex-shrink-0 flex flex-col border-r border-white/10 bg-rich-black/90 backdrop-blur-xl transition-all duration-200 overflow-hidden"
     >
       {/* Logo + toggle */}
-      <div className="flex items-center border-b border-white/10 px-3 py-4 gap-2">
-        <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full bg-neon-violet text-sm font-black shadow-[0_0_24px_rgba(107,69,243,0.5)]">
-          G
-        </div>
-        {open && (
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-black text-white truncate">Growthip</p>
-            <p className="text-xs text-soft-gray/45 truncate">Private tipping</p>
+      <div className="flex items-center justify-between border-b border-white/10 px-3 py-4">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full bg-neon-violet text-sm font-black shadow-[0_0_24px_rgba(107,69,243,0.5)]">
+            G
           </div>
-        )}
+          {open && (
+            <div className="min-w-0">
+              <p className="text-sm font-black text-white truncate">Growthip</p>
+              <p className="text-xs text-soft-gray/45 truncate">Private tipping</p>
+            </div>
+          )}
+        </div>
         <button
           onClick={() => setOpen(!open)}
-          className="flex-shrink-0 rounded-xl p-1.5 text-soft-gray/40 transition hover:bg-white/[0.06] hover:text-white"
-          title={open ? "Collapse" : "Expand"}
+          className="flex-shrink-0 rounded-xl p-1.5 text-soft-gray/40 transition hover:bg-white/[0.06] hover:text-white ml-1"
+          title={open ? "Collapse sidebar" : "Expand sidebar"}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             {open
