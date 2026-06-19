@@ -214,11 +214,11 @@ export default function Home() {
               { name: "Stellar", img: "/icons/Stellar-Dark.png", rounded: false },
               { name: "Freighter", img: "/icons/freighter.png", rounded: true },
               { name: "xBull Wallet", img: "/icons/xbull.png", rounded: true },
-              { name: "Soroban", img: "/icons/Soroban.jpg", rounded: false },
+              { name: "Soroban", img: "/icons/Soroban.jpg", rounded: false, scale: true },
             ].map((w) => (
               <div key={w.name} className="flex flex-col items-center gap-4 cursor-default">
                 <div className={`flex items-center justify-center overflow-hidden flex-shrink-0 ${w.rounded ? "w-20 h-20 rounded-full" : "w-[204px] h-16"}`}>
-                  <img src={w.img} alt={w.name} className={w.rounded ? "w-full h-full object-cover" : "w-full h-full object-contain"} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                  <img src={w.img} alt={w.name} className={w.rounded ? "w-full h-full object-cover" : "w-full h-full object-contain"} style={(w as any).scale ? { transform: "scale(1.8)" } : undefined} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                 </div>
                 <span className="text-[15px] font-medium text-[#737373]">{w.name}</span>
               </div>
