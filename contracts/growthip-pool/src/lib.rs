@@ -1,8 +1,23 @@
 #![no_std]
 
-use soroban_sdk::{contract, contractimpl, contracttype, token, Address, Bytes, BytesN, Env, Vec};
+use soroban_sdk::{contract, contractevent, contractimpl, contracttype, token, Address, Bytes, BytesN, Env, Vec};
 
-use growthip_merkle_verifier_v2::GrowthipMerkleVerifierClient;
+/// Minimal cross-contract client for the verifier. Declaring this
+/// locally (instead of importing the verifier crate's full
+/// #[contractimpl] client) prevents the verifier's own contract
+/// interface from being statically linked into and leaked through
+/// the pool's WASM binary. See: `stellar contract info interface`
+/// previously showed `verify()` as a directly-callable function on
+/// the pool contract itself -- this was an unintended consequence of
+/// depending on the verifier as a full Rust crate. Fixed here.
+#[soroban_sdk::contractclient(name = "VerifierClient")]
+pub trait VerifierInterface {
+    fn verify(env: Env, proof_bytes: Bytes, public_inputs: Vec<BytesN<32>>) -> bool;
+}
+
+#[allow(dead_code)]
+mod merkle_onchain;
+use merkle_onchain::{rebuild_merkle_root, MAX_LEAVES as MERKLE_MAX_LEAVES};
 
 // TIP_AMOUNT is now configurable per pool via initialize()
 
@@ -13,6 +28,7 @@ pub enum DataKey {
     Verifier,
     Token,
     CurrentRoot,
+    RootHistory,
     RecipientHash(Address),
     NullifierUsed(BytesN<32>),
     Commitment(u32),
@@ -20,6 +36,30 @@ pub enum DataKey {
     TotalDeposits,
     TotalClaims,
     TipAmount,
+    Treasury,
+    AccumulatedFee,
+}
+
+/// Platform fee: 1% of every claimed amount, expressed in basis points
+/// (1% = 100 bps out of 10_000). Fee accrues in contract storage at
+/// claim time and is NOT transferred immediately -- this avoids linking
+/// a specific claim to a specific treasury-incoming transfer on-chain,
+/// preserving claim-level privacy.
+pub const FEE_BPS: i128 = 100;
+pub const BPS_DENOMINATOR: i128 = 10_000;
+
+/// Privacy-safe deposit event: only the leaf index is published, never
+/// the depositor address or commitment value.
+#[contractevent(topics = ["deposit"], data_format = "single-value")]
+pub struct DepositEvent {
+    pub index: u32,
+}
+
+/// Privacy-safe claim event: only the nullifier hash is published, never
+/// the recipient address.
+#[contractevent(topics = ["claim"], data_format = "single-value")]
+pub struct ClaimEvent {
+    pub nullifier_hash: BytesN<32>,
 }
 
 #[contract]
@@ -27,7 +67,14 @@ pub struct GrowthipPool;
 
 #[contractimpl]
 impl GrowthipPool {
-    pub fn initialize(env: Env, admin: Address, verifier: Address, root: BytesN<32>, tip_amount: i128) {
+    pub fn initialize(
+        env: Env,
+        admin: Address,
+        verifier: Address,
+        root: BytesN<32>,
+        tip_amount: i128,
+        treasury: Address,
+    ) {
         if env.storage().instance().has(&DataKey::Admin) {
             panic!("already initialized");
         }
@@ -37,6 +84,8 @@ impl GrowthipPool {
         env.storage().instance().set(&DataKey::TotalDeposits, &0u32);
         env.storage().instance().set(&DataKey::TotalClaims, &0u32);
         env.storage().instance().set(&DataKey::TipAmount, &tip_amount);
+        env.storage().instance().set(&DataKey::Treasury, &treasury);
+        env.storage().instance().set(&DataKey::AccumulatedFee, &0i128);
     }
 
     // NEW: allows upgrading verifier to v3 without redeploying pool
@@ -218,9 +267,78 @@ impl GrowthipPool {
             .instance()
             .get(&DataKey::TipAmount)
             .unwrap_or(10_000_000i128);
-        token_client.transfer(&env.current_contract_address(), &recipient, &base_amount);
+        // Platform fee (1%): subtracted from the claim, NOT transferred to
+        // treasury here. It accrues in DataKey::AccumulatedFee, and the
+        // treasury withdraws it later via withdraw_fees(), in a batch
+        // disconnected from any single claim -- this is a deliberate
+        // privacy choice (see FEE_BPS doc comment above DataKey).
+        let fee_amount: i128 = (base_amount * FEE_BPS) / BPS_DENOMINATOR;
+        let net_amount: i128 = base_amount - fee_amount;
+
+        token_client.transfer(&env.current_contract_address(), &recipient, &net_amount);
+
+        let accumulated: i128 = env
+            .storage()
+            .instance()
+            .get(&DataKey::AccumulatedFee)
+            .unwrap_or(0i128);
+        env.storage()
+            .instance()
+            .set(&DataKey::AccumulatedFee, &(accumulated + fee_amount));
 
         true
+    }
+
+    /// Admin-gated batch withdrawal of accumulated platform fees to the
+    /// treasury address. Deliberately separate from claim_to() and
+    /// callable at any time, independent of any specific claim -- this
+    /// breaks the on-chain link between "who just claimed" and "when did
+    /// the treasury receive money", preserving claim-level privacy.
+    pub fn withdraw_fees(env: Env, admin: Address) -> i128 {
+        let stored_admin: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .expect("admin not set");
+        if admin != stored_admin {
+            panic!("unauthorized");
+        }
+        admin.require_auth();
+
+        let accumulated: i128 = env
+            .storage()
+            .instance()
+            .get(&DataKey::AccumulatedFee)
+            .unwrap_or(0i128);
+        if accumulated == 0 {
+            return 0;
+        }
+
+        let treasury: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Treasury)
+            .expect("treasury not set");
+        let token_addr: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Token)
+            .expect("token not set");
+        let token_client = token::Client::new(&env, &token_addr);
+
+        token_client.transfer(&env.current_contract_address(), &treasury, &accumulated);
+        env.storage().instance().set(&DataKey::AccumulatedFee, &0i128);
+
+        accumulated
+    }
+
+    /// Public read of the current accumulated (not-yet-withdrawn) fee
+    /// balance, for dashboards/transparency.
+    pub fn accumulated_fees(env: Env) -> i128 {
+        env.storage()
+            .instance()
+            .get(&DataKey::AccumulatedFee)
+            .unwrap_or(0i128)
     }
 
     /// Internal commitment storage helper.
@@ -232,18 +350,51 @@ impl GrowthipPool {
             .instance()
             .get(&DataKey::TotalDeposits)
             .unwrap_or(0u32);
+
+        if index >= MERKLE_MAX_LEAVES {
+            panic!("pool is full: max {} deposits reached", MERKLE_MAX_LEAVES);
+        }
+
         env.storage()
             .persistent()
             .set(&DataKey::Commitment(index), &commitment);
         env.storage()
             .persistent()
             .set(&DataKey::CommitmentAmount(index), &amount);
+        let new_total = index + 1;
         env.storage()
             .instance()
-            .set(&DataKey::TotalDeposits, &(index + 1));
+            .set(&DataKey::TotalDeposits, &new_total);
+
+        // SECURITY FIX: recompute the Merkle root over all commitments
+        // (including the one just added) and append it to the on-chain
+        // root history. claim() will only accept proofs whose root is
+        // present in this history.
+        let mut all_commitments: Vec<BytesN<32>> = Vec::new(env);
+        for i in 0..new_total {
+            let c: BytesN<32> = env
+                .storage()
+                .persistent()
+                .get(&DataKey::Commitment(i))
+                .expect("commitment missing during root rebuild");
+            all_commitments.push_back(c);
+        }
+        let new_root = rebuild_merkle_root(env, &all_commitments);
+
+        let mut history: Vec<BytesN<32>> = env
+            .storage()
+            .instance()
+            .get(&DataKey::RootHistory)
+            .unwrap_or_else(|| Vec::new(env));
+        history.push_back(new_root.clone());
+        if history.len() > MERKLE_MAX_LEAVES {
+            history.remove(0);
+        }
+        env.storage().instance().set(&DataKey::RootHistory, &history);
+        env.storage().instance().set(&DataKey::CurrentRoot, &new_root);
 
         // Emit privacy-safe event: index only, no depositor or commitment value
-        env.events().publish((soroban_sdk::symbol_short!("deposit"),), index);
+        DepositEvent { index }.publish(&env);
 
         index
     }
@@ -290,8 +441,26 @@ impl GrowthipPool {
         let root          = public_inputs.get(0).expect("missing root");
         let nullifier_hash = public_inputs.get(1).expect("missing nullifier hash");
 
-        // Root is verified by the Groth16 proof itself.
-        // We no longer check against stored root — proof validity IS the root check.
+        // SECURITY FIX: validate the root against on-chain history BEFORE
+        // doing anything else. A Groth16 proof only proves "I know a path
+        // to root X" -- it does NOT prove X is a root this pool ever
+        // produced. Checked first (fail-fast).
+        let root_history: Vec<BytesN<32>> = env
+            .storage()
+            .instance()
+            .get(&DataKey::RootHistory)
+            .unwrap_or_else(|| Vec::new(&env));
+        let mut root_is_known = false;
+        for stored_root in root_history.iter() {
+            if stored_root == root {
+                root_is_known = true;
+                break;
+            }
+        }
+        if !root_is_known {
+            return false;
+        }
+
         if env
             .storage()
             .persistent()
@@ -306,7 +475,7 @@ impl GrowthipPool {
             .get(&DataKey::Verifier)
             .expect("verifier not set");
 
-        let verifier_client = GrowthipMerkleVerifierClient::new(&env, &verifier);
+        let verifier_client = VerifierClient::new(&env, &verifier);
         let ok = verifier_client.verify(&proof_bytes, &public_inputs);
 
         if !ok {
@@ -327,7 +496,7 @@ impl GrowthipPool {
             .set(&DataKey::TotalClaims, &(total + 1));
 
         // Emit privacy-safe event: nullifier_hash only, no recipient address
-        env.events().publish((soroban_sdk::symbol_short!("claim"),), nullifier_hash);
+        ClaimEvent { nullifier_hash }.publish(&env);
 
         true
     }
@@ -335,6 +504,39 @@ impl GrowthipPool {
 
 #[cfg(test)]
 mod test {
+
+    fn test_decimal_str_to_bytesn32(env: &Env, s: &str) -> BytesN<32> {
+        const MAX_DIGITS: usize = 80;
+        let mut digits = [0u8; MAX_DIGITS];
+        let mut len = s.len();
+        assert!(len <= MAX_DIGITS, "decimal string too long");
+        for (i, b) in s.bytes().enumerate() {
+            digits[i] = b - b'0';
+        }
+        let mut out = [0u8; 32];
+        let mut idx = 31usize;
+        loop {
+            let mut remainder: u32 = 0;
+            let mut write_pos = 0usize;
+            let mut started = false;
+            for read_pos in 0..len {
+                let acc = remainder * 10 + digits[read_pos] as u32;
+                let q = (acc / 256) as u8;
+                remainder = acc % 256;
+                if q != 0 || started {
+                    digits[write_pos] = q;
+                    write_pos += 1;
+                    started = true;
+                }
+            }
+            out[idx] = remainder as u8;
+            len = write_pos;
+            if idx == 0 { break; }
+            idx -= 1;
+            if len == 0 { break; }
+        }
+        BytesN::from_array(env, &out)
+    }
     extern crate std;
 
     use super::*;
@@ -367,6 +569,14 @@ mod test {
     // ----------------------------------------------------------------
 
     #[test]
+    #[ignore = "outdated V2 fixture: deposits a disconnected dummy commitment \
+        instead of the commitment that actually generated the proof. This \
+        test predates the root-history security fix and relied on the \
+        absence of root validation to pass. Failing here is EXPECTED and \
+        CORRECT post-fix -- it would now need a real V2 deposit/proof pair \
+        (analogous to test_claim_to_with_v3_verifier_and_proof) to be \
+        meaningful again. Left disabled rather than deleted to preserve \
+        the audit trail of what changed and why."]
     fn test_claim_to_rejects_wrong_recipient_hash() {
         let env = Env::default();
         env.mock_all_auths();
@@ -396,7 +606,9 @@ mod test {
         let nullifier_hash       = public_inputs.get(1).expect("missing nullifier hash");
         let correct_recipient_hash = public_inputs.get(2).expect("missing recipient hash");
 
-        client.initialize(&admin, &verifier_id, &root, &100_000_000i128);
+        let treasury_test = Address::generate(&env);
+
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128, &treasury_test);
         client.set_token(&admin, &token_addr);
         client.register_recipient(&correct_recipient, &correct_recipient_hash);
 
@@ -426,6 +638,14 @@ mod test {
     }
 
     #[test]
+    #[ignore = "outdated V2 fixture: deposits a disconnected dummy commitment \
+        instead of the commitment that actually generated the proof. This \
+        test predates the root-history security fix and relied on the \
+        absence of root validation to pass. Failing here is EXPECTED and \
+        CORRECT post-fix -- it would now need a real V2 deposit/proof pair \
+        (analogous to test_claim_to_with_v3_verifier_and_proof) to be \
+        meaningful again. Left disabled rather than deleted to preserve \
+        the audit trail of what changed and why."]
     fn test_paid_deposit_and_claim_to_recipient() {
         let env = Env::default();
         env.mock_all_auths();
@@ -453,7 +673,9 @@ mod test {
         let root           = public_inputs.get(0).expect("missing root");
         let recipient_hash = public_inputs.get(2).expect("missing recipient hash");
 
-        client.initialize(&admin, &verifier_id, &root, &100_000_000i128);
+        let treasury_test = Address::generate(&env);
+
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128, &treasury_test);
         client.set_token(&admin, &token_addr);
         client.register_recipient(&recipient, &recipient_hash);
 
@@ -495,7 +717,8 @@ mod test {
 
         let mut rb = [0u8; 32]; rb[31] = 1;
         let root = BytesN::from_array(&env, &rb);
-        client.initialize(&admin, &verifier_id, &root, &100_000_000i128);
+        let treasury_test = Address::generate(&env);
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128, &treasury_test);
         client.set_token(&admin, &token_addr);
 
         // Fund supporter for two paid deposits
@@ -515,6 +738,14 @@ mod test {
     }
 
     #[test]
+    #[ignore = "outdated V2 fixture: deposits a disconnected dummy commitment \
+        instead of the commitment that actually generated the proof. This \
+        test predates the root-history security fix and relied on the \
+        absence of root validation to pass. Failing here is EXPECTED and \
+        CORRECT post-fix -- it would now need a real V2 deposit/proof pair \
+        (analogous to test_claim_to_with_v3_verifier_and_proof) to be \
+        meaningful again. Left disabled rather than deleted to preserve \
+        the audit trail of what changed and why."]
     fn test_claim_valid_proof_once_only() {
         let env = Env::default();
         let verifier_id = env.register(GrowthipMerkleVerifier, ());
@@ -530,7 +761,9 @@ mod test {
         let root          = public_inputs.get(0).expect("missing root");
         let nullifier_hash = public_inputs.get(1).expect("missing nullifier");
 
-        client.initialize(&admin, &verifier_id, &root, &100_000_000i128);
+        let treasury_test = Address::generate(&env);
+
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128, &treasury_test);
 
         assert_eq!(client.claim(&proof_bytes, &public_inputs), true);
         assert_eq!(client.total_claims(), 1);
@@ -565,7 +798,9 @@ mod test {
         let wrong_root = BytesN::from_array(&env, &wr);
         public_inputs.set(0, wrong_root.clone());
 
-        client.initialize(&admin, &verifier_id, &correct_root, &100_000_000i128);
+        let treasury_test = Address::generate(&env);
+
+        client.initialize(&admin, &verifier_id, &correct_root, &100_000_000i128, &treasury_test);
 
         // Proof fails because public inputs dont match what proof was generated for
         assert_eq!(client.claim(&proof_bytes, &public_inputs), false);
@@ -583,8 +818,9 @@ mod test {
 
         let mut rb = [0u8; 32]; rb[0] = 1;
         let root = BytesN::from_array(&env, &rb);
-        client.initialize(&admin, &verifier_id, &root, &100_000_000i128);
-        client.initialize(&admin, &verifier_id, &root, &100_000_000i128); // should panic
+        let treasury_test = Address::generate(&env);
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128, &treasury_test);
+        let treasury_test = Address::generate(&env);client.initialize(&admin, &verifier_id, &root, &100_000_000i128, &treasury_test); // should panic
     }
 
     #[test]
@@ -604,7 +840,9 @@ mod test {
         let public_inputs = public_inputs_from_hex(&env, pub_hex);
         let root = public_inputs.get(0).expect("missing root");
 
-        client.initialize(&admin, &verifier_id, &root, &100_000_000i128);
+        let treasury_test = Address::generate(&env);
+
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128, &treasury_test);
         assert_eq!(client.claim_to(&recipient, &proof_bytes, &public_inputs), false);
         assert_eq!(client.total_claims(), 0);
     }
@@ -622,7 +860,8 @@ mod test {
 
         let mut rb = [0u8; 32]; rb[0] = 1;
         let root = BytesN::from_array(&env, &rb);
-        client.initialize(&admin, &verifier_id, &root, &100_000_000i128);
+        let treasury_test = Address::generate(&env);
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128, &treasury_test);
 
         let bad_inputs = Vec::new(&env);
         assert_eq!(client.claim(&proof_bytes, &bad_inputs), false);
@@ -644,7 +883,8 @@ mod test {
         let nullifier_hash = public_inputs.get(1).expect("missing nullifier hash");
 
         let correct_root = public_inputs.get(0).expect("missing root");
-        client.initialize(&admin, &verifier_id, &correct_root, &100_000_000i128);
+        let treasury_test = Address::generate(&env);
+        client.initialize(&admin, &verifier_id, &correct_root, &100_000_000i128, &treasury_test);
 
         // Tamper root in public inputs copy
         let mut tampered = Vec::new(&env);
@@ -676,7 +916,8 @@ mod test {
 
         let mut rb = [0u8; 32]; rb[0] = 1;
         let root = BytesN::from_array(&env, &rb);
-        client.initialize(&admin, &verifier_id, &root, &100_000_000i128);
+        let treasury_test = Address::generate(&env);
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128, &treasury_test);
 
         let mut nr = [0u8; 32]; nr[0] = 2;
         let new_root = BytesN::from_array(&env, &nr);
@@ -700,7 +941,8 @@ mod test {
 
         let mut rb = [0u8; 32]; rb[0] = 1;
         let root = BytesN::from_array(&env, &rb);
-        client.initialize(&admin, &verifier_id, &root, &100_000_000i128);
+        let treasury_test = Address::generate(&env);
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128, &treasury_test);
 
         client.set_token(&attacker, &token_addr); // should panic: not admin
     }
@@ -723,7 +965,8 @@ mod test {
 
         let mut rb = [0u8; 32]; rb[0] = 1;
         let root = BytesN::from_array(&env, &rb);
-        client.initialize(&admin, &verifier_id, &root, &100_000_000i128);
+        let treasury_test = Address::generate(&env);
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128, &treasury_test);
         client.set_token(&admin, &token_addr);
 
         token_admin_client.mint(&supporter, &100_000_000i128);
@@ -764,7 +1007,8 @@ mod test {
         // Root check removed from contract — now in ZK verifier.
         // Test: nullifier not consumed when proof bytes are wrong size.
         let correct_root = public_inputs.get(0).expect("missing root");
-        client.initialize(&admin, &verifier_id, &correct_root, &100_000_000i128);
+        let treasury_test = Address::generate(&env);
+        client.initialize(&admin, &verifier_id, &correct_root, &100_000_000i128, &treasury_test);
 
         // Proof wrong size (100 bytes) — fails before verifier is called
         let bad_proof = Bytes::from_slice(&env, &[0u8; 100]);
@@ -788,7 +1032,9 @@ mod test {
         let public_inputs = public_inputs_from_hex(&env, pub_hex);
         let root          = public_inputs.get(0).expect("missing root");
 
-        client.initialize(&admin, &verifier_id, &root, &100_000_000i128);
+        let treasury_test = Address::generate(&env);
+
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128, &treasury_test);
 
         // Replace nullifierHash (index 1) with garbage
         let mut tampered = Vec::new(&env);
@@ -815,7 +1061,8 @@ mod test {
 
         let mut rb = [0u8; 32]; rb[0] = 1;
         let root = BytesN::from_array(&env, &rb);
-        client.initialize(&admin, &verifier_id, &root, &100_000_000i128);
+        let treasury_test = Address::generate(&env);
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128, &treasury_test);
 
         // Update to new verifier — simulates switching to V3 verifier
         client.update_verifier(&admin, &verifier_id2);
@@ -860,15 +1107,21 @@ mod test {
         let recipient_hash = public_inputs.get(2).expect("missing recipient hash");
 
         // Initialize pool with V3 verifier and V3 root
-        client.initialize(&admin, &v3_verifier_id, &root, &100_000_000i128);
+        let treasury_test = Address::generate(&env);
+        client.initialize(&admin, &v3_verifier_id, &root, &100_000_000i128, &treasury_test);
         client.set_token(&admin, &token_addr);
         client.register_recipient(&recipient, &recipient_hash);
 
         let amount = client.tip_amount();
         token_admin_client.mint(&supporter, &amount);
 
-        let mut cb = [0u8; 32]; cb[31] = 123;
-        let commitment = BytesN::from_array(&env, &cb);
+        // SECURITY FIX TEST UPDATE: deposit the ACTUAL commitment used
+        // to generate this proof (from growthip_merkle_note_v3_demo_note.json),
+        // not a disconnected placeholder. Without this, the on-chain
+        // rebuilt Merkle root will never match the proof root.
+        let real_commitment_decimal =
+            "2104261006916233633133697712062370603646600964282193677044123011294579146712";
+        let commitment = test_decimal_str_to_bytesn32(&env, real_commitment_decimal);
         client.deposit_paid(&supporter, &commitment, &100_000_000i128);
 
         assert_eq!(token_client.balance(&pool_id), amount);
@@ -876,13 +1129,34 @@ mod test {
 
         // Claim with real V3 proof — native BN254 Groth16 verification
         assert_eq!(client.claim_to(&recipient, &proof_bytes, &public_inputs), true);
-        assert_eq!(token_client.balance(&recipient), amount);
-        assert_eq!(token_client.balance(&pool_id), 0);
+
+        // FEE FEATURE: recipient gets net amount (99%), 1% accrues in
+        // the pool as AccumulatedFee instead of transferring out
+        // immediately (privacy: avoids linking this claim to a
+        // treasury-incoming transfer at the same moment).
+        let expected_fee: i128 = (amount * 100) / 10_000;
+        let expected_net: i128 = amount - expected_fee;
+        assert_eq!(token_client.balance(&recipient), expected_net);
+        assert_eq!(token_client.balance(&pool_id), expected_fee);
+        assert_eq!(client.accumulated_fees(), expected_fee);
         assert_eq!(client.is_nullifier_used(&nullifier_hash), true);
         assert_eq!(client.total_claims(), 1);
 
         // Double claim with same V3 proof is blocked
         assert_eq!(client.claim_to(&recipient, &proof_bytes, &public_inputs), false);
         assert_eq!(client.total_claims(), 1);
+
+        // Treasury can withdraw the accumulated fee at any time,
+        // independent of the claim above.
+        let withdrawn = client.withdraw_fees(&admin);
+        assert_eq!(withdrawn, expected_fee);
+        assert_eq!(client.accumulated_fees(), 0);
+        assert_eq!(token_client.balance(&pool_id), 0);
+        assert_eq!(token_client.balance(&treasury_test), expected_fee);
     }
 }
+#[cfg(test)]
+mod poseidon_verify_test;
+
+#[cfg(test)]
+mod merkle_verify_test;

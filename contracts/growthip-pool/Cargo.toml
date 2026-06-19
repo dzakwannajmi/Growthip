@@ -8,10 +8,10 @@ publish = false
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-soroban-sdk = { workspace = true }
-growthip-merkle-verifier-v2 = { path = "../growthip-merkle-verifier-v2" }
+soroban-sdk = { workspace = true, features = ["hazmat-crypto"] }
 
 [dev-dependencies]
-soroban-sdk = { workspace = true, features = ["testutils"] }
+soroban-sdk = { workspace = true, features = ["testutils", "hazmat-crypto"] }
 hex = "0.4"
 growthip-merkle-verifier-v3 = { path = "../growthip-merkle-verifier-v3" }
+growthip-merkle-verifier-v2 = { path = "../growthip-merkle-verifier-v2" }
