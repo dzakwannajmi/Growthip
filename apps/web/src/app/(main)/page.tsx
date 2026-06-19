@@ -209,18 +209,18 @@ export default function Home() {
         <section className="mx-auto max-w-6xl px-6 py-16 text-center">
           <h2 className="text-4xl md:text-5xl font-black text-[#0A0A0A] tracking-tight mb-4">Built on Stellar</h2>
           <p className="text-[16px] text-[#737373] mb-16">Powered by cutting-edge blockchain technology</p>
-          <div className="flex flex-wrap items-center justify-center gap-x-16 gap-y-10">
+          <div className="flex flex-wrap items-start justify-center gap-x-20 gap-y-10">
             {[
               { name: "Stellar", img: "/icons/Stellar-Dark.png", rounded: false },
               { name: "Freighter", img: "/icons/freighter.png", rounded: true },
               { name: "xBull Wallet", img: "/icons/xbull.png", rounded: true },
               { name: "Albedo", img: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAMAAABF0y+mAAAAV1BMVEX////m8fXX6fBNpcQAkLYAibLH4OqEvdMAjbVhrckAg6+s0eAAh7H1+vxEosEnmby82ubP5e2Zx9oSlLnu9vkAfqyOwtZqscu11uQ3nr+gy9zf7vN5uM+RdKwmAAAAuUlEQVR4Aa3ShQKCMBAA0BGnN1k38f+/aSuNScMDtgvypyXLN7AoNz4E2K3iHrFYRUR6yFasQsbFfgUlUqIOy6YBNCFQLSJFeT4au2SOXT/iXi9gQLieI12M4zbR3LuZJWT3EGWYYf1MTmJTy1mfVpYmGLEPIcixcYZNH5TPR2gQh7+JIyxLiKm9FVV1lvGBKWBtbqgsy9LSoIk1AxQoxsWD/rploEZIWH8fAacN00fTNLsJOsPJL8sJr9gG4dsjKbsAAAAASUVORK5CYII=", rounded: true },
             ].map((w) => (
-              <div key={w.name} className="flex items-center gap-3 group cursor-default">
-                <div className={`w-10 h-10 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 overflow-hidden flex-shrink-0 ${w.rounded ? "rounded-full border border-[#E5E5E5]" : ""}`}>
-                  <img src={w.img} alt={w.name} className={w.rounded ? "w-full h-full object-cover" : "w-full h-full object-contain"} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+              <div key={w.name} className="flex flex-col items-center gap-4 cursor-default">
+                <div className={`w-16 h-16 flex items-center justify-center overflow-hidden flex-shrink-0 ${w.rounded ? "rounded-full" : ""}`}>
+                  <img src={w.img} alt={w.name} className={w.rounded ? "w-full h-full object-cover" : "h-12 object-contain"} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                 </div>
-                <span className="text-[17px] font-bold text-[#0A0A0A] group-hover:text-[#6b45f3] transition-colors whitespace-nowrap">{w.name}</span>
+                <span className="text-[15px] font-medium text-[#737373]">{w.name}</span>
               </div>
             ))}
           </div>
