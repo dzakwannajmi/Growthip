@@ -255,33 +255,6 @@ export default function Home() {
               <Link href="/dashboard" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-10 py-4 text-lg font-bold text-[#0A0A0A] transition-all hover:scale-[1.02] shadow-lg">
                 Create Your Growthip Account <Icon icon="ph:arrow-right-bold" className="w-5 h-5" />
               </Link>
-
-              {/* Bento box mini-nav */}
-              <div className="grid gap-4 sm:grid-cols-3 mt-14 max-w-3xl mx-auto">
-                <Link href="/dashboard" className="group rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-left transition-all hover:bg-white/[0.08] hover:border-white/20">
-                  <Icon icon="ph:gauge-bold" className="w-6 h-6 text-[#7ffc58] mb-3" />
-                  <p className="text-sm font-bold text-white mb-1">Dashboard</p>
-                  <p className="text-xs text-white/50">Send tips and check balances</p>
-                </Link>
-                <Link href="/dashboard/activity" className="group rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-left transition-all hover:bg-white/[0.08] hover:border-white/20">
-                  <Icon icon="ph:activity-bold" className="w-6 h-6 text-[#6b45f3] mb-3" />
-                  <p className="text-sm font-bold text-white mb-1">Activity</p>
-                  <p className="text-xs text-white/50">Claim pending tips with ZK proofs</p>
-                </Link>
-                <Link href="/dashboard/analytics" className="group rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-left transition-all hover:bg-white/[0.08] hover:border-white/20">
-                  <Icon icon="ph:chart-bar-bold" className="w-6 h-6 text-[#f59e0b] mb-3" />
-                  <p className="text-sm font-bold text-white mb-1">Analytics</p>
-                  <p className="text-xs text-white/50">Track your earnings over time</p>
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-10 rounded-[24px] border border-[#ffb6a3] bg-[#fff5f2] p-6 max-w-xl mx-auto flex gap-4 text-left shadow-sm">
-            <Icon icon="ph:warning-circle-fill" className="w-7 h-7 text-[#e0452d] shrink-0 mt-0.5" />
-            <div>
-              <p className="text-[15px] font-bold text-[#e0452d] mb-1">Prototype Notice</p>
-              <p className="text-[14px] leading-relaxed text-[#b33522]">Growthip is currently a hackathon prototype running on the Stellar Testnet. The smart contracts are not audited. Do not use real funds.</p>
             </div>
           </div>
         </section>
