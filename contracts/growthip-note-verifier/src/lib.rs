@@ -4,7 +4,7 @@ use core::array;
 
 use soroban_sdk::{
     contract, contractimpl, contracttype,
-    crypto::bn254::{Bn254G1Affine, Bn254G2Affine, Fr},
+    crypto::bn254::{Bn254Fr, Bn254G1Affine, Bn254G2Affine},
     vec, Bytes, BytesN, Env, Vec,
 };
 
@@ -118,7 +118,7 @@ impl GrowthipNoteVerifier {
         let mut vk_x = vk.ic[0].clone();
 
         for (input, ic_point) in public_inputs.iter().zip(vk.ic.iter().skip(1)) {
-            let scalar = Fr::from_bytes(input);
+            let scalar = Bn254Fr::from_bytes(input);
             let prod = bn.g1_mul(ic_point, &scalar);
             vk_x = bn.g1_add(&vk_x, &prod);
         }

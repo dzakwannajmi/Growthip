@@ -10,7 +10,7 @@ members = [
 ]
 
 [workspace.dependencies]
-soroban-sdk = "25.1.0"
+soroban-sdk = { version = "26.0.1", features = ["hazmat-crypto"] }
 
 [profile.release]
 overflow-checks = true
