@@ -218,8 +218,8 @@ export default function Home() {
               { name: "Stellar Development Foundation", img: "/icons/SDF-Dark.png", rounded: false },
             ].map((w) => (
               <div key={w.name} className="flex flex-col items-center gap-4 cursor-default">
-                <div className={`w-16 h-16 flex items-center justify-center overflow-hidden flex-shrink-0 ${w.rounded ? "rounded-full" : ""}`}>
-                  <img src={w.img} alt={w.name} className={w.rounded ? "w-full h-full object-cover" : "h-12 object-contain"} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                <div className={`flex items-center justify-center overflow-hidden flex-shrink-0 ${w.rounded ? "w-16 h-16 rounded-full" : "h-16 w-auto"}`}>
+                  <img src={w.img} alt={w.name} className={w.rounded ? "w-full h-full object-cover" : "h-full w-auto object-contain"} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                 </div>
                 <span className="text-[15px] font-medium text-[#737373]">{w.name}</span>
               </div>
