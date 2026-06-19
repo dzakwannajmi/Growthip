@@ -215,10 +215,11 @@ export default function Home() {
               { name: "Freighter", img: "/icons/freighter.png", rounded: true },
               { name: "xBull Wallet", img: "/icons/xbull.png", rounded: true },
               { name: "Albedo", img: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAMAAABF0y+mAAAAV1BMVEX////m8fXX6fBNpcQAkLYAibLH4OqEvdMAjbVhrckAg6+s0eAAh7H1+vxEosEnmby82ubP5e2Zx9oSlLnu9vkAfqyOwtZqscu11uQ3nr+gy9zf7vN5uM+RdKwmAAAAuUlEQVR4Aa3ShQKCMBAA0BGnN1k38f+/aSuNScMDtgvypyXLN7AoNz4E2K3iHrFYRUR6yFasQsbFfgUlUqIOy6YBNCFQLSJFeT4au2SOXT/iXi9gQLieI12M4zbR3LuZJWT3EGWYYf1MTmJTy1mfVpYmGLEPIcixcYZNH5TPR2gQh7+JIyxLiKm9FVV1lvGBKWBtbqgsy9LSoIk1AxQoxsWD/rploEZIWH8fAacN00fTNLsJOsPJL8sJr9gG4dsjKbsAAAAASUVORK5CYII=", rounded: true },
-              { name: "Stellar Development Foundation", img: "/icons/SDF-Dark.png", rounded: false },
+              // { name: "Stellar Development Foundation", img: "/icons/SDF-Dark.png", rounded: false },
+              { name: "Soroban", img: "/icons/Soroban.jpg", rounded: false },
             ].map((w) => (
               <div key={w.name} className="flex flex-col items-center gap-4 cursor-default">
-                <div className={`flex items-center justify-center overflow-hidden flex-shrink-0 ${w.rounded ? "w-16 h-16 rounded-full" : "h-16 w-auto"}`}>
+                <div className={`flex items-center justify-center overflow-hidden flex-shrink-0 ${w.rounded ? "w-20 h-20 rounded-full" : "h-24 w-auto"}`}>
                   <img src={w.img} alt={w.name} className={w.rounded ? "w-full h-full object-cover" : "h-full w-auto object-contain"} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                 </div>
                 <span className="text-[15px] font-medium text-[#737373]">{w.name}</span>
