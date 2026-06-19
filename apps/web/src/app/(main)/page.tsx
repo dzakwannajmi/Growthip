@@ -133,7 +133,7 @@ export default function Home() {
           <div className="rounded-[40px] border border-[#6b45f3]/10 bg-white p-8 md:p-16 shadow-[0_8px_40px_rgba(0,0,0,0.02)] transition-transform duration-500 hover:scale-[1.01]">
             <div className="max-w-2xl mb-12 text-center md:text-left mx-auto md:mx-0">
               <p className="text-[13px] font-bold uppercase tracking-widest text-[#6b45f3] mb-3">Why Growthip?</p>
-              <h2 className="text-3xl md:text-4xl font-black text-[#0A0A0A] tracking-tight">The ultimate way to support creators privately.</h2>
+              <h2 className="text-3xl md:text-4xl font-black text-[#0A0A0A] tracking-tight leading-snug">The ultimate way to support creators privately.</h2>
             </div>
             <div className="grid gap-8 md:grid-cols-2">
               {[
@@ -159,7 +159,7 @@ export default function Home() {
         <section className="mx-auto max-w-7xl px-6 py-24 border-t border-[#E5E5E5]/50">
           <div className="text-center md:text-left mb-16">
             <p className="text-[13px] font-bold uppercase tracking-widest text-[#6b45f3] mb-3">How it works</p>
-            <h2 className="text-3xl md:text-5xl font-black text-[#0A0A0A] tracking-tight">How Growthip protects<br className="hidden md:block" /> your privacy.</h2>
+            <h2 className="text-3xl md:text-5xl font-black text-[#0A0A0A] tracking-tight leading-tight">How Growthip protects<br className="hidden md:block" /> your privacy.</h2>
           </div>
           <div className="grid gap-6 md:grid-cols-3">
             {[
@@ -184,7 +184,7 @@ export default function Home() {
         <section className="mx-auto max-w-7xl px-6 py-24">
           <div className="text-center mb-16">
             <p className="text-[13px] font-bold uppercase tracking-widest text-[#6b45f3] mb-3">Privacy by Design</p>
-            <h2 className="text-3xl md:text-5xl font-black text-[#0A0A0A] tracking-tight">Simple for you,<br />secure underneath.</h2>
+            <h2 className="text-3xl md:text-5xl font-black text-[#0A0A0A] tracking-tight leading-tight">Simple for you,<br />secure underneath.</h2>
           </div>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {[
@@ -207,7 +207,7 @@ export default function Home() {
         </section>
 
         <section className="mx-auto max-w-5xl px-6 py-16 text-center">
-          <h2 className="text-4xl md:text-5xl font-black text-[#0A0A0A] tracking-tight mb-4">Built on Stellar</h2>
+          <h2 className="text-4xl md:text-5xl font-black text-[#0A0A0A] tracking-tight mb-6">Built on Stellar</h2>
           <p className="text-[16px] text-[#737373] mb-16">Powered by cutting-edge blockchain technology</p>
           <div className="grid grid-cols-2 md:grid-cols-4 items-center justify-items-center gap-12">
             {[
@@ -228,7 +228,7 @@ export default function Home() {
 
         <section className="mx-auto max-w-3xl px-6 py-24">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-black text-[#0A0A0A] tracking-tight mb-4">Frequently Asked Questions</h2>
+            <h2 className="text-3xl md:text-4xl font-black text-[#0A0A0A] tracking-tight mb-5">Frequently Asked Questions</h2>
             <p className="text-[16px] text-[#737373]">Everything you need to know about Growthip.</p>
           </div>
           <div className="flex flex-col">
@@ -238,13 +238,46 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-4xl px-6 pb-24 pt-10 text-center">
-          <h2 className="text-4xl md:text-6xl font-black text-[#0A0A0A] tracking-tight mb-6">Try it on Testnet.</h2>
-          <p className="mx-auto max-w-xl text-lg text-[#525252] mb-10 leading-relaxed">Send a private tip and claim it back using a ZK proof — all entirely in your browser, securely on Stellar.</p>
-          <Link href="/dashboard" className="inline-flex items-center justify-center gap-2 rounded-full bg-[#6b45f3] px-10 py-4 text-lg font-bold text-white transition-all hover:bg-[#5835d6] hover:shadow-lg hover:shadow-[#6b45f3]/20 hover:scale-[1.02]">
-            Open Dashboard <Icon icon="ph:arrow-right-bold" className="w-5 h-5" />
-          </Link>
-          <div className="mt-12 rounded-[24px] border border-[#ffb6a3] bg-[#fff5f2] p-6 max-w-xl mx-auto flex gap-4 text-left shadow-sm">
+        <section className="mx-auto max-w-7xl px-6 py-24">
+          <div className="rounded-[40px] bg-[#0A0A0A] p-10 md:p-20 text-center relative overflow-hidden">
+            {/* Decorative gradient orbs inside CTA */}
+            <div className="absolute top-[-20%] left-[10%] w-[24rem] h-[24rem] bg-[#6b45f3] opacity-20 rounded-full blur-[100px] pointer-events-none" />
+            <div className="absolute bottom-[-20%] right-[10%] w-[24rem] h-[24rem] bg-[#7ffc58] opacity-10 rounded-full blur-[100px] pointer-events-none" />
+
+            <div className="relative z-10">
+              <h2 className="text-4xl md:text-6xl font-black text-white tracking-tight mb-6 leading-tight">
+                Ready to Accept Tips<br className="hidden md:block" /> Privately?
+              </h2>
+              <p className="mx-auto max-w-xl text-lg text-white/60 mb-10 leading-relaxed">
+                Join creators who value privacy and security. Get started in less than 60 seconds.
+              </p>
+
+              <Link href="/dashboard" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-10 py-4 text-lg font-bold text-[#0A0A0A] transition-all hover:scale-[1.02] shadow-lg">
+                Create Your Growthip Account <Icon icon="ph:arrow-right-bold" className="w-5 h-5" />
+              </Link>
+
+              {/* Bento box mini-nav */}
+              <div className="grid gap-4 sm:grid-cols-3 mt-14 max-w-3xl mx-auto">
+                <Link href="/dashboard" className="group rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-left transition-all hover:bg-white/[0.08] hover:border-white/20">
+                  <Icon icon="ph:gauge-bold" className="w-6 h-6 text-[#7ffc58] mb-3" />
+                  <p className="text-sm font-bold text-white mb-1">Dashboard</p>
+                  <p className="text-xs text-white/50">Send tips and check balances</p>
+                </Link>
+                <Link href="/dashboard/activity" className="group rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-left transition-all hover:bg-white/[0.08] hover:border-white/20">
+                  <Icon icon="ph:activity-bold" className="w-6 h-6 text-[#6b45f3] mb-3" />
+                  <p className="text-sm font-bold text-white mb-1">Activity</p>
+                  <p className="text-xs text-white/50">Claim pending tips with ZK proofs</p>
+                </Link>
+                <Link href="/dashboard/analytics" className="group rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-left transition-all hover:bg-white/[0.08] hover:border-white/20">
+                  <Icon icon="ph:chart-bar-bold" className="w-6 h-6 text-[#f59e0b] mb-3" />
+                  <p className="text-sm font-bold text-white mb-1">Analytics</p>
+                  <p className="text-xs text-white/50">Track your earnings over time</p>
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-10 rounded-[24px] border border-[#ffb6a3] bg-[#fff5f2] p-6 max-w-xl mx-auto flex gap-4 text-left shadow-sm">
             <Icon icon="ph:warning-circle-fill" className="w-7 h-7 text-[#e0452d] shrink-0 mt-0.5" />
             <div>
               <p className="text-[15px] font-bold text-[#e0452d] mb-1">Prototype Notice</p>
