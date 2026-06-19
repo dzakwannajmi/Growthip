@@ -261,11 +261,16 @@ export default function Home() {
       </main>
 
       <footer className="border-t border-[#E5E5E5] bg-white">
-        <div className="mx-auto max-w-7xl px-6 py-10 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
-          <p className="text-[14px] font-medium text-[#737373]">Built by <span className="text-[#0A0A0A] font-bold">Muhammad Dzakwan Najmi</span> · Growthip on Stellar Testnet</p>
-          <div className="flex items-center gap-8 text-[14px] font-semibold text-[#737373]">
-            <a href="https://github.com/dzakwannajmi/Growthip" target="_blank" rel="noreferrer" className="hover:text-[#0A0A0A] transition-colors">GitHub Repository</a>
-            <a href={"https://stellar.expert/explorer/testnet/contract/" + config.pool.xlm} target="_blank" rel="noreferrer" className="hover:text-[#0A0A0A] transition-colors">Stellar Explorer</a>
+        <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-[15px]">
+            <span className="font-black text-[#6b45f3]">Growthip</span>
+            <span className="text-[#A3A3A3]">·</span>
+            <span className="text-[#737373]">Privacy-First Tipping</span>
+          </div>
+          <div className="flex items-center gap-3 text-[14px] text-[#737373]">
+            <span>Powered by Stellar</span>
+            <span className="text-[#A3A3A3]">·</span>
+            <span>Secured by Soroban</span>
           </div>
         </div>
       </footer>
