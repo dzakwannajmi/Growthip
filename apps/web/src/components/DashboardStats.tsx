@@ -6,10 +6,10 @@ import { SUPPORTED_TOKENS } from "@/lib/tokens";
 
 interface PoolStats {
   totalDeposits: number;
-  totalClaims:   number;
-  claimRate:     number;
-  tipAmount:     string;
-  token:         string;
+  totalClaims: number;
+  claimRate: number;
+  tipAmount: string;
+  token: string;
 }
 
 const RPC_URL = config.network.rpcUrl;
@@ -19,7 +19,7 @@ async function fetchPoolStats(poolId: string, tokenSymbol: string): Promise<Pool
   const client = new Client({
     ...networks.testnet,
     contractId: poolId,
-    rpcUrl:     RPC_URL,
+    rpcUrl: RPC_URL,
   });
 
   const [tipTx, depositsTx, claimsTx] = await Promise.all([
@@ -29,16 +29,16 @@ async function fetchPoolStats(poolId: string, tokenSymbol: string): Promise<Pool
   ]);
 
   const deposits = Number(depositsTx.result ?? 0);
-  const claims   = Number(claimsTx.result ?? 0);
-  const tipAmt   = Number(tipTx.result ?? 0);
-  const human    = (tipAmt / Math.pow(10, 7)).toFixed(tokenSymbol === "XLM" ? 0 : 1);
+  const claims = Number(claimsTx.result ?? 0);
+  const tipAmt = Number(tipTx.result ?? 0);
+  const human = (tipAmt / Math.pow(10, 7)).toFixed(tokenSymbol === "XLM" ? 0 : 1);
 
   return {
     totalDeposits: deposits,
-    totalClaims:   claims,
-    claimRate:     deposits > 0 ? Math.round((claims / deposits) * 100) : 0,
-    tipAmount:     `${human} ${tokenSymbol} base`,
-    token:         tokenSymbol,
+    totalClaims: claims,
+    claimRate: deposits > 0 ? Math.round((claims / deposits) * 100) : 0,
+    tipAmount: `${human} ${tokenSymbol} base`,
+    token: tokenSymbol,
   };
 }
 
@@ -57,9 +57,9 @@ function StatCard({ label, value, sub, valueColor }: {
 }
 
 export default function DashboardStats() {
-  const [stats, setStats]           = useState<Record<string, PoolStats>>({});
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState("");
+  const [stats, setStats] = useState<Record<string, PoolStats>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const availableTokens = SUPPORTED_TOKENS.filter((t) => t.available);
@@ -111,20 +111,20 @@ export default function DashboardStats() {
     );
   }
 
-  const allStats      = Object.values(stats);
+  const allStats = Object.values(stats);
   const totalDeposits = allStats.reduce((s, p) => s + p.totalDeposits, 0);
-  const totalClaims   = allStats.reduce((s, p) => s + p.totalClaims, 0);
-  const claimRate     = totalDeposits > 0 ? Math.round((totalClaims / totalDeposits) * 100) : 0;
+  const totalClaims = allStats.reduce((s, p) => s + p.totalClaims, 0);
+  const claimRate = totalDeposits > 0 ? Math.round((totalClaims / totalDeposits) * 100) : 0;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       {/* Aggregate stats */}
       <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "repeat(2, 1fr)", gridAutoRows: "1fr" }}
         className="md:grid-cols-4">
-        <StatCard label="Total Deposits"  value={String(totalDeposits)} sub="anonymous tips sent"      valueColor="#6366f1" />
-        <StatCard label="Total Claims"    value={String(totalClaims)}   sub="tips claimed"             valueColor="#22c55e" />
-        <StatCard label="Unclaimed Tips"  value={String(totalDeposits - totalClaims)} sub="waiting to be claimed" valueColor="#0A0A0A" />
-        <StatCard label="Claim Rate"      value={`${claimRate}%`}       sub="of tips claimed"          valueColor={claimRate > 50 ? "#22c55e" : "#6366f1"} />
+        <StatCard label="Total Deposits" value={String(totalDeposits)} sub="anonymous tips sent" valueColor="#6366f1" />
+        <StatCard label="Total Claims" value={String(totalClaims)} sub="tips claimed" valueColor="#22c55e" />
+        <StatCard label="Unclaimed Tips" value={String(totalDeposits - totalClaims)} sub="waiting to be claimed" valueColor="#0A0A0A" />
+        <StatCard label="Claim Rate" value={`${claimRate}%`} sub="of tips claimed" valueColor={claimRate > 50 ? "#22c55e" : "#6366f1"} />
       </div>
 
       {/* Per-token breakdown */}
