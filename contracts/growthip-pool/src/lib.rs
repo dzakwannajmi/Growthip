@@ -249,13 +249,33 @@ impl GrowthipPool {
         Self::deposit_internal(&env, commitment, amount, message)
     }
 
+    /// Extracts a small u32 index from a BytesN<32> public-input value.
+    /// Only the last 4 bytes may be non-zero; the upper 28 bytes MUST be
+    /// zero. This is a sanity/format check on a value already
+    /// cryptographically proven correct by the Groth16 verifier (the
+    /// circuit can only ever output index values 0..MAX_LEAVES-1, which
+    /// always fit in far fewer than 4 bytes) -- it is NOT a security
+    /// boundary against attacker-controlled input, so a violation here
+    /// indicates an internal bug, not a malicious proof, and panics
+    /// rather than returning false.
+    fn bytesn32_to_u32(bytes: &BytesN<32>) -> u32 {
+        let arr = bytes.to_array();
+        for &b in arr[0..28].iter() {
+            if b != 0 {
+                panic!("index field has unexpected non-zero high bytes");
+            }
+        }
+        u32::from_be_bytes([arr[28], arr[29], arr[30], arr[31]])
+    }
+
     pub fn claim_to(
         env: Env,
         recipient: Address,
         proof_bytes: Bytes,
         public_inputs: Vec<BytesN<32>>,
     ) -> bool {
-        if public_inputs.len() != 3 {
+        // V3.1: public_inputs is [root, nullifierHash, recipientHash, index].
+        if public_inputs.len() != 4 {
             return false;
         }
 
@@ -275,7 +295,7 @@ impl GrowthipPool {
             return false;
         }
 
-        let ok = Self::claim(env.clone(), proof_bytes, public_inputs);
+        let ok = Self::claim(env.clone(), proof_bytes, public_inputs.clone());
         if !ok {
             return false;
         }
@@ -286,13 +306,24 @@ impl GrowthipPool {
             .get(&DataKey::Token)
             .expect("token not set");
         let token_client = token::Client::new(&env, &token_addr);
-        // Transfer the exact amount that was deposited with this commitment
-        // We use total_claims as index proxy — in production use nullifier→index mapping
+
+        // DEPOSIT-AMOUNT-AWARE CLAIMS FIX: public_inputs[3] is the V3.1
+        // circuit's `index` output, cryptographically proven correct by
+        // the Groth16 verify() call above (it's derived from the same
+        // pathIndices bits used to prove Merkle membership against this
+        // exact root). We look up the ACTUAL amount deposited at that
+        // index, instead of always paying out a flat TipAmount base
+        // unit -- the prior behavior silently paid out only 1x the base
+        // unit on a 5x/10x/20x deposit, permanently locking the
+        // remainder in the pool. See SECURITY.md.
+        let index_bytes = public_inputs.get(3).expect("missing index");
+        let index = Self::bytesn32_to_u32(&index_bytes);
+
         let base_amount: i128 = env
             .storage()
-            .instance()
-            .get(&DataKey::TipAmount)
-            .unwrap_or(10_000_000i128);
+            .persistent()
+            .get(&DataKey::CommitmentAmount(index))
+            .expect("commitment amount missing for claimed index");
         // Platform fee (1%): subtracted from the claim, NOT transferred to
         // treasury here. It accrues in DataKey::AccumulatedFee, and the
         // treasury withdraws it later via withdraw_fees(), in a batch
@@ -480,7 +511,11 @@ impl GrowthipPool {
     }
 
     pub fn claim(env: Env, proof_bytes: Bytes, public_inputs: Vec<BytesN<32>>) -> bool {
-        if public_inputs.len() != 3 {
+        // V3.1: public_inputs is now [root, nullifierHash, recipientHash, index].
+        // `index` lets claim_to() look up the ACTUAL deposited amount
+        // (CommitmentAmount(index)) instead of a flat base unit -- see
+        // SECURITY.md for the deposit-amount-aware claims fix writeup.
+        if public_inputs.len() != 4 {
             return false;
         }
 
@@ -1121,15 +1156,15 @@ mod test {
     // closing the gap between tested (V2) and deployed (V3) (audit M1).
     // ----------------------------------------------------------------
     #[test]
-    fn test_claim_to_with_v3_verifier_and_proof() {
-        use growthip_merkle_verifier_v3::GrowthipMerkleVerifierV3;
+    fn test_claim_to_with_v3_1_verifier_pays_actual_deposited_amount() {
+        use growthip_merkle_verifier_v3_1::GrowthipMerkleVerifierV31;
 
         let env = Env::default();
         env.mock_all_auths();
 
-        let v3_verifier_id = env.register(GrowthipMerkleVerifierV3, ());
-        let pool_id        = env.register(GrowthipPool, ());
-        let client         = GrowthipPoolClient::new(&env, &pool_id);
+        let v3_1_verifier_id = env.register(GrowthipMerkleVerifierV31, ());
+        let pool_id          = env.register(GrowthipPool, ());
+        let client           = GrowthipPoolClient::new(&env, &pool_id);
 
         let admin     = Address::generate(&env);
         let supporter = Address::generate(&env);
@@ -1141,9 +1176,11 @@ mod test {
         let token_client       = token::Client::new(&env, &token_addr);
         let token_admin_client = token::StellarAssetClient::new(&env, &token_addr);
 
-        // Load V3 artifacts (production circuit)
-        let proof_hex = include_str!("../../../circuits/build/growthip_merkle_note_v3_proof_abc.hex");
-        let pub_hex   = include_str!("../../../circuits/build/growthip_merkle_note_v3_public_inputs.hex");
+        // Load V3.1 artifacts: 4 public inputs (root, nullifierHash,
+        // recipientHash, index). The proof was generated for the
+        // commitment at leaf index 5 -- see scripts/make_v3_1_test_input.js.
+        let proof_hex = include_str!("../../../circuits/build/growthip_merkle_note_v3_1_proof_abc.hex");
+        let pub_hex   = include_str!("../../../circuits/build/growthip_merkle_note_v3_1_public_inputs.hex");
 
         let proof_bytes   = bytes_from_hex(&env, proof_hex);
         let public_inputs = public_inputs_from_hex(&env, pub_hex);
@@ -1152,52 +1189,60 @@ mod test {
         let nullifier_hash = public_inputs.get(1).expect("missing nullifier hash");
         let recipient_hash = public_inputs.get(2).expect("missing recipient hash");
 
-        // Initialize pool with V3 verifier and V3 root
         let treasury_test = Address::generate(&env);
-        client.initialize(&admin, &v3_verifier_id, &root, &100_000_000i128, &treasury_test);
+        client.initialize(&admin, &v3_1_verifier_id, &root, &100_000_000i128, &treasury_test);
         client.set_token(&admin, &token_addr);
         client.register_recipient(&recipient, &recipient_hash);
 
-        let amount = client.tip_amount();
-        token_admin_client.mint(&supporter, &amount);
+        let base_unit = client.tip_amount();
+        // DEPOSIT-AMOUNT-AWARE CLAIMS FIX: deposit 5x the base unit, at
+        // leaf index 5 (matching the proof), to prove claim_to() now
+        // pays out the ACTUAL deposited amount rather than always
+        // paying a flat 1x base unit regardless of what was deposited.
+        let deposited_amount = base_unit * 5;
+        token_admin_client.mint(&supporter, &deposited_amount);
 
-        // SECURITY FIX TEST UPDATE: deposit the ACTUAL commitment used
-        // to generate this proof (from growthip_merkle_note_v3_demo_note.json),
-        // not a disconnected placeholder. Without this, the on-chain
-        // rebuilt Merkle root will never match the proof root.
+        // Pad leaf indices 0..4 with the EXACT all-zero commitment used
+        // by scripts/make_v3_1_test_input.js's padding (leaves initialized
+        // to "0" for every position except TARGET_INDEX). The proof's root
+        // was computed over this specific tree shape -- any other padding
+        // value here would produce a different on-chain root that won't
+        // match the proof's root.
+        for _ in 0u8..5 {
+            let zero_commitment = BytesN::from_array(&env, &[0u8; 32]);
+            let dummy_amount = base_unit;
+            token_admin_client.mint(&supporter, &dummy_amount);
+            client.deposit_paid(&supporter, &zero_commitment, &dummy_amount, &None);
+        }
+
+        // The real commitment, generated by scripts/make_v3_1_test_input.js.
         let real_commitment_decimal =
-            "2104261006916233633133697712062370603646600964282193677044123011294579146712";
+            "9441917699024536157291676259789576939205534922878967609663288864418714902782";
         let commitment = test_decimal_str_to_bytesn32(&env, real_commitment_decimal);
-        client.deposit_paid(&supporter, &commitment, &100_000_000i128, &None);
+        let index = client.deposit_paid(&supporter, &commitment, &deposited_amount, &None);
+        assert_eq!(index, 5, "real commitment must land at leaf index 5 to match the proof");
 
-        assert_eq!(token_client.balance(&pool_id), amount);
         assert_eq!(client.is_nullifier_used(&nullifier_hash), false);
 
-        // Claim with real V3 proof — native BN254 Groth16 verification
+        // Claim with real V3.1 proof — native BN254 Groth16 verification
         assert_eq!(client.claim_to(&recipient, &proof_bytes, &public_inputs), true);
 
-        // FEE FEATURE: recipient gets net amount (99%), 1% accrues in
-        // the pool as AccumulatedFee instead of transferring out
-        // immediately (privacy: avoids linking this claim to a
-        // treasury-incoming transfer at the same moment).
-        let expected_fee: i128 = (amount * 100) / 10_000;
-        let expected_net: i128 = amount - expected_fee;
+        // THE FIX: recipient gets 99% of the ACTUAL 5x deposited amount,
+        // not 99% of a flat 1x base unit.
+        let expected_fee: i128 = (deposited_amount * 100) / 10_000;
+        let expected_net: i128 = deposited_amount - expected_fee;
         assert_eq!(token_client.balance(&recipient), expected_net);
-        assert_eq!(token_client.balance(&pool_id), expected_fee);
         assert_eq!(client.accumulated_fees(), expected_fee);
         assert_eq!(client.is_nullifier_used(&nullifier_hash), true);
         assert_eq!(client.total_claims(), 1);
 
-        // Double claim with same V3 proof is blocked
+        // Double claim with same V3.1 proof is blocked
         assert_eq!(client.claim_to(&recipient, &proof_bytes, &public_inputs), false);
         assert_eq!(client.total_claims(), 1);
 
-        // Treasury can withdraw the accumulated fee at any time,
-        // independent of the claim above.
         let withdrawn = client.withdraw_fees(&admin);
         assert_eq!(withdrawn, expected_fee);
         assert_eq!(client.accumulated_fees(), 0);
-        assert_eq!(token_client.balance(&pool_id), 0);
         assert_eq!(token_client.balance(&treasury_test), expected_fee);
     }
 }

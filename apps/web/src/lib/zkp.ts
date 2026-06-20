@@ -34,9 +34,9 @@ import type { PrivateNote } from "@/lib/note"; // adjust import to your project
 import type { MerklePath } from "./merkle";
 
 /** Public artifact paths (copied into apps/web/public/zkp/). */
-const WASM_PATH = "/zkp/growthip_merkle_note_v3.wasm";
-const ZKEY_PATH = "/zkp/growthip_merkle_note_v3_final.zkey";
-const WITNESS_CALCULATOR_PATH = "/zkp/witness_calculator.js";
+const WASM_PATH = "/zkp/growthip_merkle_note_v3_1.wasm";
+const ZKEY_PATH = "/zkp/growthip_merkle_note_v3_1_final.zkey";
+const WITNESS_CALCULATOR_PATH = "/zkp/witness_calculator_v3_1.js";
 
 /** Circuit input shape (decimal strings, except pathIndices bits). */
 interface CircuitInput {
@@ -59,8 +59,8 @@ interface Groth16Proof {
 export interface GeneratedProof {
   /** 512-hex-char (256-byte) proof: G1_A || G2_B || G1_C. */
   proofHex: string;
-  /** Three 64-hex-char (32-byte) public inputs: [root, nullifierHash, recipientHash]. */
-  publicInputsHex: [string, string, string];
+  /** Four 64-hex-char (32-byte) public inputs: [root, nullifierHash, recipientHash, index]. */
+  publicInputsHex: [string, string, string, string];
   /** Raw snarkjs public signals (decimal), in circuit output order. */
   publicSignals: string[];
 }
@@ -223,9 +223,9 @@ export async function generateProof(
   if (proof.protocol !== "groth16") {
     throw new Error(`Expected groth16 proof, got ${proof.protocol}`);
   }
-  if (publicSignals.length !== 3) {
+  if (publicSignals.length !== 4) {
     throw new Error(
-      `Expected 3 public signals [root, nullifierHash, recipientHash], got ${publicSignals.length}`,
+      `Expected 4 public signals [root, nullifierHash, recipientHash, index], got ${publicSignals.length}`,
     );
   }
 
@@ -235,6 +235,7 @@ export async function generateProof(
   }
 
   const publicInputsHex = publicSignals.map(to32ByteHex) as [
+    string,
     string,
     string,
     string,
