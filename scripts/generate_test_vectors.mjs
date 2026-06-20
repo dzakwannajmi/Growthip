@@ -53,8 +53,12 @@ console.log(JSON.stringify(testVectors, null, 2));
 
 // Also write to file for the Rust test to reference.
 import { writeFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 writeFileSync(
-  "/home/puppy/growthip/contracts/growthip-pool/poseidon_test_vectors.json",
+  join(__dirname, "..", "contracts", "growthip-pool", "poseidon_test_vectors.json"),
   JSON.stringify(testVectors, null, 2)
 );
 console.log("\nWritten to contracts/growthip-pool/poseidon_test_vectors.json");

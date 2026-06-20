@@ -14,7 +14,8 @@
 // So each field element is emitted as a 32-byte literal array.
 
 const fs = require("fs");
-const c = require("/home/puppy/growthip/node_modules/circomlibjs/src/poseidon_constants.json");
+const path = require("path");
+const c = require(path.join(__dirname, "..", "node_modules", "circomlibjs", "src", "poseidon_constants.json"));
 
 const N_ROUNDS_F = 8;
 const N_ROUNDS_P = [56, 57, 56, 60, 60, 63, 64, 63, 60, 66, 60, 65, 70, 60, 64, 68];
@@ -105,7 +106,7 @@ for (const { name, arityIndex, t, usage } of arities) {
   rustOut += `    ]\n}\n`;
 }
 
-fs.writeFileSync("/home/puppy/growthip/contracts/growthip-pool/src/poseidon_constants_generated.rs", rustOut);
+fs.writeFileSync(path.join(__dirname, "..", "contracts", "growthip-pool", "src", "poseidon_constants_generated.rs"), rustOut);
 console.log("Written to: contracts/growthip-pool/src/poseidon_constants_generated.rs");
 console.log("Total size:", rustOut.length, "bytes");
 console.log("Lines:", rustOut.split("\n").length);
