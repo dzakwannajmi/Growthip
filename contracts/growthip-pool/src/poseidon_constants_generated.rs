@@ -1,10 +1,10 @@
-//! Auto-generated Poseidon BN254 constants (circomlib-compatible).
-//! Source: circomlibjs poseidon_constants.json (raw form, NOT _opt).
-//! Verified byte-for-byte against frontend lib/poseidon.ts constants.
-//!
-//! DO NOT HAND-EDIT. Regenerate via extract_poseidon.js if circomlib
-//! constants ever change (canonical BN254 Poseidon params per the
-//! reference whitepaper — should be stable).
+// Auto-generated Poseidon BN254 constants (circomlib-compatible).
+// Source: circomlibjs poseidon_constants.json (raw form, NOT _opt).
+// Verified byte-for-byte against frontend lib/poseidon.ts constants.
+//
+// DO NOT HAND-EDIT. Regenerate via extract_poseidon.js if circomlib
+// constants ever change (canonical BN254 Poseidon params per the
+// reference whitepaper — should be stable).
 
 use soroban_sdk::{vec, Bytes, Env, U256, Vec as SVec};
 

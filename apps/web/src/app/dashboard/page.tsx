@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { usePrices, useWalletBalances } from "@/lib/useMarket";
 import { Buffer } from "buffer";
 import { Icon } from "@iconify/react";
+import { QRCodeSVG } from "qrcode.react";
 import {
   isConnected,
   requestAccess,
@@ -32,10 +33,11 @@ import { config } from "@/lib/config";
 import WalletModal from "@/components/WalletModal";
 import { getAvailableTokens, type Token, type TokenSymbol } from "@/lib/tokens";
 import { saveNote, getPendingNotes, getClaimedNotes, markNoteAsClaimed, formatRelativeTime, type PrivateNote } from "@/lib/note";
+import { encodeTipId } from "@/lib/addressId";
 import TokenSelector from "@/components/TokenSelector";
 import AmountSelector from "@/components/AmountSelector";
 
-const RPC_URL            = config.network.rpcUrl;
+const RPC_URL = config.network.rpcUrl;
 const NETWORK_PASSPHRASE = config.network.passphrase;
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -53,7 +55,7 @@ function commitmentToDecimal(raw: Buffer | Uint8Array | string): string {
 
 function formatAmount(note: PrivateNote): string {
   const tokens = getAvailableTokens();
-  const token  = tokens.find((t) => t.symbol === note.token);
+  const token = tokens.find((t) => t.symbol === note.token);
   if (!token) return `${note.amount} ${note.token}`;
   const human = Number(note.amount) / Math.pow(10, token.decimals);
   return `${human % 1 === 0 ? human.toFixed(0) : human.toFixed(1)} ${token.symbol}`;
@@ -108,7 +110,7 @@ function InfoTooltip({ text }: { text: string }) {
 
 // ── Live price simulation ──────────────────────────────────────────────────
 function useLivePrices() {
-  const [xlm,  setXlm]  = useState<TokenPrice>({ percent: "+2.45%", isUp: true });
+  const [xlm, setXlm] = useState<TokenPrice>({ percent: "+2.45%", isUp: true });
   const [usdc, setUsdc] = useState<TokenPrice>({ percent: "+0.01%", isUp: true });
   const [total, setTotal] = useState({ percent: "+0.00%", value: "(+$0.00)", isUp: true });
 
@@ -152,9 +154,9 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 // ══════════════════════════════════════════════════════════════════════════
 export default function DashboardPage() {
   // Wallet state
-  const [address,  setAddress]  = useState<string>("");
-  const [network,  setNetwork]  = useState<string>("");
-  const [walletBusy, setWalletBusy]   = useState(false);
+  const [address, setAddress] = useState<string>("");
+  const [network, setNetwork] = useState<string>("");
+  const [walletBusy, setWalletBusy] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [walletStatus, setWalletStatus] = useState("");
 
@@ -164,42 +166,45 @@ export default function DashboardPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const addr = localStorage.getItem("growthip:wallet") ?? "";
-    const net  = localStorage.getItem("growthip:network") ?? "";
+    const net = localStorage.getItem("growthip:network") ?? "";
     setAddress(addr);
     setNetwork(net);
     setRecipient(addr);
   }, []);
 
   // UI state
-  const [copied, setCopied]   = useState(false);
+  const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<"send" | "withdraw">("send");
 
   // Send tip state
-  const [sendToken, setSendToken]         = useState<Token>(getAvailableTokens()[0]);
+  const [sendToken, setSendToken] = useState<Token>(getAvailableTokens()[0]);
   const [contractAmount, setContractAmount] = useState(0);
-  const [displayAmount, setDisplayAmount]   = useState(0);
-  const [sendStep, setSendStep]             = useState<"select" | "confirm" | "done">("select");
-  const [sendBusy, setSendBusy]             = useState(false);
-  const [sendStatus, setSendStatus]         = useState("");
-  const [sentNote, setSentNote]             = useState<PrivateNote | null>(null);
-  const [copiedNote, setCopiedNote]         = useState(false);
+  const [displayAmount, setDisplayAmount] = useState(0);
+  const [sendStep, setSendStep] = useState<"select" | "confirm" | "done">("select");
+  const [sendBusy, setSendBusy] = useState(false);
+  const [sendStatus, setSendStatus] = useState("");
+  const [sentNote, setSentNote] = useState<PrivateNote | null>(null);
+  const [copiedNote, setCopiedNote] = useState(false);
+  const [showSendQR, setShowSendQR] = useState(false);
+  const [showLinkQR, setShowLinkQR] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   // Withdraw (claim) state
-  const [noteInput, setNoteInput]     = useState("");
-  const [recipient, setRecipient]     = useState("");
-  const [claimBusy, setClaimBusy]     = useState(false);
+  const [noteInput, setNoteInput] = useState("");
+  const [recipient, setRecipient] = useState("");
+  const [claimBusy, setClaimBusy] = useState(false);
   const [claimProgress, setClaimProgress] = useState<ProofProgress | null>(null);
   const [claimStatus, setClaimStatus] = useState("");
-  const [claimStage, setClaimStage]   = useState<"idle" | "loading" | "proving" | "submitting" | "done" | "error">("idle");
+  const [claimStage, setClaimStage] = useState<"idle" | "loading" | "proving" | "submitting" | "done" | "error">("idle");
   const [claimTxHash, setClaimTxHash] = useState("");
-  const [claimError, setClaimError]   = useState("");
+  const [claimError, setClaimError] = useState("");
 
   // Notes state
   const [pending, setPending] = useState<PrivateNote[]>([]);
   const [claimed, setClaimed] = useState<PrivateNote[]>([]);
 
   const { xlm, usdc, total } = useLivePrices();
-  const { prices }                = usePrices();
+  const { prices } = usePrices();
   const { balances, refetch: refetchBalances } = useWalletBalances(address);
 
   // Pool client
@@ -275,29 +280,30 @@ export default function DashboardPage() {
     setSendBusy(true);
     setSendStatus("Generating secret and nullifier...");
     try {
-      const secret        = generateSecret();
-      const nullifier     = generateNullifier();
+      const secret = generateSecret();
+      const nullifier = generateNullifier();
       setSendStatus("Computing recipient hash...");
       const recipientHash = await computeRecipientHash(address);
-      const commitment    = await computeCommitment(secret, nullifier, recipientHash);
+      const commitment = await computeCommitment(secret, nullifier, recipientHash);
       const nullifierHash = await computeNullifierHash(nullifier);
       const commitmentHex = decimalToHex32(commitment);
-      const client        = buildClient(address, sendToken.symbol);
+      const client = buildClient(address, sendToken.symbol);
 
       setSendStatus("Checking registration...");
       const existing = await client.get_recipient_hash({ recipient: address });
       if (existing.result == null) {
         setSendStatus("Registering recipient...");
         const buf = Buffer.from(decimalToHex32(recipientHash), "hex");
-        const tx  = await client.register_recipient({ recipient: address, recipient_hash: buf });
+        const tx = await client.register_recipient({ recipient: address, recipient_hash: buf });
         await tx.signAndSend({ force: true });
       }
 
       setSendStatus("Approve in Freighter...");
       const tx = await client.deposit_paid({
-        depositor:  address,
+        depositor: address,
         commitment: Buffer.from(commitmentHex, "hex"),
-        amount:     BigInt(contractAmount),
+        amount: BigInt(contractAmount),
+        message: undefined,
       });
       const { result } = await tx.signAndSend({ force: true });
       const depositIndex = Number(result ?? 0);
@@ -344,7 +350,7 @@ export default function DashboardPage() {
       // Load commitments
       setClaimStatus("Loading pool commitments...");
       const totalTx = await client.total_deposits();
-      const total   = Number(totalTx.result);
+      const total = Number(totalTx.result);
       if (total === 0) throw new Error("Pool is empty.");
       if (total > MAX_LEAVES) throw new Error(`Pool is full (${total}/${MAX_LEAVES}).`);
 
@@ -395,12 +401,14 @@ export default function DashboardPage() {
   }
 
   function copyLink() {
-    navigator.clipboard.writeText("https://growthip.vercel.app/tip/creator");
+    if (!tipLink) return;
+    navigator.clipboard.writeText(tipLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
 
   const fmtDisplay = (n: number) => (n % 1 === 0 ? String(n) : n.toFixed(1));
+  const tipLink = address ? "https://growthip.vercel.app/tip/" + encodeTipId(address) : null;
 
   // ══════════════════════════════════════════════════════════════════════
   return (
@@ -545,7 +553,7 @@ export default function DashboardPage() {
                   {network === "TESTNET" ? "Testnet" : network === "FUTURENET" ? "Futurenet" : network}
                 </span>
                 <button
-                  onClick={() => {}}
+                  onClick={() => { }}
                   title="Swap wallet (coming soon)"
                   style={{ width: 32, height: 32, borderRadius: "8px", border: "1px solid #E5E5E5", background: "#FAFAFA", cursor: "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.5 }}
                 >
@@ -701,6 +709,23 @@ export default function DashboardPage() {
                       {copiedNote ? "Copied!" : "Copy Note"}
                     </button>
                     <button
+                      onClick={() => setShowSendQR((prev) => !prev)}
+                      style={{ width: "100%", padding: "12px", borderRadius: "12px", background: "transparent", color: "#525252", fontSize: "14px", fontWeight: 600, border: "1px solid #E5E5E5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+                    >
+                      <Icon icon="ph:qr-code-bold" style={{ fontSize: "18px" }} />
+                      {showSendQR ? "Hide QR Code" : "Show QR Code"}
+                    </button>
+                    {showSendQR && (
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", padding: "16px", borderRadius: "12px", border: "1px solid #E5E5E5", background: "#FAFAFA" }}>
+                        <div style={{ background: "white", padding: "12px", borderRadius: "10px", border: "1px solid #E5E5E5" }}>
+                          <QRCodeSVG value={JSON.stringify(sentNote)} size={180} level="M" />
+                        </div>
+                        <p style={{ fontSize: "12px", color: "#737373", textAlign: "center", maxWidth: "260px" }}>
+                          Share this QR privately with your recipient — anyone who scans it can claim the tip.
+                        </p>
+                      </div>
+                    )}
+                    <button
                       onClick={() => { setSendStep("select"); setContractAmount(0); setDisplayAmount(0); setSentNote(null); setActiveTab("withdraw"); setNoteInput(JSON.stringify(sentNote)); }}
                       style={{ width: "100%", padding: "12px", borderRadius: "12px", background: "transparent", color: "#525252", fontSize: "14px", fontWeight: 600, border: "1px solid #E5E5E5", cursor: "pointer" }}
                     >
@@ -799,45 +824,72 @@ export default function DashboardPage() {
               <Icon icon="ph:pencil-simple-bold" /> Edit Profile
             </button>
           </div>
-
-          <div style={{ background: "#FAFAFA", borderRadius: "12px", padding: "16px", border: "1px solid #E5E5E5", display: "flex", alignItems: "center", gap: "16px", marginBottom: "16px" }}>
-            <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: "white", fontSize: "18px" }}>CR</div>
-            <div>
-              <div style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>@creator</div>
-              <div style={{ fontSize: "13px", color: "#737373" }}>growthip.vercel.app/tip/creator</div>
+          {address ? (
+            <>
+              <div style={{ background: "#FAFAFA", borderRadius: "12px", padding: "16px", border: "1px solid #E5E5E5", display: "flex", alignItems: "center", gap: "16px", marginBottom: "16px" }}>
+                <div style={{ width: 48, height: 48, borderRadius: "50%", overflow: "hidden", background: "#E5E5E5", flexShrink: 0 }}>
+                  <img src={"https://api.dicebear.com/9.x/pixel-art/svg?seed=" + address} alt="avatar" width={48} height={48} style={{ width: 48, height: 48 }} />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A", fontFamily: "monospace" }}>{address.slice(0, 6)}...{address.slice(-4)}</div>
+                  <div style={{ fontSize: "13px", color: "#737373", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tipLink?.replace("https://", "")}</div>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button onClick={copyLink} style={{ flex: 1, background: "#FAFAFA", border: "1px solid #E5E5E5", borderRadius: "12px", padding: "10px", fontSize: "13px", fontWeight: 600, color: "#171717", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                  <Icon icon="ph:copy-simple-bold" style={{ fontSize: "18px" }} />
+                  {copied ? "Copied!" : "Copy Link"}
+                </button>
+                <button
+                  onClick={() => { if (navigator.share && tipLink) { navigator.share({ url: tipLink, title: "Send me a private tip" }); } }}
+                  style={{ width: 48, height: 44, background: "#FAFAFA", border: "1px solid #E5E5E5", borderRadius: "12px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#404040" }}
+                >
+                  <Icon icon="ph:share-network-bold" style={{ fontSize: "18px" }} />
+                </button>
+                <button
+                  onClick={() => setShowLinkQR((prev) => !prev)}
+                  style={{ width: 48, height: 44, background: showLinkQR ? "#0A0A0A" : "#FAFAFA", border: "1px solid #E5E5E5", borderRadius: "12px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: showLinkQR ? "white" : "#404040" }}
+                >
+                  <Icon icon="ph:qr-code-bold" style={{ fontSize: "18px" }} />
+                </button>
+                <a
+                  href={tipLink ?? "#"}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  style={{ width: 48, height: 44, background: "#FAFAFA", border: "1px solid #E5E5E5", borderRadius: "12px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#404040", textDecoration: "none" }}
+                >
+                  <Icon icon="ph:arrow-square-out-bold" style={{ fontSize: "18px" }} />
+                </a>
+              </div>
+              {showLinkQR && tipLink && (
+                <div style={{ marginTop: "16px", display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", padding: "16px", borderRadius: "12px", border: "1px solid #E5E5E5", background: "#FAFAFA" }}>
+                  <div style={{ background: "white", padding: "12px", borderRadius: "10px", border: "1px solid #E5E5E5" }}>
+                    <QRCodeSVG value={tipLink} size={180} level="M" />
+                  </div>
+                  <p style={{ fontSize: "12px", color: "#737373", textAlign: "center" }}>Scan to open your tip page</p>
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{ padding: "20px", borderRadius: "12px", border: "1px dashed #E5E5E5", background: "#FAFAFA", textAlign: "center" }}>
+              <p style={{ fontSize: "13px", color: "#A3A3A3" }}>Connect your wallet to get your personal tip link</p>
             </div>
-          </div>
-
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button onClick={copyLink} style={{ flex: 1, background: "#FAFAFA", border: "1px solid #E5E5E5", borderRadius: "12px", padding: "10px", fontSize: "13px", fontWeight: 600, color: "#171717", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-              <Icon icon="ph:copy-simple-bold" style={{ fontSize: "18px" }} />
-              {copied ? "Copied!" : "Copy Link"}
-            </button>
-            {[
-              { icon: "ph:share-network-bold" },
-              { icon: "ph:qr-code-bold" },
-              { icon: "ph:arrow-square-out-bold" },
-            ].map(({ icon }) => (
-              <button key={icon} style={{ width: 48, height: 44, background: "#FAFAFA", border: "1px solid #E5E5E5", borderRadius: "12px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#404040" }}>
-                <Icon icon={icon} style={{ fontSize: "18px" }} />
-              </button>
-            ))}
-          </div>
+          )}
         </Card>
 
 
 
-      {showWalletModal && (
-        <WalletModal
-          onClose={() => setShowWalletModal(false)}
-          onSelectFreighter={async () => {
-            setShowWalletModal(false);
-            await connectWallet();
-          }}
-          connecting={walletBusy}
-        />
-      )}
-      </div>
+        {showWalletModal && (
+          <WalletModal
+            onClose={() => setShowWalletModal(false)}
+            onSelectFreighter={async () => {
+              setShowWalletModal(false);
+              await connectWallet();
+            }}
+            connecting={walletBusy}
+          />
+        )}
+      </div>;
     </div>
-  );
-}
+  )
+};

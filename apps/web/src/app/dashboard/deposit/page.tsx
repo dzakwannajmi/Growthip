@@ -152,7 +152,7 @@ export default function DepositPage() {
         await regTx.signAndSend({ force: true });
       }
       setStatus("Approve the deposit transaction in Freighter...");
-      const tx = await client.deposit_paid({ depositor: address, commitment: commitmentBuf, amount: BigInt(contractAmount) });
+      const tx = await client.deposit_paid({ depositor: address, commitment: commitmentBuf, amount: BigInt(contractAmount), message: undefined });
       const { result } = await tx.signAndSend({ force: true });
       const depositIndex = Number(result ?? 0);
       const newNote: PrivateNote = {

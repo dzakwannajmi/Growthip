@@ -1,6 +1,6 @@
 #![no_std]
 
-use soroban_sdk::{contract, contractevent, contractimpl, contracttype, token, Address, Bytes, BytesN, Env, Vec};
+use soroban_sdk::{contract, contractevent, contractimpl, contracttype, token, Address, Bytes, BytesN, Env, String, Vec};
 
 /// Minimal cross-contract client for the verifier. Declaring this
 /// locally (instead of importing the verifier crate's full
@@ -33,12 +33,20 @@ pub enum DataKey {
     NullifierUsed(BytesN<32>),
     Commitment(u32),
     CommitmentAmount(u32),
+    Message(u32),
     TotalDeposits,
     TotalClaims,
     TipAmount,
     Treasury,
     AccumulatedFee,
 }
+
+/// Public donor message max length, in bytes. Soroban String::len()
+/// counts bytes, not visual characters -- for plain ASCII this is
+/// equivalent to a 50-character cap, but multi-byte UTF-8 (e.g. emoji)
+/// would hit this limit sooner than 50 visible characters. Acceptable
+/// simplification for a cosmetic donor-message feature.
+pub const MAX_MESSAGE_LEN: u32 = 50;
 
 /// Platform fee: 1% of every claimed amount, expressed in basis points
 /// (1% = 100 bps out of 10_000). Fee accrues in contract storage at
@@ -194,8 +202,26 @@ impl GrowthipPool {
             .unwrap_or(100_000_000i128)
     }
 
-    pub fn deposit_paid(env: Env, depositor: Address, commitment: BytesN<32>, amount: i128) -> u32 {
+    pub fn deposit_paid(
+        env: Env,
+        depositor: Address,
+        commitment: BytesN<32>,
+        amount: i128,
+        message: Option<String>,
+    ) -> u32 {
         depositor.require_auth();
+
+        // Public donor message: optional, on-chain, capped at
+        // MAX_MESSAGE_LEN bytes. This is intentionally PUBLIC -- visible
+        // to anyone reading the pool's commitment list, the same way the
+        // commitment and deposit index are public. It is NOT linked to
+        // the depositor's identity (the depositor's signature on this
+        // transaction is the only on-chain trace, same as any deposit).
+        if let Some(ref m) = message {
+            if m.len() > MAX_MESSAGE_LEN {
+                panic!("message exceeds {} bytes", MAX_MESSAGE_LEN);
+            }
+        }
 
         // Validate amount is one of the allowed denominations
         // 1 unit, 5 units, 10 units, 20 units (in base units)
@@ -220,7 +246,7 @@ impl GrowthipPool {
 
         let token_client = token::Client::new(&env, &token_addr);
         token_client.transfer(&depositor, &env.current_contract_address(), &amount);
-        Self::deposit_internal(&env, commitment, amount)
+        Self::deposit_internal(&env, commitment, amount, message)
     }
 
     pub fn claim_to(
@@ -344,7 +370,12 @@ impl GrowthipPool {
     /// Internal commitment storage helper.
     /// Not public: deposits must go through `deposit_paid` which enforces payment.
     /// This prevents griefing via free commitment spam (audit finding H1).
-    fn deposit_internal(env: &Env, commitment: BytesN<32>, amount: i128) -> u32 {
+    fn deposit_internal(
+        env: &Env,
+        commitment: BytesN<32>,
+        amount: i128,
+        message: Option<String>,
+    ) -> u32 {
         let index: u32 = env
             .storage()
             .instance()
@@ -361,6 +392,13 @@ impl GrowthipPool {
         env.storage()
             .persistent()
             .set(&DataKey::CommitmentAmount(index), &amount);
+        // Only write a storage entry if a message was actually provided —
+        // avoids unnecessary storage writes/gas for tips with no message.
+        if let Some(m) = message {
+            env.storage()
+                .persistent()
+                .set(&DataKey::Message(index), &m);
+        }
         let new_total = index + 1;
         env.storage()
             .instance()
@@ -404,6 +442,14 @@ impl GrowthipPool {
             .persistent()
             .get(&DataKey::CommitmentAmount(index))
             .unwrap_or(0i128)
+    }
+
+    /// Public read of an optional donor message attached to a deposit.
+    /// Returns None if no message was provided at deposit time.
+    pub fn get_message(env: Env, index: u32) -> Option<String> {
+        env.storage()
+            .persistent()
+            .get(&DataKey::Message(index))
     }
 
     pub fn get_commitment(env: Env, index: u32) -> BytesN<32> {
@@ -622,7 +668,7 @@ mod test {
 
         let mut cb = [0u8; 32]; cb[31] = 99;
         let commitment = BytesN::from_array(&env, &cb);
-        client.deposit_paid(&supporter, &commitment, &100_000_000i128);
+        client.deposit_paid(&supporter, &commitment, &100_000_000i128, &None);
 
         assert_eq!(token_client.balance(&pool_id), amount);
         assert_eq!(client.is_nullifier_used(&nullifier_hash), false);
@@ -684,7 +730,7 @@ mod test {
 
         let mut cb = [0u8; 32]; cb[31] = 77;
         let commitment = BytesN::from_array(&env, &cb);
-        let index = client.deposit_paid(&supporter, &commitment, &100_000_000i128);
+        let index = client.deposit_paid(&supporter, &commitment, &100_000_000i128, &None);
 
         assert_eq!(index, 0);
         assert_eq!(client.total_deposits(), 1);
@@ -730,8 +776,8 @@ mod test {
         let c2 = BytesN::from_array(&env, &c2b);
 
         // deposit() is now internal; use deposit_paid (audit finding H1)
-        assert_eq!(client.deposit_paid(&supporter, &c1, &100_000_000i128), 0);
-        assert_eq!(client.deposit_paid(&supporter, &c2, &100_000_000i128), 1);
+        assert_eq!(client.deposit_paid(&supporter, &c1, &100_000_000i128, &None), 0);
+        assert_eq!(client.deposit_paid(&supporter, &c2, &100_000_000i128, &None), 1);
         assert_eq!(client.total_deposits(), 2);
         assert_eq!(client.get_commitment(&0), c1);
         assert_eq!(client.get_commitment(&1), c2);
@@ -973,7 +1019,7 @@ mod test {
 
         let mut cb = [0u8; 32]; cb[31] = 5;
         let commitment = BytesN::from_array(&env, &cb);
-        client.deposit_paid(&supporter, &commitment, &100_000_000i128);
+        client.deposit_paid(&supporter, &commitment, &100_000_000i128, &None);
 
         // Now attempt to change token — should panic
         let token_admin2 = Address::generate(&env);
@@ -1122,7 +1168,7 @@ mod test {
         let real_commitment_decimal =
             "2104261006916233633133697712062370603646600964282193677044123011294579146712";
         let commitment = test_decimal_str_to_bytesn32(&env, real_commitment_decimal);
-        client.deposit_paid(&supporter, &commitment, &100_000_000i128);
+        client.deposit_paid(&supporter, &commitment, &100_000_000i128, &None);
 
         assert_eq!(token_client.balance(&pool_id), amount);
         assert_eq!(client.is_nullifier_used(&nullifier_hash), false);
@@ -1160,3 +1206,111 @@ mod poseidon_verify_test;
 
 #[cfg(test)]
 mod merkle_verify_test;
+
+#[cfg(test)]
+mod public_message_test {
+    use super::*;
+    use soroban_sdk::testutils::Address as _;
+    use growthip_merkle_verifier_v2::GrowthipMerkleVerifier;
+
+    #[test]
+    fn deposit_with_message_stores_and_reads_back() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let verifier_id = env.register(GrowthipMerkleVerifier, ());
+        let pool_id     = env.register(GrowthipPool, ());
+        let client      = GrowthipPoolClient::new(&env, &pool_id);
+
+        let admin     = Address::generate(&env);
+        let supporter = Address::generate(&env);
+        let treasury  = Address::generate(&env);
+        let token_admin        = Address::generate(&env);
+        let sac                = env.register_stellar_asset_contract_v2(token_admin.clone());
+        let token_addr         = sac.address();
+        let token_admin_client = token::StellarAssetClient::new(&env, &token_addr);
+
+        let mut rb = [0u8; 32]; rb[31] = 1;
+        let root = BytesN::from_array(&env, &rb);
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128, &treasury);
+        client.set_token(&admin, &token_addr);
+
+        let amount = client.tip_amount();
+        token_admin_client.mint(&supporter, &amount);
+
+        let mut cb = [0u8; 32]; cb[31] = 5;
+        let commitment = BytesN::from_array(&env, &cb);
+
+        let message = String::from_str(&env, "Thanks for the great content!");
+        let index = client.deposit_paid(&supporter, &commitment, &amount, &Some(message.clone()));
+
+        let read_back = client.get_message(&index);
+        assert_eq!(read_back, Some(message));
+    }
+
+    #[test]
+    fn deposit_without_message_returns_none() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let verifier_id = env.register(GrowthipMerkleVerifier, ());
+        let pool_id     = env.register(GrowthipPool, ());
+        let client      = GrowthipPoolClient::new(&env, &pool_id);
+
+        let admin     = Address::generate(&env);
+        let supporter = Address::generate(&env);
+        let treasury  = Address::generate(&env);
+        let token_admin        = Address::generate(&env);
+        let sac                = env.register_stellar_asset_contract_v2(token_admin.clone());
+        let token_addr         = sac.address();
+        let token_admin_client = token::StellarAssetClient::new(&env, &token_addr);
+
+        let mut rb = [0u8; 32]; rb[31] = 1;
+        let root = BytesN::from_array(&env, &rb);
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128, &treasury);
+        client.set_token(&admin, &token_addr);
+
+        let amount = client.tip_amount();
+        token_admin_client.mint(&supporter, &amount);
+
+        let mut cb = [0u8; 32]; cb[31] = 6;
+        let commitment = BytesN::from_array(&env, &cb);
+
+        let index = client.deposit_paid(&supporter, &commitment, &amount, &None);
+        let read_back = client.get_message(&index);
+        assert_eq!(read_back, None);
+    }
+
+    #[test]
+    #[should_panic(expected = "message exceeds")]
+    fn deposit_with_oversized_message_panics() {
+        let env = Env::default();
+        env.mock_all_auths();
+        let verifier_id = env.register(GrowthipMerkleVerifier, ());
+        let pool_id     = env.register(GrowthipPool, ());
+        let client      = GrowthipPoolClient::new(&env, &pool_id);
+
+        let admin     = Address::generate(&env);
+        let supporter = Address::generate(&env);
+        let treasury  = Address::generate(&env);
+        let token_admin        = Address::generate(&env);
+        let sac                = env.register_stellar_asset_contract_v2(token_admin.clone());
+        let token_addr         = sac.address();
+        let token_admin_client = token::StellarAssetClient::new(&env, &token_addr);
+
+        let mut rb = [0u8; 32]; rb[31] = 1;
+        let root = BytesN::from_array(&env, &rb);
+        client.initialize(&admin, &verifier_id, &root, &100_000_000i128, &treasury);
+        client.set_token(&admin, &token_addr);
+
+        let amount = client.tip_amount();
+        token_admin_client.mint(&supporter, &amount);
+
+        let mut cb = [0u8; 32]; cb[31] = 7;
+        let commitment = BytesN::from_array(&env, &cb);
+
+        let too_long = String::from_str(
+            &env,
+            "This message is way too long and definitely exceeds fifty bytes for sure",
+        );
+        client.deposit_paid(&supporter, &commitment, &amount, &Some(too_long));
+    }
+}
