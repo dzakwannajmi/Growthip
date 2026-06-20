@@ -267,10 +267,43 @@ export default function DashboardPage() {
       void warmPoseidon();
       setWalletStatus("Connected!");
       refetchBalances();
+
+      // Auto-register this wallet as a tip recipient on every available
+      // token pool, so the creator's public /tip/[id] link works
+      // immediately without a separate manual "activate" step. Only
+      // registers on pools where it isn't already registered (checked
+      // first to avoid an unnecessary signed transaction).
+      void autoRegisterRecipient(access.address);
     } catch (err) {
       setWalletStatus(err instanceof Error ? err.message : "Failed.");
     } finally {
       setWalletBusy(false);
+    }
+  }
+
+  async function autoRegisterRecipient(walletAddress: string) {
+    if (!PoolClient) return;
+    const recipientHash = await computeRecipientHash(walletAddress);
+    const recipientHashBuf = Buffer.from(decimalToHex32(recipientHash), "hex");
+
+    for (const tokenSymbol of ["XLM", "USDC"]) {
+      try {
+        const client = buildClient(walletAddress, tokenSymbol);
+        const existing = await client.get_recipient_hash({ recipient: walletAddress });
+        if (existing.result == null) {
+          const tx = await client.register_recipient({
+            recipient: walletAddress,
+            recipient_hash: recipientHashBuf,
+          });
+          await tx.signAndSend({ force: true });
+        }
+      } catch (err) {
+        // Silent fail per-token — e.g. a token's pool isn't configured
+        // yet, or the user rejects one of the signing prompts. Doesn't
+        // block wallet connect; the user can still use whichever
+        // token's pool succeeded.
+        console.error(`Auto-register failed for ${tokenSymbol}:`, err);
+      }
     }
   }
 
