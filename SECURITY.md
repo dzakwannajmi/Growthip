@@ -16,6 +16,7 @@ against the source code — not as marketing copy.
 - [Trust Assumptions](#trust-assumptions)
 - [Self-Found Issue #1 — Root Forgery](#self-found-issue-1--root-forgery)
 - [Self-Found Issue #2 — Verifier Interface Leak](#self-found-issue-2--verifier-interface-leak)
+- [Self-Found Issue #3 — Deposit-Amount-Aware Claims](#self-found-issue-3--deposit-amount-aware-claims)
 - [Trusted Setup](#trusted-setup)
 - [Known Limitations](#known-limitations)
 - [Reporting a Vulnerability](#reporting-a-vulnerability)
@@ -226,6 +227,134 @@ a local test environment).
 (~15%), and `verify()` no longer appears in the pool's exported
 interface — confirmed by rebuilding and re-running
 `stellar contract info interface`.
+
+## Self-Found Issue #3 — Deposit-Amount-Aware Claims
+
+**Severity: Critical (permanent fund lockup, discovered in live production
+testnet use, not merely theoretical).**
+**Status: Fixed and verified on-chain.**
+
+### The bug
+
+`claim_to()` always paid out a flat `DataKey::TipAmount` (the pool's base
+denomination) to the recipient, regardless of how much was actually
+deposited. Growthip's `deposit_paid()` accepts 1x, 5x, 10x, or 20x the
+base unit — but `claim_to()` had no way to know which multiple a given
+proof corresponded to, so it always paid out 1x.
+
+The code's own comment, written during an earlier development pass,
+already flagged this as incomplete:
+
+```rust
+// Transfer the exact amount that was deposited with this commitment
+// We use total_claims as index proxy — in production use nullifier→index mapping
+let base_amount: i128 = env.storage().instance().get(&DataKey::TipAmount)...
+```
+
+The comment described the intended fix; the code below it never
+implemented it.
+
+### How it was found
+
+Not through code review — through a real testnet transaction. A 20 XLM
+tip was sent, and the on-chain claim transaction showed only 0.99 XLM
+(99% of the 1x base unit) credited to the recipient, with no error and
+no panic. The remaining ~19 XLM had no code path that could ever move it
+out of the pool — `claim_to()` only ever reads `TipAmount`, never
+`CommitmentAmount(index)` for any index above the implicit assumption of
+"the most recent one."
+
+### Why this was structurally hard to fix
+
+The ZK proof's public inputs (`root`, `nullifierHash`, `recipientHash`)
+never carried which leaf index the deposit lived at. A Groth16 proof
+proves *"I know a path to a leaf with this root"* without revealing
+*which* leaf — that's the privacy property working as intended, but it
+also meant the contract had no way to look up the deposit's actual
+amount without either (a) breaking privacy by requiring a public
+commitment value as an extra parameter (which would let anyone watching
+the mempool front-run claim transactions by directly observing the
+target leaf), or (b) adding `index` itself as a new public output of
+the circuit.
+
+### The fix: V3.1 circuit
+
+`circuits/growthip_merkle_note_v3_1.circom` adds `index` as a fourth
+public output, computed from the `pathIndices[]` bits the circuit
+already used to prove Merkle membership — no new private inputs needed:
+
+```circom
+signal indexAcc[DEPTH + 1];
+indexAcc[0] <== 0;
+for (var i = 0; i < DEPTH; i++) {
+    ...
+    indexAcc[i + 1] <== indexAcc[i] + pathIndices[i] * (2 ** i);
+}
+index <== indexAcc[DEPTH];
+```
+
+This reveals only the deposit's position in a (small, depth-3, max
+8-leaf) Merkle tree — not the depositor's identity, not the secret, not
+the nullifier preimage. The position is no more sensitive than the
+commitment list itself, which is already fully public on-chain.
+
+Before trusting this derivation, the bit ordering was checked against
+`apps/web/src/lib/merkle.ts`'s `getMerklePathByIndex()` (which pushes
+bits LSB-first), and the circuit's output was verified against a manual
+calculation for a *non-trivial* leaf (index 5, not the trivially-passing
+index 0 case, where a broken derivation could coincidentally still
+output 0).
+
+`growthip-pool`'s `claim()` and `claim_to()` were updated to expect 4
+public inputs instead of 3. `claim_to()` now extracts `index` from
+`public_inputs[3]`, looks up `DataKey::CommitmentAmount(index)` —
+written at deposit time and already present in storage — and uses that
+as the actual payout base, instead of the flat `TipAmount`.
+
+### A second bug found while fixing the first
+
+The initial patch updated the public-input length check inside `claim()`
+but missed an *identical, separate* length check at the top of
+`claim_to()` (`if public_inputs.len() != 3 { return false; }`) — a
+near-duplicate guard that existed for early-exit efficiency before
+calling into `claim()`. This meant `claim_to()` always returned `false`
+immediately, before ever reaching the new `index`-based logic, even
+though `claim()` alone worked correctly when tested directly.
+
+This was caught through systematic isolation debugging — calling
+`claim()` directly (bypassing `claim_to()`'s extra checks) to confirm
+the root/nullifier/verify layer succeeded, then checking each of
+`claim_to()`'s additional guards (recipient-hash match) individually —
+rather than guessing at the cause from the failing assertion alone.
+
+### Verification before deploying
+
+A new regression test, `test_claim_to_with_v3_1_verifier_pays_actual_deposited_amount`,
+deposits 5x the base unit at a non-trivial leaf index (5, padded with
+five zero-commitment dummy deposits at indices 0–4 to match the tree
+shape the real proof was generated against), then asserts the recipient
+receives 99% of the *actual* 5x amount — not 99% of a flat 1x base unit.
+This test would have caught the original bug had it existed beforehand.
+
+The fix was then verified end-to-end on testnet: a real 20 XLM deposit
+(20x base unit) was claimed, and the resulting transaction showed
+`transfer(..., 19800000)` (99% of 20 XLM) to the recipient and
+`AccumulatedFee` increasing by `2000000` (1% of 20 XLM) — confirmed via
+direct inspection of the transaction's emitted events and state changes
+on [Stellar Expert](https://stellar.expert/explorer/testnet), not merely
+trusted from the client UI.
+
+### What this means for the trusted setup
+
+Because the circuit's R1CS changed (a new public output adds new
+constraints), the V3 circuit's existing proving/verification key could
+not simply be reused — a new phase-2 Groth16 setup was required for
+V3.1, following the same process and the same caveats as the original
+V3 setup (see [Trusted Setup](#trusted-setup) below): the same reused
+Powers of Tau file, followed by a new local phase-2 contribution
+specific to the V3.1 circuit. All prior caveats about this not being a
+publicly-coordinated MPC ceremony apply equally to V3.1.
+
 
 ---
 

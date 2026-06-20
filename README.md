@@ -9,7 +9,7 @@ A supporter deposits a fixed-denomination tip into a shared pool. The creator la
 
 ```text
 supporter deposits → pool stores commitment → on-chain root updates
-creator claims     → ZK proof verifies note membership against root history
+creator claims     → ZK proof verifies note membership + deposit amount
 nullifier consumed → double-claim prevented forever
 ```
 
@@ -25,6 +25,7 @@ nullifier consumed → double-claim prevented forever
 - [What Makes Growthip Novel on Stellar](#what-makes-growthip-novel-on-stellar)
 - [Testnet Deployment](#testnet-deployment)
 - [Protocol Design](#protocol-design)
+- [Creator Links & Sharing](#creator-links--sharing)
 - [Security History (Honest Disclosure)](#security-history-honest-disclosure)
 - [Fee Model](#fee-model)
 - [ZK Circuit](#zk-circuit)
@@ -87,19 +88,25 @@ foundation with concrete improvements:
 2. **V3 circuit recipient binding** — `commitment = Poseidon(secret, nullifier, recipientHash)`
    binds the recipient at circuit level, not just contract level, preventing
    recipient substitution even if the note is stolen
-3. **Private deposit()** — prevents free commitment spam (griefing vector
+3. **V3.1 circuit deposit-amount binding** — the circuit additionally exposes
+   the deposit's Merkle leaf `index` as a public output (derived from the
+   existing path bits, no new private inputs), letting the pool pay out the
+   *actual* amount deposited (1x/5x/10x/20x the base unit) instead of a flat
+   base unit — see [Security History](#security-history-honest-disclosure)
+   for how a real bug here was found and fixed
+4. **Private deposit()** — prevents free commitment spam (griefing vector
    present in both reference implementations)
-4. **On-chain trustless root history** — the Merkle root is recomputed
+5. **On-chain trustless root history** — the Merkle root is recomputed
    on-chain via the native Poseidon host function on every deposit, and
    claims are validated against a bounded on-chain root history. No admin
-   ever sets or signs off on the root (see [Security History](#security-history-honest-disclosure)
-   for how this replaced an earlier, less safe design)
-5. **pool upgrade()** — enables protocol upgrades without losing state,
+   ever sets or signs off on the root
+6. **pool upgrade()** — enables protocol upgrades without losing state,
    absent in both reference implementations
 
 Application focus: while both references are general-purpose, Growthip
 applies the pattern specifically to creator tipping, with a full Freighter
-E2E flow, 25 passing tests, and a working testnet deployment.
+E2E flow, shareable creator tip links, public/private donor messages, QR
+code sharing, 31 passing tests, and a working testnet deployment.
 
 ## What Makes Growthip Novel on Stellar
 
@@ -111,6 +118,8 @@ Growthip is the first application on Stellar to:
 * ✅ Demonstrate ZK Merkle membership proof in a working creator tipping flow
 * ✅ Show a complete deposit → note → proof → claim cycle on Stellar Testnet
 * ✅ Use `recipientHash` binding at circuit level (V3) — not just contract level
+* ✅ Expose a ZK-circuit-derived deposit index (V3.1) so claims pay out the
+  actual amount deposited, while keeping the depositor's identity private
 
 CAP-0075: Cryptographic Primitives for Poseidon/Poseidon2 Hash Functions defines host functions that expose the core permutation primitives behind Poseidon and Poseidon2, addressing a key performance bottleneck for hashing inside ZK-friendly applications, shipped in Protocol 25 (X-Ray). CAP-0080 in Protocol 26 (Yardstick) builds on the BN254 work from X-Ray, adding nine new host functions for BN254 multi-scalar multiplication, scalar-field arithmetic, and curve-membership checks. Growthip uses the Poseidon host function directly to compute its Merkle root on-chain — not just to verify a Groth16 proof, but to eliminate the need for any admin-submitted root entirely.
 
@@ -118,13 +127,13 @@ CAP-0075: Cryptographic Primitives for Poseidon/Poseidon2 Hash Functions defines
 
 ## Testnet Deployment
 
-### V3 Contracts — Current, deployed with `soroban-sdk 26.0.1`
+### V3.1 Contracts — Current, deployed with `soroban-sdk 26.0.1`
 
 | Contract | Address |
 |---|---|
-| Growthip Merkle Verifier V3 | `CDQCYVL5EXPZNB5RW5WHZ565QIXWCJURAYF7UNLPIV3GQYRY4NSG57AU` |
-| Growthip Pool — XLM | `CARWGBYE2FRXWGLHL3UH2Y7CPACH3WHFVNCJEIDSJ3VCVCONOMH4TENG` |
-| Growthip Pool — USDC | `CBNKY7LVXLALUQBSYB2O5PW44BBIRIQL3BT5M2AGM434ACNYF4S5EJ5I` |
+| Growthip Merkle Verifier V3.1 | `CA5IHK2NAUVQ6NLS7CWSGPZWEXY6CAFAQBLMM43GCKSFYC2BZXZQIA2L` |
+| Growthip Pool — XLM | `CDAI6HSTK22CYJQPJ6NWX6QCKPX37WVJRFPA3A6FNM2EPQI5GBLH5ZJ3` |
+| Growthip Pool — USDC | `CBKTJKSGQ7Y4WOLM6PQWNKHTHMYQ2MBWPZJYCH3KNZPK7SERD5ZGAXK7` |
 | Native XLM Token (SAC) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
 | USDC Token (SAC) | `CA2R3TBJRDGPAPIXZXVBAZDD63Q5HLJF7JFOLIPBABMDMWJAJ6AV7ZUY` |
 | Admin / Treasury | `GDPAPDZWAKBXUPCNMI4YHAZ7DS7UOUTPGXAFDSWZG4URRMWHFSQTDQBM` |
@@ -132,9 +141,10 @@ CAP-0075: Cryptographic Primitives for Poseidon/Poseidon2 Hash Functions defines
 | Tip Amount — USDC pool | `1,000,000 stroops = 0.1 USDC` (base; 5x/10x/20x also accepted) |
 | Network | Stellar Testnet |
 
-> Contracts were redeployed from a prior version after a self-discovered
-> root-validation vulnerability was found and fixed — see
-> [Security History](#security-history-honest-disclosure) below.
+> Contracts have been redeployed twice from earlier versions, after two
+> self-discovered issues were found and fixed — a root-validation
+> vulnerability, and a deposit-amount payout bug. See
+> [Security History](#security-history-honest-disclosure) below for both.
 
 ---
 
@@ -144,23 +154,31 @@ CAP-0075: Cryptographic Primitives for Poseidon/Poseidon2 Hash Functions defines
 
 Growthip implements a **fixed-denomination privacy pool** model:
 
-1. **Supporter calls `deposit_paid(commitment, amount)`**
+1. **Supporter calls `deposit_paid(commitment, amount, message?)`**
    * → tip locked in pool (1x/5x/10x/20x base denomination)
    * → commitment stored on-chain (anonymous — no identity link)
+   * → an optional public message (max 50 bytes) may be attached, stored
+     on-chain, and is never linked to the depositor's wallet address
    * → **the pool recomputes its Merkle root on-chain**, using the native
      Poseidon host function, and appends the new root to an on-chain
      bounded root history
 2. **Supporter shares private note off-chain with creator**
    * → note contains: `secret`, `nullifier`, `recipientHash`, Merkle path
+   * → can be shared via copy/paste, file download, or as a QR code the
+     creator scans directly
 3. **Creator calls `register_recipient(recipient, recipient_hash)`**
    * → binds their wallet to their expected `recipientHash`
+   * → done automatically the first time a creator connects their wallet
+     to the dashboard, on every available token pool
 4. **Creator generates Groth16 proof from private note (browser-side)**
-   * → proof proves: valid note + Merkle membership + unused nullifier
+   * → proof proves: valid note + Merkle membership + unused nullifier +
+     the deposit's leaf index (V3.1)
 5. **Creator calls `claim_to(recipient, proof_bytes, public_inputs)`**
    * → contract verifies, in order: **root is present in on-chain root
      history** → nullifier unused → proof valid → recipient hash match
-   * → 99% of the tip transferred to creator, 1% accrues as platform fee
-     (see [Fee Model](#fee-model))
+   * → looks up the deposit's *actual* amount via the proof's index output
+   * → 99% of that actual tip amount transferred to creator, 1% accrues
+     as platform fee (see [Fee Model](#fee-model))
    * → nullifier marked as used (forever)
 
 ### What Is Public
@@ -171,6 +189,7 @@ Growthip implements a **fixed-denomination privacy pool** model:
 * ✅ Commitment list (anonymous — not linked to identity)
 * ✅ Used nullifier list (anonymous — not linked to secret)
 * ✅ Root history (anonymous — just a list of hashes, not linked to depositors)
+* ✅ A deposit's optional public message, if the supporter chose to attach one
 
 ### What Is Protected
 * 🔒 Link between supporter wallet and creator wallet
@@ -187,7 +206,46 @@ Growthip implements a **fixed-denomination privacy pool** model:
   deliberately disconnected in time from any individual claim to avoid
   linking a specific claim to a treasury-incoming transfer — but the
   treasury address itself is public, so aggregate fee revenue is observable
+* ⚠️ A creator's real wallet address is unavoidably revealed on-chain the
+  moment they claim — the cosmetic tip-link obfuscation (see
+  [Creator Links & Sharing](#creator-links--sharing)) only avoids exposing
+  the raw address in a casually-shared URL, it is not cryptographic privacy
+* ⚠️ Receiving USDC (or any non-native asset) requires the creator's wallet
+  to already have an open Stellar trustline to that asset — this is a
+  Stellar-level requirement, not something Growthip can bypass
 * ⚠️ Not audited — do not use with real funds
+
+---
+
+## Creator Links & Sharing
+
+Every connected wallet gets a personal, shareable tip page at
+`growthip.vercel.app/tip/<id>`, where `<id>` is the creator's Stellar
+address transformed with a reversible base62 encoding
+(`apps/web/src/lib/addressId.ts`).
+
+**This is cosmetic obfuscation, not cryptographic privacy.** The transform
+is publicly computable in both directions — anyone opening the link can
+decode it back to the real address, because the supporter's browser needs
+to know where to send the tip. Its only purpose is avoiding a raw
+56-character Stellar address sitting in a casually-shared URL (a Twitter
+bio, a stream overlay, a Discord pin). The creator's real address is still
+fully visible on-chain the instant they call `register_recipient()` or
+`claim_to()` — this does not and cannot hide that.
+
+The dashboard's "Personal Link" card provides:
+* A working copy-link button (no hardcoded placeholder)
+* A QR code rendering of the same link, for sharing on a stream or printed
+  material
+* A native Web Share API trigger on supported devices/browsers
+* A direct "open in new tab" link to preview the public page
+
+The public tip page (`apps/web/src/app/tip/[id]/page.tsx`) lets a
+supporter, without ever creating an account: connect Freighter, pick a
+token and preset amount, optionally attach a public on-chain message (max
+50 characters), deposit, and receive/share their resulting private note —
+including as a QR code the creator can scan directly, skipping manual
+copy-paste entirely.
 
 ---
 
@@ -195,82 +253,69 @@ Growthip implements a **fixed-denomination privacy pool** model:
 
 This section exists because Growthip's design changed materially during
 development, and we believe documenting *why* is more credible than
-pretending the final design was always the plan.
+pretending the final design was always the plan. Full technical writeups,
+including exact attack steps and on-chain transaction evidence, are in
+[SECURITY.md](SECURITY.md).
 
-### What happened
+### Issue #1 — Root Forgery (Critical, fixed)
 
 An earlier iteration of the pool contract removed its root-validation check
-under the (incorrect) assumption that **"proof validity IS the root
-check."** This is a real cryptographic misconception worth naming
-explicitly: a Groth16 proof only proves *"I know a path to root X"* — it
-does **not** prove that root X is one this pool ever actually produced. An
-attacker could build an entirely fake Merkle tree offline, generate a
-valid proof for *that* tree's root, and drain real deposits without ever
-making one.
+under the incorrect assumption that "proof validity IS the root check." A
+Groth16 proof only proves *"I know a path to root X"* — it does **not**
+prove that root X is one this pool ever actually produced. An attacker
+could build an entirely fake Merkle tree offline and drain real deposits
+without ever making one.
 
-### How it was found and fixed
+**Fix:** the pool now recomputes its Merkle root on-chain (via the native
+Poseidon host function) after every deposit, and validates a claim's proof
+root against a bounded on-chain history before doing anything else —
+verified against the frontend's own Merkle/Poseidon implementations with
+dedicated parity tests, not just assumed correct.
 
-The issue was caught during self-review before submission, by re-examining
-the `claim()` function's actual on-chain logic rather than trusting prior
-summaries of it. The fix:
+### Issue #2 — Verifier Interface Leak (Low severity, fixed)
 
-1. **On-chain Merkle root computation.** Soroban's native
-   `poseidon_permutation` host function (Protocol 25, CAP-0075) is called
-   directly inside `deposit_internal()` to rebuild the full depth-3 tree
-   from all current commitments — no off-chain or admin-submitted root is
-   ever trusted.
-2. **Root history validation.** `claim()` now checks that the proof's
-   `root` public input is present in a bounded on-chain history of recent
-   roots (sized to the tree's max leaf count), *before* spending gas on
-   the Groth16 pairing check. This also correctly handles the race
-   condition where a new deposit lands between proof generation and claim
-   submission.
-3. **Verified, not assumed, parity with the circuit.** Before this fix
-   touched the contract, three things were independently verified with
-   passing tests, not just trusted from documentation:
-   - The Soroban host function's Poseidon output is byte-for-byte
-     identical to `circomlibjs`'s output, across every arity Growthip
-     uses (t=2, t=3, t=4) — see `poseidon_verify_test.rs`
-   - The on-chain Merkle tree construction (padding, level hashing,
-     sibling ordering) produces identical roots to the frontend's
-     `merkle.ts`, given the same commitments — see `merkle_verify_test.rs`
-   - A regression test (`test_claim_to_with_v3_verifier_and_proof`) deposits
-     the *actual* commitment used to generate a real V3 proof artifact
-     (not a disconnected dummy value), so the test genuinely exercises the
-     deposit → root → claim path end-to-end
+`growthip-pool` depended on the verifier as a full Rust crate rather than
+calling it purely through its on-chain address, which caused the
+verifier's own `verify()` function to be statically linked into and
+exposed through the pool's compiled WASM — confirmed directly via
+`stellar contract info interface`.
 
-### A second issue found in the same review pass
+**Fix:** replaced the full-crate dependency with a minimal, locally
+declared client trait carrying only the function signature needed for
+cross-contract calls. Pool WASM size dropped ~15% and `verify()` no longer
+appears in the pool's exported interface.
 
-While verifying the verifier-contract dependency, we discovered that
-`growthip-pool` had been importing `growthip-merkle-verifier-v2` as a full
-Rust crate dependency rather than calling it purely through its on-chain
-address. Because that crate carries its own `#[contract]` /
-`#[contractimpl]` implementation, the verifier's entire interface
-(including its `verify()` function) was being statically linked into and
-exposed through the pool's own WASM binary — confirmed via
-`stellar contract info interface`, which listed `verify()` as a
-directly-callable function on the pool contract itself.
+### Issue #3 — Deposit-Amount-Aware Claims (Critical, fixed)
 
-This was fixed by replacing the full-crate import with a minimal,
-locally-declared `#[contractclient]` trait containing only the `verify()`
-signature needed for cross-contract calls. The fix reduced the pool's
-compiled WASM size from 60,057 bytes to 50,975 bytes (~15%) and the
-verifier's interface no longer leaks through the pool contract.
+`claim_to()` always paid out a flat base-unit amount regardless of how
+much was actually deposited (1x/5x/10x/20x). A 20 XLM tip resulted in the
+creator receiving only 0.99 XLM, with the remaining ~19 XLM permanently
+locked in the pool — there was no function that could move it out. This
+was discovered through a real testnet transaction, not code review.
 
-### Why this is disclosed here, not hidden
+**Fix:** the V3.1 circuit adds `index` (the deposit's Merkle leaf
+position) as a new public output, derived from path bits the circuit
+already computed — no new private inputs, no loss of depositor anonymity.
+`claim_to()` now looks up the actual deposited amount at that index and
+pays out 99% of the *real* amount. Verified both with a dedicated
+regression test (5x deposit, non-trivial leaf index) and, after
+deployment, against a live 20 XLM testnet transaction showing the correct
+19.8 XLM payout and 0.2 XLM fee accrual.
 
-We believe a ZK-technical reviewer who reads the contract source will ask
-exactly these questions. Answering them here, with the actual fix and the
-tests that prove it, is more credible than a README that simply doesn't
-mention the issue ever existed.
+While fixing this, a related bug was also found: the public-input length
+check had been updated in `claim()` but an identical, separate check
+inside `claim_to()` was missed, silently causing every claim to fail —
+caught through systematic isolation debugging rather than guessing.
 
 ---
 
 ## Fee Model
 
-Growthip charges a **1% platform fee**, taken at claim time:
+Growthip charges a **1% platform fee**, taken at claim time, calculated
+against the **actual amount deposited** (not a flat base unit — see
+[Security History, Issue #3](#security-history-honest-disclosure)):
 
-* Recipient receives **99%** of the base tip amount, transferred
+* Recipient receives **99%** of the actual tip amount, transferred
   immediately on a successful `claim_to()` call
 * The remaining **1%** accrues in the pool contract's storage
   (`accumulated_fees()`), **not** transferred out immediately
@@ -294,28 +339,39 @@ confirms a withdrawal.
 
 ## ZK Circuit
 
-### V3 Circuit (Current) — `circuits/growthip_merkle_note_v3.circom`
+### V3.1 Circuit (Current) — `circuits/growthip_merkle_note_v3_1.circom`
 
-**The key improvement in V3:** `recipientHash` is now cryptographically bound inside the commitment. A note generated for `recipientHash_A` cannot produce a valid proof for `recipientHash_B`, even if the attacker knows `secret` and `nullifier`.
+V3.1 builds on V3's recipient binding by adding a fourth public output,
+`index`, so the pool contract can pay out the actual deposited amount
+instead of a flat base unit (see
+[Security History, Issue #3](#security-history-honest-disclosure)).
 
 ```text
 commitment = Poseidon(secret, nullifier, recipientHash)  ← V3: bound here
 nullifierHash = Poseidon(nullifier)
 recipientHashOut = recipientHash  (public output for on-chain check)
+index = Σ pathIndices[i] * 2^i    ← V3.1: leaf position, NEW public output
 
 Merkle membership: commitment ∈ MerkleTree(root)
 Binary constraint: pathIndices[i] ∈ {0, 1}
 ```
 
+`index` is derived entirely from the `pathIndices[]` bits the circuit
+already computed to prove Merkle membership — no new private inputs. It
+reveals only the deposit's position in a small (max 8-leaf) tree, which is
+no more sensitive than the commitment list itself, already fully public
+on-chain.
+
 **Public inputs** (visible on-chain):
-* `root` — validated against on-chain root history (see [Security History](#security-history-honest-disclosure))
+* `root` — validated against on-chain root history
 * `nullifierHash` — Poseidon(nullifier), for double-claim prevention
 * `recipientHash` — bound recipient, for front-running prevention
+* `index` — Merkle leaf position, used to look up the actual deposited amount
 
 **Private inputs** (never leave the browser):
 * `secret`
 * `nullifier`
-* `recipientHash` (private in V3 — bound inside commitment)
+* `recipientHash` (private — bound inside commitment)
 * `pathElements[3]`
 * `pathIndices[3]`
 
@@ -324,28 +380,32 @@ Binary constraint: pathIndices[i] ∈ {0, 1}
 * `nullifierHash` is correctly derived from the same nullifier
 * The claim is bound to a specific `recipientHash` — cannot be redirected
 * The commitment has not been claimed before (enforced by nullifier on-chain)
-* **The root itself is one the pool actually produced** (enforced by the
+* The root itself is one the pool actually produced (enforced by the
   on-chain root-history check, not by the proof alone)
+* `index` matches the actual Merkle path proven — cannot be forged to
+  claim a different deposit's amount
 
 ### Trusted Setup
 
-The V3 circuit's Groth16 proving/verification keys were generated using
+The V3.1 circuit's Groth16 proving/verification keys were generated using
 **snarkjs's standard Powers of Tau ceremony** (the publicly available,
-widely-reused `ptau` files from the Hermez/Polygon ceremony), followed by
-a circuit-specific phase-2 contribution generated locally during
-development. This is the same trusted-setup pattern used by most
-hackathon and early-stage Groth16 deployments; it is **not** a
-multi-party, audited ceremony, and should not be treated as one. A
-production deployment would require a dedicated, publicly-verifiable
+widely-reused `ptau` files from the Hermez/Polygon ceremony), reused from
+the original V3 setup, followed by a new circuit-specific phase-2
+contribution (V3.1's R1CS differs from V3's, so its proving/verification
+key could not simply be carried over). This is the same trusted-setup
+pattern used by most hackathon and early-stage Groth16 deployments; it is
+**not** a multi-party, audited ceremony, and should not be treated as one.
+A production deployment would require a dedicated, publicly-verifiable
 phase-2 MPC ceremony before handling real funds.
 
 ### Circuit Evolution
 
-| Version | Commitment | Recipient Binding | Status |
-|---|---|---|---|
-| V1 (square) | N/A | N/A | Verifier pipeline test |
-| V2 (note) | `Poseidon(secret, nullifier)` | Contract-level only | Deprecated |
-| V3 (current) | `Poseidon(secret, nullifier, recipientHash)` | **Circuit-level** | ✅ Active |
+| Version | Commitment | Recipient Binding | Deposit-Amount Aware | Status |
+|---|---|---|---|---|
+| V1 (square) | N/A | N/A | N/A | Verifier pipeline test |
+| V2 (note) | `Poseidon(secret, nullifier)` | Contract-level only | No | Deprecated |
+| V3 | `Poseidon(secret, nullifier, recipientHash)` | **Circuit-level** | No | Deprecated |
+| V3.1 (current) | `Poseidon(secret, nullifier, recipientHash)` | **Circuit-level** | **Yes** | ✅ Active |
 
 ---
 
@@ -365,12 +425,16 @@ upgrade(admin, new_wasm_hash)           // upgrade pool WASM (admin only)
 update_root(admin, new_root)            // legacy/manual root display only —
                                          // NOT used for claim validation
 register_recipient(recipient, hash)     // bind wallet to recipientHash
-deposit_paid(depositor, commitment, amount)  // lock tip, store commitment,
-                                              // recompute root on-chain
-claim_to(recipient, proof, inputs)      // verify root + proof, release 99%,
+deposit_paid(depositor, commitment, amount, message?)  // lock tip, store
+                                                        // commitment + optional
+                                                        // public message,
+                                                        // recompute root on-chain
+claim_to(recipient, proof, inputs)      // verify root + proof + index, release
+                                         // 99% of the ACTUAL deposited amount,
                                          // accrue 1% fee
 withdraw_fees(admin)                    // admin-gated batch fee withdrawal
 accumulated_fees()                      // public read of pending fee balance
+get_message(index)                      // public read of a deposit's optional message
 is_nullifier_used(nullifier_hash)       // check double-claim status
 ```
 
@@ -381,22 +445,24 @@ is_nullifier_used(nullifier_hash)       // check double-claim status
 * ✅ `upgrade`: admin-only, uses Soroban deployer
 * ✅ `claim_to`/`claim`: **root validated against on-chain history first**
   (fail-fast, before the Groth16 pairing check) → nullifier check → proof
-  verify → recipient check → transfer
+  verify → recipient check → actual-amount lookup → transfer
 * ✅ `register_recipient`: recipient must sign
 * ✅ `deposit_paid`: depositor must sign + amount must be 1x/5x/10x/20x the
-  pool's fixed denomination
+  pool's fixed denomination + optional message capped at 50 bytes
 * ✅ nullifier consumed only after all checks pass (Soroban atomicity)
 * ✅ wrong recipient does not consume nullifier
 * ✅ wrong/forged root does not consume nullifier and is rejected before
   any pairing check runs
+* ✅ a claim's payout is bound to its proof's `index` output — cannot be
+  redirected to drain a different deposit's amount
 * ✅ `deposit_internal()` is private — free commitment spam prevented
 * ✅ privacy-safe events: deposit index only, claim nullifier hash only
   (no addresses), defined via the SDK's typed `#[contractevent]` macro
 * ✅ verifier called through a minimal local client trait — the verifier's
   own contract interface is not bundled into or exposed through the pool's
-  WASM (see [Security History](#security-history-honest-disclosure))
+  WASM
 
-### GrowthipMerkleVerifierV3
+### GrowthipMerkleVerifierV3.1
 
 Native Soroban Groth16 verifier using Protocol 25/26 BN254 host functions.
 
@@ -419,21 +485,20 @@ cargo test --workspace
 growthip-merkle-verifier      : 1 passed
 growthip-note-verifier        : 1 passed
 growthip-merkle-verifier-v2   : 1 passed
-growthip-merkle-verifier-v3   : 3 passed
-  test_verify_growthip_merkle_note_v3_proof
-  test_v3_wrong_proof_rejected
-  test_v3_tampered_public_inputs_rejected
-
+growthip-merkle-verifier-v3   : 3 passed   (legacy, kept for reference)
+growthip-merkle-verifier-v3-1 : 3 passed   (active, 4-public-input circuit)
 square-verifier                : 1 passed
 
-growthip-pool                  : 18 passed, 3 ignored (documented)
-  poseidon_t2_matches_circomlibjs_ground_truth   <- Poseidon parity, t=2
-  poseidon_t3_matches_circomlibjs_ground_truth   <- Poseidon parity, t=3
-  poseidon_t4_matches_circomlibjs_ground_truth   <- Poseidon parity, t=4
-  merkle_root_matches_typescript_ground_truth    <- on-chain root = frontend root
+growthip-pool                  : 21 passed, 3 ignored (documented)
+  poseidon_t2_matches_circomlibjs_ground_truth     <- Poseidon parity, t=2
+  poseidon_t3_matches_circomlibjs_ground_truth     <- Poseidon parity, t=3
+  poseidon_t4_matches_circomlibjs_ground_truth     <- Poseidon parity, t=4
+  merkle_root_matches_typescript_ground_truth      <- on-chain root = frontend root
   merkle_root_empty_pool_matches_all_zero_leaves
   test_claim_rejects_wrong_root
-  test_claim_to_with_v3_verifier_and_proof       <- real deposit->root->claim, with fee split
+  test_claim_to_with_v3_1_verifier_pays_actual_deposited_amount
+    <- deposits 5x base unit at a non-trivial leaf index, asserts the
+       recipient receives 99% of the REAL amount, not a flat base unit
   test_claim_to_before_recipient_registered_returns_false
   test_invalid_proof_does_not_consume_nullifier
   test_initialize_twice_panics
@@ -445,17 +510,20 @@ growthip-pool                  : 18 passed, 3 ignored (documented)
   test_deposit_stores_commitment
   test_wrong_root_does_not_consume_nullifier
   test_set_token_blocked_after_deposits
+  deposit_with_message_stores_and_reads_back
+  deposit_without_message_returns_none
+  deposit_with_oversized_message_panics
   [ignored] test_claim_to_rejects_wrong_recipient_hash  <- outdated V2 fixture, see test comment
   [ignored] test_claim_valid_proof_once_only            <- outdated V2 fixture, see test comment
   [ignored] test_paid_deposit_and_claim_to_recipient    <- outdated V2 fixture, see test comment
 
-Total: 25 passed, 0 failed, 3 ignored
+Total: 31 passed, 0 failed, 3 ignored (across all workspace crates)
 ```
 
 The three ignored tests predate the root-history fix and relied on the
 absence of root validation to pass — each carries an `#[ignore = "..."]`
 reason explaining exactly why, rather than being silently deleted. See
-[Security History](#security-history-honest-disclosure).
+[SECURITY.md](SECURITY.md).
 
 ---
 
@@ -468,6 +536,7 @@ growthip/
 │       ├── src/
 │       │   ├── app/
 │       │   │   ├── (main)/page.tsx       # Landing page
+│       │   │   ├── tip/[id]/page.tsx     # Public creator tip page
 │       │   │   └── dashboard/            # Dashboard: send, claim, analytics
 │       │   ├── components/
 │       │   │   ├── WalletModal.tsx       # Freighter / xBull / Albedo selector
@@ -478,22 +547,26 @@ growthip/
 │       │       ├── config.ts             # Centralized env config
 │       │       ├── poseidon.ts           # Browser Poseidon (circomlibjs)
 │       │       ├── merkle.ts             # Browser Merkle tree reconstruction
-│       │       ├── zkp.ts                # Proof generation
+│       │       ├── zkp.ts                # Proof generation (V3.1: 4 public inputs)
+│       │       ├── addressId.ts          # Cosmetic tip-link address obfuscation
 │       │       ├── useMarket.ts          # Live price + balance hooks
 │       │       └── growthipPoolClient.ts # Generated TS binding
+│       ├── public/zkp/                   # Circuit WASM, .zkey, witness calculator
 │       └── .env.local                    # Environment (see testnet.env)
 ├── circuits/
 │   ├── square.circom                     # Verifier pipeline test
 │   ├── growthip_note.circom              # V0: commitment + nullifier
 │   ├── growthip_merkle_note.circom       # V1: + Merkle proof
 │   ├── growthip_merkle_note_v2.circom    # V2: + recipientHash output
-│   └── growthip_merkle_note_v3.circom    # V3: + recipientHash in commitment
+│   ├── growthip_merkle_note_v3.circom    # V3: + recipientHash in commitment
+│   └── growthip_merkle_note_v3_1.circom  # V3.1: + index public output ✅ active
 ├── contracts/
 │   ├── square-verifier/                  # Pipeline test verifier
 │   ├── growthip-note-verifier/           # V0 verifier
 │   ├── growthip-merkle-verifier/         # V1 verifier
 │   ├── growthip-merkle-verifier-v2/      # V2 verifier (deprecated, dev-only)
-│   ├── growthip-merkle-verifier-v3/      # V3 verifier - active
+│   ├── growthip-merkle-verifier-v3/      # V3 verifier (deprecated, dev-only)
+│   ├── growthip-merkle-verifier-v3-1/    # V3.1 verifier ✅ active
 │   └── growthip-pool/                    # Pool escrow contract
 │       └── src/
 │           ├── lib.rs                    # Main contract logic
@@ -503,11 +576,14 @@ growthip/
 │           └── merkle_verify_test.rs     # Merkle root parity tests
 ├── scripts/
 │   ├── make_growthip_merkle_input_v3.js  # Generate V3 input
+│   ├── make_v3_1_test_input.js           # Generate V3.1 test input (non-trivial leaf)
 │   ├── extract_poseidon.js               # Extract circomlib constants -> Rust
-│   └── convert_growthip_merkle_note_v3_snarkjs.js  # Convert to Soroban format
+│   ├── convert_growthip_merkle_note_v3_snarkjs.js    # V3 proof -> Soroban format
+│   ├── convert_growthip_merkle_note_v3_1_snarkjs.js  # V3.1 proof -> Soroban format
+│   └── convert_vk_to_parameters.js       # snarkjs VK -> verifier parameters.json
 ├── packages/
 │   └── growthip-pool-client/             # Generated TypeScript binding
-└── testnet.env                           # Testnet contract addresses
+└── testnet.env                           # Testnet contract addresses (reference only)
 ```
 
 ---
@@ -554,28 +630,28 @@ cargo test --workspace
 stellar contract build
 ```
 
-### Generate Fresh V3 Proof
+### Generate a Fresh V3.1 Proof
 
 ```bash
-node scripts/make_growthip_merkle_input_v3.js
+node scripts/make_v3_1_test_input.js
 
-node circuits/build/growthip_merkle_note_v3_js/generate_witness.js \
-  circuits/build/growthip_merkle_note_v3_js/growthip_merkle_note_v3.wasm \
-  circuits/growthip_merkle_note_v3_input.json \
-  circuits/build/growthip_merkle_note_v3_witness.wtns
+node circuits/build/growthip_merkle_note_v3_1_js/generate_witness.js \
+  circuits/build/growthip_merkle_note_v3_1_js/growthip_merkle_note_v3_1.wasm \
+  circuits/growthip_merkle_note_v3_1_input.json \
+  circuits/build/growthip_merkle_note_v3_1_witness.wtns
 
 snarkjs groth16 prove \
-  circuits/build/growthip_merkle_note_v3_final.zkey \
-  circuits/build/growthip_merkle_note_v3_witness.wtns \
-  circuits/build/growthip_merkle_note_v3_proof.json \
-  circuits/build/growthip_merkle_note_v3_public.json
+  circuits/build/growthip_merkle_note_v3_1_final.zkey \
+  circuits/build/growthip_merkle_note_v3_1_witness.wtns \
+  circuits/build/growthip_merkle_note_v3_1_proof.json \
+  circuits/build/growthip_merkle_note_v3_1_public.json
 
 snarkjs groth16 verify \
-  circuits/build/growthip_merkle_note_v3_verification_key.json \
-  circuits/build/growthip_merkle_note_v3_public.json \
-  circuits/build/growthip_merkle_note_v3_proof.json
+  circuits/build/growthip_merkle_note_v3_1_verification_key.json \
+  circuits/build/growthip_merkle_note_v3_1_public.json \
+  circuits/build/growthip_merkle_note_v3_1_proof.json
 
-node scripts/convert_growthip_merkle_note_v3_snarkjs.js
+node scripts/convert_growthip_merkle_note_v3_1_snarkjs.js
 ```
 
 ---
@@ -590,8 +666,9 @@ The pool contract is fully transparent — every deposit and withdrawal is visib
 * ✅ Recipient registration required — accountable claim flow
 * ✅ Testnet only — no real assets
 * ✅ Not a general-purpose mixer — application-specific tipping only
-* ✅ All limitations documented honestly, including a self-found and
-  self-fixed root-validation vulnerability
+* ✅ All limitations documented honestly, including two self-found and
+  self-fixed critical vulnerabilities (root validation, deposit-amount
+  payout) — see [SECURITY.md](SECURITY.md)
 
 **Why privacy is legitimate:**
 When you tip a street musician, nobody records your name. When you support a creator in person, there is no public ledger. Growthip brings this natural privacy to blockchain-based creator support — without hiding the pool itself, and without compromising auditability of the protocol.
@@ -600,32 +677,44 @@ When you tip a street musician, nobody records your name. When you support a cre
 
 ## Roadmap
 
-**Phase 1 — Hackathon MVP**
+**Phase 1 — Hackathon MVP ✅**
 * Native BN254 Groth16 verifier on Soroban (Protocol 25/26)
-* V3 circuit with cryptographic recipient binding
+* V3.1 circuit with cryptographic recipient binding and deposit-amount-aware
+  claims
 * Pool escrow with nullifier anti-double-claim
 * Trustless on-chain Merkle root computation + root-history validation
 * 1% platform fee with privacy-preserving batch withdrawal
 * Freighter deposit + claim flow
-* Testnet E2E working
-* 25 tests passing
+* Testnet E2E working, including live verification of correct payout on
+  multi-unit (5x/20x) deposits
+* 31 tests passing
 * Vercel deployment
 
-**Phase 2 — Note Delivery & UX**
-* Encrypted claim note via Stellar Data Entry
-* End-to-end encrypted creator inbox
-* QR code claim ticket flow
+**Phase 2 — Creator Profiles & Sharing ✅**
+* Shareable, cosmetically-obfuscated creator tip links (`/tip/[id]`)
+* QR codes for both tip links and private claim notes
+* Optional public on-chain donor messages (max 50 chars)
+* Auto-registration of recipient hashes across all token pools on wallet connect
 
-**Phase 3 — Production Hardening**
+**Phase 3 — Encrypted Note Delivery**
+* In-app encrypted note delivery (mechanism TBD — evaluated and rejected
+  Stellar `manageData` entries for this due to their 64-byte size limit,
+  far smaller than a private note; current direction is client-side
+  encryption with the blob carried in the shareable link/QR itself, to
+  stay backend-free)
+* End-to-end encrypted creator inbox
+* Private (creator-only) donor messages, as an alternative to the public
+  on-chain message
+
+**Phase 4 — Production Hardening**
 * Formal security audit
-* Public, multi-party trusted-setup ceremony for the V3 circuit
+* Public, multi-party trusted-setup ceremony for the V3.1 circuit
 * View key for compliance reporting
 * Allowlist / eligibility gate
 * Association Set Provider (ASP) integration
 * Vault Mode: offline claim signing
 
-**Phase 4 — Creator Platform**
-* Creator profile pages
+**Phase 5 — Creator Platform**
 * Premium tier (advanced analytics, API/SDK access)
 * Multiple denomination pools
 * Web Worker browser proof generation
@@ -644,8 +733,8 @@ Growthip is a hackathon/testnet prototype.
 * Note delivery is manual (off-chain, not encrypted)
 * Small anonymity set on testnet (max 8 leaves per tree)
 * Merkle root is NOT admin-controlled — computed on-chain natively
-* Honest about all limitations, including a self-found vulnerability
-  and its fix
+* Honest about all limitations, including two self-found vulnerabilities
+  and their fixes (see [SECURITY.md](SECURITY.md))
 * Testnet only — no real funds at risk
 
 ---
