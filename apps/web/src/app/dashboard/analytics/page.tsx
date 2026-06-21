@@ -11,6 +11,8 @@ import {
   type PrivateNote,
 } from "@/lib/note";
 import { getToken } from "@/lib/tokens";
+import { isConnected, requestAccess } from "@stellar/freighter-api";
+import { useRegistryClient } from "@/lib/registryClient";
 
 
 
@@ -60,6 +62,38 @@ export default function AnalyticsPage() {
   const [claimed, setClaimed] = useState<PrivateNote[]>([]);
 
   const availableTokens = SUPPORTED_TOKENS.filter((t) => t.available);
+
+  // Analytics is a premium feature -- gated behind growthip-creator-registry's
+  // is_premium(), same activation as private notes (Tahap 3 decision).
+  const { isReady: registryReady, buildRegistryClient } = useRegistryClient();
+  const [address, setAddress] = useState("");
+  const [premiumChecked, setPremiumChecked] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const conn = await isConnected();
+      if (!conn.isConnected) { setPremiumChecked(true); return; }
+      const access = await requestAccess();
+      if (access.error) { setPremiumChecked(true); return; }
+      setAddress(access.address);
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (!address || !registryReady) return;
+    (async () => {
+      try {
+        const client = buildRegistryClient(address);
+        const result = await client.is_premium({ recipient: address });
+        setIsPremium(result.result === true);
+      } catch (err) {
+        console.error("Failed to check premium status:", err);
+      } finally {
+        setPremiumChecked(true);
+      }
+    })();
+  }, [address, registryReady, buildRegistryClient]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -125,6 +159,28 @@ export default function AnalyticsPage() {
       iconBg: "#FEF2F2",
     },
   ];
+
+  // Premium gate: Analytics is locked behind growthip-creator-registry's
+  // is_premium(), the same activation flow as private notes.
+  if (premiumChecked && !isPremium) {
+    return (
+      <div style={{ padding: "32px", background: "#FAFAFA", minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ maxWidth: "360px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+          <Icon icon="ph:chart-line-up-bold" style={{ fontSize: "36px", color: "#A3A3A3" }} />
+          <p style={{ fontSize: "16px", fontWeight: 700, color: "#171717" }}>Analytics is a Premium feature</p>
+          <p style={{ fontSize: "13px", color: "#737373", lineHeight: 1.6 }}>
+            Activate private notes (one-time 6 XLM) in Settings to unlock detailed analytics, alongside encrypted notes from supporters.
+          </p>
+          <a
+            href="/dashboard/settings"
+            style={{ marginTop: "8px", padding: "10px 20px", borderRadius: "10px", background: "#0A0A0A", color: "white", fontSize: "13px", fontWeight: 700, textDecoration: "none" }}
+          >
+            Go to Settings
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: "32px", background: "#FAFAFA" }}>

@@ -24,6 +24,8 @@ import { config } from "@/lib/config";
 import { getAvailableTokens, type Token, type TokenSymbol } from "@/lib/tokens";
 import { saveNote, type PrivateNote } from "@/lib/note";
 import { decodeTipId } from "@/lib/addressId";
+import { useRegistryClient } from "@/lib/registryClient";
+import { encryptNoteForRecipient } from "@/lib/encryption/keyManagement";
 import TokenSelector from "@/components/TokenSelector";
 import AmountSelector from "@/components/AmountSelector";
 
@@ -52,6 +54,13 @@ export default function PublicTipPage() {
   const [recipientAddress, setRecipientAddress] = useState<string | null>(null);
   const [linkError, setLinkError] = useState("");
 
+  // Premium / encryption gating -- private notes are mandatory: a
+  // supporter cannot tip a creator who hasn't activated private notes.
+  const { isReady: registryReady, buildRegistryClient } = useRegistryClient();
+  const [premiumChecked, setPremiumChecked] = useState(false);
+  const [creatorIsPremium, setCreatorIsPremium] = useState(false);
+  const [creatorEncryptionPubKey, setCreatorEncryptionPubKey] = useState<Uint8Array | null>(null);
+
   // Wallet
   const [address, setAddress]     = useState("");
   const [network, setNetwork]     = useState("");
@@ -68,6 +77,7 @@ export default function PublicTipPage() {
   const [busy, setBusy]                     = useState(false);
   const [status, setStatus]                 = useState("");
   const [sentNote, setSentNote]             = useState<PrivateNote | null>(null);
+  const [encryptedNoteBundle, setEncryptedNoteBundle] = useState<string | null>(null);
   const [copiedNote, setCopiedNote]         = useState(false);
   const [showQR, setShowQR]                 = useState(false);
 
@@ -92,6 +102,31 @@ export default function PublicTipPage() {
       setLinkError("This tip link is invalid or corrupted.");
     }
   }, [tipId]);
+
+  // Once we know the creator's real address, check whether they've
+  // activated premium (mandatory for private notes -- see Tahap 3
+  // design decision: no plaintext fallback).
+  useEffect(() => {
+    if (!recipientAddress || !registryReady) return;
+    (async () => {
+      try {
+        const client = buildRegistryClient(recipientAddress);
+        const [premiumResult, pubkeyResult] = await Promise.all([
+          client.is_premium({ recipient: recipientAddress }),
+          client.get_encryption_pubkey({ recipient: recipientAddress }),
+        ]);
+        setCreatorIsPremium(premiumResult.result === true);
+        if (pubkeyResult.result) {
+          setCreatorEncryptionPubKey(new Uint8Array(pubkeyResult.result));
+        }
+      } catch (err) {
+        console.error("Failed to check creator premium status:", err);
+        setCreatorIsPremium(false);
+      } finally {
+        setPremiumChecked(true);
+      }
+    })();
+  }, [recipientAddress, registryReady, buildRegistryClient]);
 
   async function connectWallet() {
     setWalletBusy(true);
@@ -138,6 +173,13 @@ export default function PublicTipPage() {
 
   async function handleDeposit() {
     if (!address || !isTestnet || !PoolClient || contractAmount === 0 || !recipientAddress) return;
+    // Private notes are mandatory (Tahap 3 design decision) -- a
+    // supporter cannot deposit at all if the creator hasn't activated
+    // premium / published an encryption public key.
+    if (!creatorIsPremium || !creatorEncryptionPubKey) {
+      setStatus("This creator hasn't activated private notes yet.");
+      return;
+    }
     setBusy(true);
     setStatus("Generating secret and nullifier...");
     try {
@@ -171,6 +213,12 @@ export default function PublicTipPage() {
       };
       saveNote(newNote);
       setSentNote(newNote);
+
+      setStatus("Encrypting note for the creator...");
+      const noteBytes = new TextEncoder().encode(JSON.stringify(newNote));
+      const bundle = await encryptNoteForRecipient(creatorEncryptionPubKey, noteBytes);
+      setEncryptedNoteBundle(bundle);
+
       setStatus("Tip sent!");
       setStep("done");
     } catch (err) {
@@ -252,7 +300,25 @@ export default function PublicTipPage() {
           </Card>
         ) : (
           <Card>
-            {step === "select" && (
+            {step === "select" && premiumChecked && !creatorIsPremium && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px", alignItems: "center", textAlign: "center", padding: "12px 0" }}>
+                <Icon icon="ph:lock-key-bold" style={{ fontSize: "32px", color: "#A3A3A3" }} />
+                <p style={{ fontSize: "15px", fontWeight: 700, color: "#171717" }}>This creator hasn&apos;t activated private notes yet</p>
+                <p style={{ fontSize: "13px", color: "#737373", lineHeight: 1.6, maxWidth: "320px" }}>
+                  Growthip requires creators to activate end-to-end encrypted notes before they can receive tips.
+                  Share this link with them so they can turn it on.
+                </p>
+                <button
+                  onClick={() => { navigator.clipboard.writeText(window.location.href); }}
+                  style={{ marginTop: "8px", padding: "10px 16px", borderRadius: "10px", background: "#0A0A0A", color: "white", border: "none", fontSize: "13px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
+                >
+                  <Icon icon="ph:copy-simple-bold" />
+                  Copy Link to Share
+                </button>
+              </div>
+            )}
+
+            {step === "select" && premiumChecked && creatorIsPremium && (
               <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                 <div>
                   <p style={{ fontSize: "11px", fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>Select Token</p>
@@ -336,26 +402,31 @@ export default function PublicTipPage() {
                   <p style={{ fontSize: "18px", fontWeight: 800, color: "#0A0A0A", marginTop: "8px" }}>Tip sent!</p>
                   <p style={{ fontSize: "13px", color: "#737373", marginTop: "4px" }}>Send this private note to the creator so they can claim it.</p>
                 </div>
+                <div style={{ padding: "12px 14px", borderRadius: "10px", border: "1px solid #D1FAE5", background: "#F0FDF4", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <Icon icon="ph:lock-key-bold" style={{ fontSize: "16px", color: "#22C55E" }} />
+                  <p style={{ fontSize: "12px", color: "#15803D" }}>This note is end-to-end encrypted -- only the creator can read it.</p>
+                </div>
                 <div style={{ padding: "16px", borderRadius: "12px", border: "1px solid #E5E5E5", background: "#FAFAFA" }}>
-                  <p style={{ fontSize: "11px", fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>Private Note</p>
+                  <p style={{ fontSize: "11px", fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>Encrypted Note</p>
                   <textarea
                     readOnly
                     rows={6}
-                    value={JSON.stringify(sentNote, null, 2)}
+                    value={encryptedNoteBundle ?? ""}
                     onFocus={(e) => e.currentTarget.select()}
-                    style={{ width: "100%", fontFamily: "monospace", fontSize: "11px", color: "#525252", background: "white", border: "1px solid #E5E5E5", borderRadius: "8px", padding: "12px", resize: "none" }}
+                    style={{ width: "100%", fontFamily: "monospace", fontSize: "11px", color: "#525252", background: "white", border: "1px solid #E5E5E5", borderRadius: "8px", padding: "12px", resize:"none", wordBreak: "break-all" }}
                   />
                 </div>
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(JSON.stringify(sentNote));
+                    if (!encryptedNoteBundle) return;
+                    navigator.clipboard.writeText(encryptedNoteBundle);
                     setCopiedNote(true);
                     setTimeout(() => setCopiedNote(false), 2000);
                   }}
                   style={{ width: "100%", padding: "12px", borderRadius: "12px", background: copiedNote ? "#22c55e" : "#0A0A0A", color: "white", fontSize: "14px", fontWeight: 700, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
                 >
                   <Icon icon={copiedNote ? "ph:check-bold" : "ph:copy-simple-bold"} style={{ fontSize: "18px" }} />
-                  {copiedNote ? "Copied!" : "Copy Note"}
+                  {copiedNote ? "Copied!" : "Copy Encrypted Note"}
                 </button>
                 <button
                   onClick={() => setShowQR((prev) => !prev)}
@@ -364,10 +435,10 @@ export default function PublicTipPage() {
                   <Icon icon="ph:qr-code-bold" style={{ fontSize: "18px" }} />
                   {showQR ? "Hide QR Code" : "Show QR Code"}
                 </button>
-                {showQR && (
+                {showQR && encryptedNoteBundle && (
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", padding: "16px", borderRadius: "12px", border: "1px solid #E5E5E5", background: "#FAFAFA" }}>
                     <div style={{ background: "white", padding: "12px", borderRadius: "10px", border: "1px solid #E5E5E5" }}>
-                      <QRCodeSVG value={JSON.stringify(sentNote)} size={180} level="M" />
+                      <QRCodeSVG value={encryptedNoteBundle} size={180} level="M" />
                     </div>
                     <p style={{ fontSize: "12px", color: "#737373", textAlign: "center", maxWidth: "260px" }}>
                       Let the creator scan this directly to claim.

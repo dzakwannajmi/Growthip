@@ -367,13 +367,44 @@ export default function DashboardPage() {
     setClaimBusy(true);
 
     try {
-      // Parse note
+      // Parse note -- supports two formats:
+      //   1. Encrypted bundle (base64url, from a supporter using /tip/[id])
+      //      -- must be decrypted with the unlocked encryption session
+      //      before it can be parsed as JSON.
+      //   2. Legacy plaintext note (raw JSON or base64 JSON) -- kept for
+      //      backward compatibility with notes sent before encryption
+      //      was mandatory.
       const raw = noteInput.trim();
       let note: PrivateNote;
-      try {
-        note = raw.startsWith("{") ? JSON.parse(raw) : JSON.parse(atob(raw));
-      } catch {
-        throw new Error("Invalid note format.");
+
+      if (!raw.startsWith("{")) {
+        // Try treating it as an encrypted bundle first.
+        const { decryptIncomingNote } = await import("@/lib/encryption/keyManagement");
+        const { isUnlocked } = await import("@/lib/encryption/keyManagement");
+        try {
+          if (!isUnlocked()) {
+            throw new Error(
+              "Your private notes are locked. Unlock them in Settings before claiming.",
+            );
+          }
+          const decryptedBytes = await decryptIncomingNote(raw);
+          note = JSON.parse(new TextDecoder().decode(decryptedBytes));
+        } catch (decryptErr) {
+          // Fall back to legacy plain-base64 JSON, in case this is an
+          // old, pre-encryption note rather than a malformed/foreign
+          // encrypted bundle.
+          try {
+            note = JSON.parse(atob(raw));
+          } catch {
+            throw decryptErr instanceof Error ? decryptErr : new Error("Invalid note format.");
+          }
+        }
+      } else {
+        try {
+          note = JSON.parse(raw);
+        } catch {
+          throw new Error("Invalid note format.");
+        }
       }
       if (note.version !== "growthip-v3") throw new Error("Unsupported note version.");
       if (note.claimed) throw new Error("This note has already been claimed.");

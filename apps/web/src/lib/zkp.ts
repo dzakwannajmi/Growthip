@@ -125,21 +125,35 @@ async function loadWitnessCalculatorFactory(): Promise<
 > {
   if (witnessCalculatorFactory) return witnessCalculatorFactory;
 
-  // witness_calculator.js uses `module.exports = ...`. Shim a module object,
-  // evaluate the source, and read the export. This avoids bundler interference.
-  const res = await fetch(WITNESS_CALCULATOR_PATH);
-  if (!res.ok) {
-    throw new Error(`Failed to load witness_calculator.js (${res.status})`);
-  }
-  const src = await res.text();
-  const moduleShim: { exports: unknown } = { exports: {} };
-  // eslint-disable-next-line @typescript-eslint/no-implied-eval, no-new-func
-  const factory = new Function("module", "exports", src);
-  factory(moduleShim, moduleShim.exports);
+  // witness_calculator.js uses `module.exports = ...`. Rather than
+  // evaluating the source as a string via `new Function(...)` (which is
+  // functionally identical to eval() and is blocked by a CSP without
+  // 'unsafe-eval' -- a much broader permission than this narrow use case
+  // needs), we inject it as a real <script> tag. Real <script> tags are
+  // permitted by `script-src 'self'` without requiring 'unsafe-eval' at
+  // all, since the browser treats them as ordinary same-origin script
+  // loading, not dynamic code evaluation.
+  //
+  // The script assigns to `module.exports`, so we provide `window.module`
+  // as a temporary global the script can write to, then read it back and
+  // clean up immediately afterward to avoid polluting global scope.
+  const w = window as unknown as { module?: { exports: unknown } };
+  w.module = { exports: {} };
 
-  witnessCalculatorFactory = moduleShim.exports as (
+  await new Promise<void>((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = WITNESS_CALCULATOR_PATH;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Failed to load witness_calculator.js"));
+    document.head.appendChild(script);
+  });
+
+  witnessCalculatorFactory = w.module!.exports as (
     wasm: ArrayBuffer | Uint8Array,
   ) => Promise<WitnessCalculator>;
+
+  delete w.module;
+
   return witnessCalculatorFactory;
 }
 

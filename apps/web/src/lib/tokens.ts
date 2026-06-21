@@ -78,7 +78,7 @@ export function fromBaseUnits(amount: number, token: Token): number {
 
 /** Format amount for display */
 export function formatAmount(amount: number, token: Token): string {
-  const human = fromBaseUnits(amount, token);
+  const human = fromBaseUnits(amount, token); 
   return `${human % 1 === 0 ? human.toFixed(0) : human.toFixed(1)} ${token.symbol}`;
 }
 

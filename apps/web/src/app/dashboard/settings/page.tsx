@@ -1,8 +1,23 @@
 "use client";
 
 import { Icon } from "@iconify/react";
+import { useState, useEffect } from "react";
+import { isConnected, requestAccess } from "@stellar/freighter-api";
+import EncryptionSetup from "@/components/EncryptionSetup";
 
 export default function SettingsPage() {
+  const [address, setAddress] = useState("");
+  const [showSecurity, setShowSecurity] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const conn = await isConnected();
+      if (!conn.isConnected) return;
+      const access = await requestAccess();
+      if (!access.error) setAddress(access.address);
+    })();
+  }, []);
+
   return (
     <div className="p-4 md:p-8 lg:p-10 w-full min-h-full" style={{ background: "#FAFAFA" }}>
       <div className="max-w-[700px] mx-auto pb-20 flex flex-col gap-6">
@@ -51,20 +66,30 @@ export default function SettingsPage() {
               <Icon icon="ph:caret-right-bold" style={{ color: "#A3A3A3" }} />
             </button>
             <div style={{ height: "1px", background: "#E5E5E5" }} />
-            <button className="w-full p-4 flex items-center justify-between transition-colors hover:bg-[#FAFAFA]">
+            <button onClick={() => setShowSecurity((p) => !p)} className="w-full p-4 flex items-center justify-between transition-colors hover:bg-[#FAFAFA]">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "#F5F5F5" }}>
                   <Icon icon="ph:shield-check-bold" className="text-xl" style={{ color: "#0A0A0A" }} />
                 </div>
                 <div className="text-left">
-                  <div className="font-bold text-sm" style={{ color: "#0A0A0A" }}>Security</div>
-                  <div className="text-xs" style={{ color: "#737373" }}>Manage your account security</div>
+                  <div className="font-bold text-sm" style={{ color: "#0A0A0A" }}>Security & Private Notes</div>
+                  <div className="text-xs" style={{ color: "#737373" }}>Enable encrypted notes from supporters</div>
                 </div>
               </div>
-              <Icon icon="ph:caret-right-bold" style={{ color: "#A3A3A3" }} />
+              <Icon icon={showSecurity ? "ph:caret-up-bold" : "ph:caret-right-bold"} style={{ color: "#A3A3A3" }} />
             </button>
           </div>
         </div>
+
+        {showSecurity && (
+          <div className="rounded-2xl p-4" style={{ border: "1px solid #E5E5E5", background: "white" }}>
+            {address ? (
+              <EncryptionSetup address={address} />
+            ) : (
+              <p style={{ fontSize: "13px", color: "#737373" }}>Connect your wallet first.</p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
