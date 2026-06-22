@@ -1,7 +1,7 @@
 # Growthip Contracts
 
 Soroban smart contracts for the Growthip privacy tipping protocol, written
-in Rust. This directory is a Cargo workspace with six members.
+in Rust. This directory is a Cargo workspace with eight members.
 
 For the protocol-level design and security history, see the
 [root README](../README.md) and [SECURITY.md](../SECURITY.md). This
@@ -15,7 +15,9 @@ deployment.
 | Crate | Role | Status |
 |---|---|---|
 | `growthip-pool` | Main escrow + claim contract | ✅ Active, production |
-| `growthip-merkle-verifier-v3` | Native BN254 Groth16 verifier for the V3 circuit | ✅ Active, production |
+| `growthip-merkle-verifier-v3-1` | Native BN254 Groth16 verifier for the V3.1 circuit (adds deposit-index public output) | ✅ Active, production |
+| `growthip-creator-registry` | Global creator identity: encryption pubkey + premium status, deployed once (not per-token) | ✅ Active, production |
+| `growthip-merkle-verifier-v3` | Verifier for the V3 circuit (3 public inputs, no deposit-amount binding) | Deprecated — superseded by V3.1, see [SECURITY.md Issue #3](../SECURITY.md#self-found-issue-3--deposit-amount-aware-claims) |
 | `growthip-merkle-verifier-v2` | V2 verifier | Deprecated — kept as a `dev-dependency` for one historical test only, not in the production build |
 | `growthip-merkle-verifier` | V1 verifier | Deprecated — kept for reference/test coverage |
 | `growthip-note-verifier` | V0 verifier (no Merkle proof) | Deprecated — kept for reference/test coverage |
@@ -32,8 +34,8 @@ contracts/growthip-pool/
 ├── Cargo.toml
 └── src/
     ├── lib.rs                            # Contract entry points, DataKey,
-    │                                      # claim()/deposit_paid()/etc.,
-    │                                      # #[cfg(test)] module
+    │                                      # claim()/claim_to()/deposit_paid()/
+    │                                      # etc., #[cfg(test)] module
     ├── merkle_onchain.rs                 # rebuild_merkle_root() — on-chain
     │                                      # Merkle tree reconstruction using
     │                                      # the native Poseidon host function
@@ -45,8 +47,11 @@ contracts/growthip-pool/
     ├── poseidon_verify_test.rs           # Verifies Soroban's native
     │                                      # poseidon_permutation() matches
     │                                      # circomlibjs byte-for-byte
-    └── merkle_verify_test.rs             # Verifies on-chain Merkle root
-                                           # matches the frontend's merkle.ts
+    ├── merkle_verify_test.rs             # Verifies on-chain Merkle root
+    │                                      # matches the frontend's merkle.ts
+    └── public_message_test.rs            # Verifies the optional 50-byte
+                                           # public donor message round-trips
+                                           # correctly through deposit_paid()
 ```
 
 ### Why `poseidon_constants_generated.rs` exists
@@ -77,13 +82,51 @@ trusting the new constants anywhere near `claim()` or
 
 ### Why the Merkle tree is rebuilt, not updated incrementally
 
-The V3 circuit uses a **fixed depth-3 tree (max 8 leaves)**. Rather than
+The V3.1 circuit uses a **fixed depth-3 tree (max 8 leaves)**. Rather than
 implementing an incremental sparse-Merkle-tree update (the pattern used by
 larger privacy pools like Tornado Cash), `deposit_internal()` simply
 re-reads all current commitments and rebuilds the entire tree from
 scratch on every deposit — 7 total `hash2` calls at most (4 + 2 + 1
 levels). This is correct and cheap at this scale; it would not be the
 right approach for a tree large enough to need true incremental updates.
+
+### Why `claim_to()` looks up `CommitmentAmount(index)` instead of a flat `TipAmount`
+
+This is the fix for a critical bug found via a real testnet transaction —
+see [SECURITY.md, Issue #3](../SECURITY.md#self-found-issue-3--deposit-amount-aware-claims)
+for the full story. In short: deposits accept 1x/5x/10x/20x the pool's
+base denomination, but the original `claim_to()` always paid out a flat
+1x regardless of what was actually deposited. The V3.1 circuit's fourth
+public output (`index`, the deposit's Merkle leaf position) lets
+`claim_to()` look up the real deposited amount instead.
+
+---
+
+## `growthip-creator-registry` — Structure
+
+```text
+contracts/growthip-creator-registry/
+├── Cargo.toml
+└── src/
+    └── lib.rs   # register_encryption_pubkey(), is_premium(),
+                 # get_encryption_pubkey(), withdraw_fees(), tests
+```
+
+Deliberately a **separate contract**, not a field added to
+`growthip-pool`. Reasoning: `growthip-pool` is deployed once per token
+(one instance for XLM, another for USDC, etc.), but premium status and a
+creator's encryption public key are properties of the *creator's wallet*,
+not of "the creator within one specific pool." Putting this state inside
+`growthip-pool` would mean a creator paying the one-time premium
+activation fee once per token pool — not the intended pricing model. See
+the [root README's Creator Links & Sharing / premium section](../README.md)
+for the user-facing design.
+
+`register_encryption_pubkey()` charges a one-time fee (6 XLM by default,
+adjustable post-deploy via `update_premium_fee()`) on the *first* call for
+a given address, and is free on every subsequent call — this lets a
+creator rotate their encryption key (e.g. after restoring access on a new
+device via recovery phrase) without being charged again.
 
 ---
 
@@ -129,11 +172,11 @@ cd contracts/growthip-pool && cargo test
 Run a specific test:
 
 ```bash
-cd contracts/growthip-pool && cargo test test_claim_to_with_v3_verifier_and_proof
+cd contracts/growthip-pool && cargo test test_claim_to_with_v3_1_verifier_pays_actual_deposited_amount
 ```
 
-As of the current deployment, the full suite reports
-**25 passed, 0 failed, 3 ignored** (the three ignored tests are
+As of the current deployment, the full workspace suite reports
+**37 passed, 0 failed, 3 ignored** (the three ignored tests are
 intentionally disabled outdated V2 fixtures — see each test's inline
 `#[ignore = "..."]` reason, or
 [SECURITY.md](../SECURITY.md#self-found-issue-1--root-forgery) for the
@@ -143,15 +186,16 @@ full explanation).
 
 ## Deploy (Testnet)
 
-This sequence deploys a verifier and a pool, then initializes and
-configures the pool. Repeat the pool-deploy steps once per token (e.g.
-once for XLM, once for USDC) — pools are independent instances of the
-same WASM binary.
+This sequence deploys a verifier, a pool, and the creator registry, then
+initializes and configures each. Repeat the pool-deploy steps once per
+token (e.g. once for XLM, once for USDC) — pools are independent
+instances of the same WASM binary. The creator registry, by contrast, is
+deployed **once total**, regardless of how many token pools exist.
 
 ```bash
 # 1. Deploy the verifier
 stellar contract deploy \
-  --wasm target/wasm32v1-none/release/growthip_merkle_verifier_v3.wasm \
+  --wasm target/wasm32v1-none/release/growthip_merkle_verifier_v3_1.wasm \
   --source <your-identity> \
   --network testnet
 
@@ -186,6 +230,25 @@ stellar contract invoke \
   -- set_token \
   --admin <admin-address> \
   --token_addr <token-sac-address>
+
+# 5. Deploy the creator registry (once, not per-token)
+stellar contract deploy \
+  --wasm target/wasm32v1-none/release/growthip_creator_registry.wasm \
+  --source <your-identity> \
+  --network testnet
+
+# 6. Initialize the registry -- token_addr is whichever asset premium
+#    fees are charged in (XLM, in Growthip's deployment), independent of
+#    which token(s) the creator later receives tips through.
+stellar contract invoke \
+  --id <registry-id> \
+  --source <your-identity> \
+  --network testnet \
+  --send=yes \
+  -- initialize \
+  --admin <admin-address> \
+  --token_addr <token-sac-address> \
+  --treasury <treasury-address>
 ```
 
 The `--root` value passed to `initialize` is effectively a placeholder —
@@ -206,6 +269,9 @@ stellar contract invoke --id <pool-id> --source <identity> --network testnet -- 
 
 # Confirm a fresh pool starts at zero deposits
 stellar contract invoke --id <pool-id> --source <identity> --network testnet -- total_deposits
+
+# Confirm the registry's premium fee matches expectations (60000000 = 6 XLM)
+stellar contract invoke --id <registry-id> --source <identity> --network testnet -- premium_fee
 ```
 
 ---
@@ -214,7 +280,8 @@ stellar contract invoke --id <pool-id> --source <identity> --network testnet -- 
 
 There is no in-place "fix the address" option for Soroban contracts — a
 new WASM hash means a new contract identity. After deploying a new
-version of `growthip-pool` or `growthip-merkle-verifier-v3`:
+version of `growthip-pool`, `growthip-merkle-verifier-v3-1`, or
+`growthip-creator-registry`:
 
 1. Update `apps/web/.env.local` with the new contract IDs
 2. Update the same variables in your hosting provider's environment
@@ -226,7 +293,9 @@ version of `growthip-pool` or `growthip-merkle-verifier-v3`:
    changeable afterward only via the admin-gated `update_verifier()`
 
 A pool with `total_deposits() == 0` can simply be discarded and
-re-deployed fresh with corrected parameters (as happened during this
-project's own development — see commit history around the tip-amount
-fix). A pool with real deposits would need a proper state-migration plan,
-which is out of scope for this prototype.
+re-deployed fresh with corrected parameters (as happened multiple times
+during this project's own development — the root-validation fix, the
+verifier-interface-leak fix, and the deposit-amount-aware claims fix each
+required a fresh pool deployment; see [SECURITY.md](../SECURITY.md) for
+the full history of each). A pool with real deposits would need a proper
+state-migration plan, which is out of scope for this prototype.

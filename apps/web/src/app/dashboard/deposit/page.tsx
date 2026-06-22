@@ -161,7 +161,7 @@ export default function DepositPage() {
         root: "0".padStart(64, "0"), token: token.symbol as TokenSymbol,
         amount: String(contractAmount), timestamp: Date.now(), depositIndex, claimed: false,
       };
-      saveNote(newNote);
+      saveNote(address, newNote);
       setNote(newNote);
       setStatus("Deposit successful.");
       setStep("note");

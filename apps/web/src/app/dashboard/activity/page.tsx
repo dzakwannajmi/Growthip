@@ -92,8 +92,9 @@ export default function ActivityPage() {
   }, []);
 
   function loadNotes() {
-    setPending(getPendingNotes());
-    setClaimed(getClaimedNotes());
+    if (!address) { setPending([]); setClaimed([]); return; }
+    setPending(getPendingNotes(address));
+    setClaimed(getClaimedNotes(address));
   }
 
   useEffect(() => { loadNotes(); }, [claimTxHash]);
@@ -196,7 +197,7 @@ export default function ActivityPage() {
 
       const hash = sent.sendTransactionResponse?.hash ?? "submitted";
       setClaimTxHash(hash);
-      markNoteAsClaimed(note.nullifierHash, hash);
+      markNoteAsClaimed(address, note.nullifierHash, hash);
       setClaimStage("done");
       loadNotes();
     } catch (err) {

@@ -205,7 +205,7 @@ function ClaimContent() {
       }
 
       setTxHash(hash);
-      markNoteAsClaimed(note.nullifierHash, hash);
+      markNoteAsClaimed(address, note.nullifierHash, hash);
       setStage("done");
     } catch (err) {
       console.error(err);

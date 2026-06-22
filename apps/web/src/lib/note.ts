@@ -4,6 +4,13 @@
  * A private note is a bearer instrument — whoever holds it can claim the tip.
  * Notes are stored in localStorage and must never be shared publicly.
  *
+ * STORAGE IS NAMESPACED PER WALLET ADDRESS (growthip:notes:${address}) so
+ * that switching the connected Freighter account in the same browser does
+ * not show one address's private notes while a different address is
+ * active. This was a real gap before this change: all addresses sharing
+ * one browser saw the exact same note list, because storage was a single
+ * global key with no address parameter at all.
+ *
  * Note structure (V3):
  *   secret       — random 31-byte field element (private input to circuit)
  *   nullifier    — random 31-byte field element (private input to circuit)
@@ -36,7 +43,16 @@ export interface PrivateNote {
   txHash?:       string;
 }
 
-const STORAGE_KEY = "growthip:notes:v3";
+/** Legacy, pre-namespacing storage key. Read-only after migration exists —
+ * never written to again, kept only so migrateLegacyNotes() can find and
+ * move data out of it. */
+const LEGACY_STORAGE_KEY = "growthip:notes:v3";
+
+function storageKeyFor(address: string): string {
+  // Full, untruncated address in the key — truncating would risk
+  // collisions between different addresses sharing a short prefix.
+  return `growthip:notes:${address}`;
+}
 
 /** Encode a note to a base64 string for sharing/QR. */
 export function encodeNote(note: PrivateNote): string {
@@ -55,21 +71,19 @@ export function decodeNote(encoded: string): PrivateNote | null {
   }
 }
 
-/** Save a note to localStorage. */
-export function saveNote(note: PrivateNote): void {
-  const notes = getAllNotes();
-  // Prevent duplicates by nullifierHash
-  const exists = notes.some((n) => n.nullifierHash === note.nullifierHash);
-  if (!exists) {
-    notes.push(note);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
-  }
+/**
+ * Saves the full notes array for a given address, overwriting whatever
+ * was there before. Low-level primitive -- prefer saveNote() for adding
+ * a single note (it handles dedup + read-modify-write for you).
+ */
+export function saveNotes(address: string, notes: PrivateNote[]): void {
+  localStorage.setItem(storageKeyFor(address), JSON.stringify(notes));
 }
 
-/** Get all notes from localStorage. */
-export function getAllNotes(): PrivateNote[] {
+/** Returns the full notes array for a given address, or [] if none exist. */
+export function getNotes(address: string): PrivateNote[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKeyFor(address));
     if (!raw) return [];
     return JSON.parse(raw) as PrivateNote[];
   } catch {
@@ -77,30 +91,97 @@ export function getAllNotes(): PrivateNote[] {
   }
 }
 
-/** Get only unclaimed notes. */
-export function getPendingNotes(): PrivateNote[] {
-  return getAllNotes().filter((n) => !n.claimed);
+/** Save a single note under the given address's namespace, deduplicated
+ * by nullifierHash. */
+export function saveNote(address: string, note: PrivateNote): void {
+  const notes = getNotes(address);
+  const exists = notes.some((n) => n.nullifierHash === note.nullifierHash);
+  if (!exists) {
+    notes.push(note);
+    saveNotes(address, notes);
+  }
 }
 
-/** Get only claimed notes. */
-export function getClaimedNotes(): PrivateNote[] {
-  return getAllNotes().filter((n) => n.claimed);
+/** @deprecated Use getNotes(address) instead. Kept temporarily so any
+ * call site not yet updated fails loudly rather than silently reading
+ * the wrong (legacy, unnamespaced) data. */
+export function getAllNotes(): never {
+  throw new Error(
+    "getAllNotes() is address-unaware and has been removed. Use getNotes(address) instead.",
+  );
 }
 
-/** Mark a note as claimed by its nullifierHash. */
-export function markNoteAsClaimed(nullifierHash: string, txHash?: string): void {
-  const notes = getAllNotes().map((n) =>
+export function getPendingNotes(address: string): PrivateNote[] {
+  return getNotes(address).filter((n) => !n.claimed);
+}
+
+export function getClaimedNotes(address: string): PrivateNote[] {
+  return getNotes(address).filter((n) => n.claimed);
+}
+
+/** Mark a note as claimed by its nullifierHash, within the given
+ * address's namespace. */
+export function markNoteAsClaimed(address: string, nullifierHash: string, txHash?: string): void {
+  const notes = getNotes(address).map((n) =>
     n.nullifierHash === nullifierHash
       ? { ...n, claimed: true, claimedAt: Date.now(), txHash }
       : n,
   );
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+  saveNotes(address, notes);
 }
 
-/** Delete a note by nullifierHash (use with caution — irreversible). */
-export function deleteNote(nullifierHash: string): void {
-  const notes = getAllNotes().filter((n) => n.nullifierHash !== nullifierHash);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+/** Delete a note by nullifierHash, within the given address's namespace.
+ * Use with caution — irreversible. */
+export function deleteNote(address: string, nullifierHash: string): void {
+  const notes = getNotes(address).filter((n) => n.nullifierHash !== nullifierHash);
+  saveNotes(address, notes);
+}
+
+/**
+ * One-way migration: moves notes from the old, unnamespaced global
+ * storage key into `currentAddress`'s namespaced bucket -- but ONLY
+ * notes this address can actually claim or already claimed (matched by
+ * recomputing recipientHash for `currentAddress` and comparing).
+ *
+ * DESIGN DECISION, not an oversight: legacy notes don't record which
+ * wallet originally sent them (a PrivateNote has no "depositor" field,
+ * only recipientHash). A note sent BY this address but FOR a different
+ * creator therefore cannot be safely attributed to `currentAddress`
+ * here -- guessing wrong would put one address's note history into
+ * another address's private bucket. Such notes are left in the legacy
+ * key, unmigrated, rather than risk a privacy leak. The legacy key
+ * itself is never deleted, so no data is lost -- it just isn't
+ * automatically sorted into a per-address bucket for the "sent as
+ * supporter" case.
+ *
+ * Idempotent: safe to call on every app load. Returns the number of
+ * notes migrated, for optional UI feedback ("imported N notes").
+ */
+export function migrateLegacyNotes(
+  currentAddress: string,
+  recipientHashForAddress: string,
+): number {
+  let legacy: PrivateNote[];
+  try {
+    const raw = localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (!raw) return 0;
+    legacy = JSON.parse(raw) as PrivateNote[];
+  } catch {
+    return 0;
+  }
+
+  const matching = legacy.filter((n) => n.recipientHash === recipientHashForAddress);
+  if (matching.length === 0) return 0;
+
+  const existing = getNotes(currentAddress);
+  const existingHashes = new Set(existing.map((n) => n.nullifierHash));
+  const toAdd = matching.filter((n) => !existingHashes.has(n.nullifierHash));
+
+  if (toAdd.length > 0) {
+    saveNotes(currentAddress, [...existing, ...toAdd]);
+  }
+
+  return toAdd.length;
 }
 
 /** Format timestamp to human-readable relative time. */

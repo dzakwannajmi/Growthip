@@ -211,7 +211,7 @@ export default function PublicTipPage() {
         root: "0".padStart(64, "0"), token: token.symbol as TokenSymbol,
         amount: String(contractAmount), timestamp: Date.now(), depositIndex, claimed: false,
       };
-      saveNote(newNote);
+      saveNote(address, newNote);
       setSentNote(newNote);
 
       setStatus("Encrypting note for the creator...");
@@ -299,6 +299,32 @@ export default function PublicTipPage() {
             {walletStatus && <p style={{ fontSize: "12px", color: "#737373", marginTop: "12px", textAlign: "center" }}>{walletStatus}</p>}
           </Card>
         ) : (
+          <>
+            {/* Connected wallet indicator -- Freighter is a single global
+                browser extension account, not per-tab. This makes it
+                explicit which wallet is currently active, since the page
+                cannot switch it (no such API exists in Freighter) -- the
+                user must do that inside the Freighter popup itself. */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: "10px", border: "1px solid #E5E5E5", background: "white" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <Icon icon="ph:wallet-bold" style={{ fontSize: "14px", color: "#737373" }} />
+                <span style={{ fontSize: "12px", color: "#737373" }}>Connected:</span>
+                <span style={{ fontSize: "12px", fontWeight: 700, color: "#171717", fontFamily: "monospace" }}>
+                  {address.slice(0, 4)}...{address.slice(-4)}
+                </span>
+              </div>
+              <span style={{ fontSize: "11px", color: "#A3A3A3" }}>Switch in Freighter</span>
+            </div>
+
+            {recipientAddress && address === recipientAddress && (
+              <div style={{ padding: "12px 14px", borderRadius: "10px", border: "1px solid #FDE68A", background: "#FFFBEB", display: "flex", alignItems: "flex-start", gap: "8px" }}>
+                <Icon icon="ph:warning-bold" style={{ fontSize: "16px", color: "#92400E", flexShrink: 0, marginTop: "1px" }} />
+                <p style={{ fontSize: "12px", color: "#92400E", lineHeight: 1.5 }}>
+                  Your connected wallet is the same as this tip link&apos;s recipient. You&apos;re about to send a tip to yourself. If that&apos;s not intended, switch accounts inside the Freighter extension first.
+                </p>
+              </div>
+            )}
+
           <Card>
             {step === "select" && premiumChecked && !creatorIsPremium && (
               <div style={{ display: "flex", flexDirection: "column", gap: "12px", alignItems: "center", textAlign: "center", padding: "12px 0" }}>
@@ -448,6 +474,7 @@ export default function PublicTipPage() {
               </div>
             )}
           </Card>
+          </>
         )}
 
         <p style={{ textAlign: "center", fontSize: "12px", color: "#A3A3A3" }}>

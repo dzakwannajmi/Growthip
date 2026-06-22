@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "@iconify/react";
+import { useRegistryClient } from "@/lib/registryClient";
+import { getProfile, avatarUrlFor } from "@/lib/profile";
 
 const NAV_ITEMS = [
   { href: "/dashboard",           icon: "ph:house-line-bold",       label: "Dashboard" },
@@ -72,6 +74,39 @@ export default function DashboardSidebar() {
   const [open, setOpen]         = useState(true);
   const [hovered, setHovered]   = useState<string | null>(null);
   const [logoHover, setLogoHover] = useState(false);
+
+  // Real connected-wallet profile data, replacing the previous hardcoded
+  // "CR" / "@creator" / "Free Plan" placeholder.
+  const [address, setAddress] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [isPremium, setIsPremium] = useState(false);
+  const { isReady: registryReady, buildRegistryClient } = useRegistryClient();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const load = () => setAddress(localStorage.getItem("growthip:wallet") ?? "");
+    load();
+    const interval = setInterval(load, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!address) { setDisplayName(""); return; }
+    setDisplayName(getProfile(address).displayName);
+  }, [address]);
+
+  useEffect(() => {
+    if (!address || !registryReady) { setIsPremium(false); return; }
+    (async () => {
+      try {
+        const client = buildRegistryClient(address);
+        const result = await client.is_premium({ recipient: address });
+        setIsPremium(result.result === true);
+      } catch {
+        setIsPremium(false);
+      }
+    })();
+  }, [address, registryReady, buildRegistryClient]);
   const collapsed               = !open;
 
   return (
@@ -153,26 +188,33 @@ export default function DashboardSidebar() {
           </div>
         </nav>
 
-        {/* Premium card */}
-        {!collapsed && (
+        {/* Premium card -- only shown if not already premium, and
+            reflects the actual feature set + price (6 XLM one-time, see
+            growthip-creator-registry). Previously hardcoded to a
+            nonexistent "100 XLM" / "Unlimited withdrawals" / "Bulk
+            withdraw" feature set that doesn't exist in this protocol. */}
+        {!collapsed && !isPremium && (
           <div className="px-3 mt-2">
             <div className="rounded-2xl bg-[#0A0A0A] text-white p-4">
               <div className="flex items-center gap-2 font-bold text-sm mb-1">
                 <Icon icon="ph:star-four-bold" />
                 Upgrade to Premium
               </div>
-              <p className="text-[11px] opacity-60 mb-3">100 XLM for unlimited features</p>
+              <p className="text-[11px] opacity-60 mb-3">6 XLM one-time, unlocks:</p>
               <ul className="space-y-1.5 mb-4">
-                {["Unlimited withdrawals", "Advanced analytics", "Bulk withdraw"].map((f) => (
+                {["Encrypted private notes", "Creator analytics dashboard"].map((f) => (
                   <li key={f} className="flex items-center gap-2 text-[11px] opacity-75">
                     <span className="w-1.5 h-1.5 rounded-full bg-white flex-shrink-0" />
                     {f}
                   </li>
                 ))}
               </ul>
-              <button className="w-full bg-white text-[#0A0A0A] font-bold text-xs py-2 rounded-xl hover:opacity-90 transition-opacity">
+              <Link
+                href="/dashboard/settings"
+                className="w-full bg-white text-[#0A0A0A] font-bold text-xs py-2 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center"
+              >
                 Upgrade Now
-              </button>
+              </Link>
             </div>
           </div>
         )}
@@ -218,13 +260,26 @@ export default function DashboardSidebar() {
                 collapsed ? "" : "w-full p-3",
               ].join(" ")}
             >
-              <div className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center font-bold text-white text-sm flex-shrink-0">
-                CR
-              </div>
+              {address ? (
+                <img
+                  src={avatarUrlFor(address)}
+                  alt="avatar"
+                  className="w-9 h-9 rounded-full flex-shrink-0"
+                  style={{ background: "#F5F5F5", border: "1px solid #E5E5E5" }}
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-full bg-[#E5E5E5] flex items-center justify-center font-bold text-[#A3A3A3] text-sm flex-shrink-0">
+                  ?
+                </div>
+              )}
               {!collapsed && (
-                <div className="flex flex-col text-left">
-                  <span className="text-sm font-bold text-[#0A0A0A] leading-tight">@creator</span>
-                  <span className="text-[10px] text-[#737373] leading-tight mt-0.5">Free Plan</span>
+                <div className="flex flex-col text-left min-w-0">
+                  <span className="text-sm font-bold text-[#0A0A0A] leading-tight truncate">
+                    {displayName || (address ? `${address.slice(0, 4)}...${address.slice(-4)}` : "Not connected")}
+                  </span>
+                  <span className="text-[10px] text-[#737373] leading-tight mt-0.5">
+                    {isPremium ? "Premium" : "Free Plan"}
+                  </span>
                 </div>
               )}
             </button>

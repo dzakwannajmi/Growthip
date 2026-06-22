@@ -32,8 +32,9 @@ import {
 import { config } from "@/lib/config";
 import WalletModal from "@/components/WalletModal";
 import { getAvailableTokens, type Token, type TokenSymbol } from "@/lib/tokens";
-import { saveNote, getPendingNotes, getClaimedNotes, markNoteAsClaimed, formatRelativeTime, type PrivateNote } from "@/lib/note";
+import { saveNote, getPendingNotes, getClaimedNotes, markNoteAsClaimed, migrateLegacyNotes, formatRelativeTime, type PrivateNote } from "@/lib/note";
 import { encodeTipId } from "@/lib/addressId";
+import { getProfile, avatarUrlFor } from "@/lib/profile";
 import TokenSelector from "@/components/TokenSelector";
 import AmountSelector from "@/components/AmountSelector";
 
@@ -155,6 +156,14 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 export default function DashboardPage() {
   // Wallet state
   const [address, setAddress] = useState<string>("");
+  const [displayName, setDisplayName] = useState("");
+
+  // Local profile display name, kept in sync with whatever was set on
+  // the Settings page (per-address localStorage, not on-chain).
+  useEffect(() => {
+    if (!address) { setDisplayName(""); return; }
+    setDisplayName(getProfile(address).displayName);
+  }, [address]);
   const [network, setNetwork] = useState<string>("");
   const [walletBusy, setWalletBusy] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
@@ -219,11 +228,12 @@ export default function DashboardPage() {
     );
   }, []);
 
-  // Load notes from localStorage
+  // Load notes from localStorage, namespaced per connected address.
   useEffect(() => {
-    setPending(getPendingNotes());
-    setClaimed(getClaimedNotes());
-  }, [sentNote, claimTxHash]);
+    if (!address) { setPending([]); setClaimed([]); return; }
+    setPending(getPendingNotes(address));
+    setClaimed(getClaimedNotes(address));
+  }, [sentNote, claimTxHash, address]);
 
   // ── Build client ────────────────────────────────────────────────────────
   const buildClient = useCallback(
@@ -286,6 +296,13 @@ export default function DashboardPage() {
     const recipientHash = await computeRecipientHash(walletAddress);
     const recipientHashBuf = Buffer.from(decimalToHex32(recipientHash), "hex");
 
+    // One-time migration: move any pre-namespacing notes this address
+    // can claim (matched by recipientHash) into this address's own
+    // localStorage bucket. Safe to call on every connect -- it's
+    // idempotent and a no-op once already migrated.
+    const recipientHashDecimal = recipientHash.toString();
+    migrateLegacyNotes(walletAddress, recipientHashDecimal);
+
     for (const tokenSymbol of ["XLM", "USDC"]) {
       try {
         const client = buildClient(walletAddress, tokenSymbol);
@@ -347,7 +364,7 @@ export default function DashboardPage() {
         root: "0".padStart(64, "0"), token: sendToken.symbol as TokenSymbol,
         amount: String(contractAmount), timestamp: Date.now(), depositIndex, claimed: false,
       };
-      saveNote(note);
+      saveNote(address, note);
       setSentNote(note);
       setSendStatus("Deposit successful!");
       setSendStep("done");
@@ -452,7 +469,7 @@ export default function DashboardPage() {
 
       const hash = sent.sendTransactionResponse?.hash ?? "submitted";
       setClaimTxHash(hash);
-      markNoteAsClaimed(note.nullifierHash, hash);
+      markNoteAsClaimed(address, note.nullifierHash, hash);
       setClaimStage("done");
       setNoteInput("");
     } catch (err) {
@@ -482,13 +499,15 @@ export default function DashboardPage() {
         {/* Header */}
         <div>
           <h1 style={{ fontSize: "24px", fontWeight: 800, color: "#0A0A0A" }}>Dashboard</h1>
-          <p style={{ fontSize: "14px", fontWeight: 400, color: "#737373" }}>Welcome back, @creator!</p>
+          <p style={{ fontSize: "14px", fontWeight: 400, color: "#737373" }}>
+            Welcome back{address ? `, ${displayName || address.slice(0, 4) + "..." + address.slice(-4)}` : ""}!
+          </p>
         </div>
 
         {/* Stealth Balances */}
         <Card>
           <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
-            <span style={{ fontSize: "14px", fontWeight: 700, color: "#171717" }}>Your Stealth Balances</span>
+            <span style={{ fontSize: "14px", fontWeight: 700, color: "#171717" }}>Your Wallet Balance</span>
             <InfoTooltip text="Prices via CoinGecko free API (may be rate-limited). If balance seems incorrect, check your wallet directly." />
           </div>
           <div style={{ marginBottom: "24px" }}>
@@ -892,7 +911,7 @@ export default function DashboardPage() {
             <>
               <div style={{ background: "#FAFAFA", borderRadius: "12px", padding: "16px", border: "1px solid #E5E5E5", display: "flex", alignItems: "center", gap: "16px", marginBottom: "16px" }}>
                 <div style={{ width: 48, height: 48, borderRadius: "50%", overflow: "hidden", background: "#E5E5E5", flexShrink: 0 }}>
-                  <img src={"https://api.dicebear.com/9.x/pixel-art/svg?seed=" + address} alt="avatar" width={48} height={48} style={{ width: 48, height: 48 }} />
+                  <img src={avatarUrlFor(address)} alt="avatar" width={48} height={48} style={{ width: 48, height: 48 }} />
                 </div>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A", fontFamily: "monospace" }}>{address.slice(0, 6)}...{address.slice(-4)}</div>

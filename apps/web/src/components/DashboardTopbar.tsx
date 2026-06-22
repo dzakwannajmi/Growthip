@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Icon } from "@iconify/react";
+import { getProfile, avatarUrlFor } from "@/lib/profile";
 
 type Network = "testnet" | "futurenet";
 
@@ -13,6 +14,7 @@ interface Toast {
 
 function WalletAvatar() {
   const [address, setAddress] = useState("");
+  const [displayName, setDisplayName] = useState("");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -22,26 +24,44 @@ function WalletAvatar() {
     return () => clearInterval(interval);
   }, []);
 
+  // Pulls the same local display-name/avatar set on the Settings page --
+  // this keeps the topbar consistent with what the creator actually
+  // configured, instead of always falling back to a placeholder.
+  //
+  // Polled on the same 1s interval as the address itself (see above),
+  // not just re-read on address change -- otherwise switching the
+  // avatar variant on the Settings page wouldn't be reflected here
+  // until a full remount (e.g. navigating away and back), since
+  // localStorage writes don't trigger React re-renders on their own.
+  const [profileVersion, setProfileVersion] = useState(0);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const interval = setInterval(() => setProfileVersion((v) => v + 1), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!address) { setDisplayName(""); return; }
+    setDisplayName(getProfile(address).displayName);
+  }, [address, profileVersion]);
+
   const shortAddr = address
     ? `${address.slice(0, 4)}...${address.slice(-4)}`
     : "Not connected";
 
-  // Dicebear pixel-art avatar — unique per address, similar to Freighter
-  const avatarUrl = address
-    ? `https://api.dicebear.com/9.x/pixel-art/svg?seed=${address}&size=32`
-    : null;
+  const label = displayName || shortAddr;
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "6px 14px 6px 6px", borderRadius: "999px", background: "#F5F5F5", border: "1px solid #E5E5E5" }}>
       <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", background: "#E5E5E5", flexShrink: 0 }}>
-        {avatarUrl ? (
-          <img src={avatarUrl} alt="avatar" width={32} height={32} style={{ width: 32, height: 32 }} />
+        {address ? (
+          <img src={avatarUrlFor(address)} alt="avatar" width={32} height={32} style={{ width: 32, height: 32 }} />
         ) : (
           <div style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", color: "#A3A3A3" }}>?</div>
         )}
       </div>
       <span style={{ fontSize: "13px", fontWeight: 600, color: "#171717" }} className="hidden sm:block">
-        {shortAddr}
+        {label}
       </span>
     </div>
   );
@@ -139,7 +159,12 @@ export default function DashboardTopbar() {
 
                   <div className="h-px my-1 mx-2" style={{ background: "#E5E5E5" }} />
 
-                  {/* Mainnet - coming soon */}
+                  {/* Mainnet - coming soon -- intentionally disabled, see
+                      project decision: no contracts are deployed to
+                      mainnet, this protocol is unaudited, and the ZK
+                      trusted setup is not a public ceremony. Do not wire
+                      this up to a real network switch without addressing
+                      those first. */}
                   <button
                     onClick={() => handleNetworkSelect("coming-soon", "Mainnet")}
                     className="flex items-center justify-between p-2.5 rounded-lg w-full text-left opacity-40 cursor-not-allowed"
@@ -167,15 +192,8 @@ export default function DashboardTopbar() {
             )}
           </div>
 
-          {/* Avatar pill */}
-          <div className="flex items-center gap-3 p-1.5 pr-4 rounded-full" style={{ background: "#F5F5F5", border: "1px solid #E5E5E5" }}>
-            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center font-bold text-white text-xs">
-              CR
-            </div>
-            <span className="text-sm font-semibold hidden sm:block" style={{ color: "#171717" }}>
-              @creator
-            </span>
-          </div>
+          {/* Avatar pill -- real connected wallet + profile, not a placeholder */}
+          <WalletAvatar />
         </div>
       </div>
 

@@ -113,9 +113,10 @@ export default function AnalyticsPage() {
 
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => {
-    setPending(getPendingNotes());
-    setClaimed(getClaimedNotes());
-  }, []);
+    if (!address) { setPending([]); setClaimed([]); return; }
+    setPending(getPendingNotes(address));
+    setClaimed(getClaimedNotes(address));
+  }, [address]);
 
   const allStats      = Object.values(stats);
   const totalDeposits = allStats.reduce((s, p) => s + p.totalDeposits, 0);

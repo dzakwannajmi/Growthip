@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { isConnected, requestAccess } from "@stellar/freighter-api";
 import {
   getPendingNotes,
   getClaimedNotes,
@@ -23,14 +24,29 @@ function formatNoteAmount(note: PrivateNote): string {
 }
 
 export default function PendingNotes() {
+  const [address, setAddress] = useState("");
   const [pending, setPending] = useState<PrivateNote[]>([]);
   const [claimed, setClaimed] = useState<PrivateNote[]>([]);
   const [tab, setTab]         = useState<"pending" | "claimed">("pending");
 
+  // This component is rendered standalone (no address prop available
+  // from its parent), so it detects the connected wallet itself --
+  // notes are namespaced per address, so we need to know which one is
+  // active before reading anything from storage.
   useEffect(() => {
-    setPending(getPendingNotes());
-    setClaimed(getClaimedNotes());
+    (async () => {
+      const conn = await isConnected();
+      if (!conn.isConnected) return;
+      const access = await requestAccess();
+      if (!access.error) setAddress(access.address);
+    })();
   }, []);
+
+  useEffect(() => {
+    if (!address) { setPending([]); setClaimed([]); return; }
+    setPending(getPendingNotes(address));
+    setClaimed(getClaimedNotes(address));
+  }, [address]);
 
   const notes = tab === "pending" ? pending : claimed;
 

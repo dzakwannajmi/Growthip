@@ -17,6 +17,7 @@ against the source code — not as marketing copy.
 - [Self-Found Issue #1 — Root Forgery](#self-found-issue-1--root-forgery)
 - [Self-Found Issue #2 — Verifier Interface Leak](#self-found-issue-2--verifier-interface-leak)
 - [Self-Found Issue #3 — Deposit-Amount-Aware Claims](#self-found-issue-3--deposit-amount-aware-claims)
+- [Private Note Encryption (Tahap 3)](#private-note-encryption-tahap-3)
 - [Trusted Setup](#trusted-setup)
 - [Known Limitations](#known-limitations)
 - [Reporting a Vulnerability](#reporting-a-vulnerability)
@@ -356,6 +357,121 @@ specific to the V3.1 circuit. All prior caveats about this not being a
 publicly-coordinated MPC ceremony apply equally to V3.1.
 
 
+## Private Note Encryption (Phase 3)
+
+This section documents the end-to-end encryption system added on top of
+the existing ZK privacy pool: private notes (the `secret`/`nullifier`/
+`recipientHash` bundle needed to claim a tip) are now encrypted before
+being shared via a URL or QR code, rather than transmitted as plaintext
+JSON as in earlier iterations of this project.
+
+### Why this couldn't simply use the creator's existing Stellar key
+
+The natural-seeming approach — derive an encryption keypair from the
+creator's existing Stellar (Ed25519) identity — was considered and
+rejected for a concrete, verified reason: Freighter (the only wallet
+this project integrates with) exposes only a `submitMessage()` (signing)
+function in its public API, never the raw private key, and has no
+`decrypt()` or shared-secret-derivation method at all. Ed25519 keys
+*can* be mathematically converted to X25519 keys usable for ECDH
+encryption, but that conversion requires the raw private key, which a
+non-custodial wallet extension never exposes to a dApp by design. This
+ruled out Stellar-key-derived encryption as a starting point, not as a
+preference — it confirmed there was no implementation path with
+Freighter as-is.
+
+The system therefore uses a **separate** X25519 keypair, generated and
+managed entirely client-side, independent of the Stellar identity.
+
+### Key lifecycle: the extractable/non-extractable/backup tension
+
+A non-extractable Web Crypto `CryptoKey` cannot be exported in any
+form — which is good for protecting it from casual extraction during
+normal use, but directly conflicts with the requirement to back it up.
+The resolution used here, a standard pattern in crypto wallets:
+
+1. The keypair is generated as **extractable**, exactly once
+2. The raw private key bytes are immediately wrapped (AES-GCM
+   encrypted) under a key derived from the creator's password —
+   **and, independently, a second time** under a key derived from a
+   12-word recovery phrase (`@scure/bip39`, an audited library).
+   Either secret alone is sufficient to unlock later; this is an "OR
+   gate," not a single derivation path with a fallback bolted on
+3. Both wrapped copies are persisted in IndexedDB. The plaintext
+   extractable key material is never written anywhere and is dropped
+   from memory immediately after wrapping
+4. For actual day-to-day use, the key is re-imported as
+   **non-extractable** from the unwrapped bytes, and held only in an
+   in-memory session (auto-locked after 15 minutes of inactivity)
+
+IndexedDB therefore never stores a `CryptoKey` object in any form — only
+opaque, AES-GCM-wrapped bytes. This sidesteps a real, verified
+historical inconsistency across browsers in how non-extractable EC
+`CryptoKey` objects survive structured-clone storage in IndexedDB,
+without needing to rely on that behavior being correct.
+
+### Key derivation parameters
+
+Argon2id via `hash-wasm`, run inside a dedicated Web Worker (not the
+main thread, which would otherwise visibly freeze the UI during
+unlock): `time=3, memory=64MB, parallelism=1, hashLength=32`.
+`parallelism=1` is an honest reflection of what browser WASM Argon2
+implementations actually compute, not an inflated number — claiming
+higher parallelism without it being real would be a false sense of
+security rather than an actual one.
+
+### Threat model specific to this system
+
+* **XSS during an unlocked session.** A non-extractable key prevents an
+  XSS payload from *exfiltrating* raw key bytes, but does not prevent
+  it from *using* the key (e.g. calling `decrypt()` through the
+  existing in-memory handle) for as long as the session stays unlocked.
+  The primary defense against this is a strict Content-Security-Policy
+  (see [apps/web/README.md](apps/web/README.md#content-security-policy))
+  restricting script sources to `'self'`; the non-extractable key and
+  15-minute auto-lock are defense-in-depth on top of that, not the
+  primary control.
+* **Recovery phrase or backup file compromise.** Anyone who obtains the
+  12-word recovery phrase, or the encrypted backup file *and* the
+  password, can decrypt all of a creator's past and future private
+  notes. This is the same trust model as a cryptocurrency wallet seed
+  phrase, and is disclosed to the creator explicitly during setup, with
+  a "write it down, do not screenshot" instruction matching standard
+  wallet UX conventions.
+* **Lost password and lost recovery phrase and lost backup file,
+  simultaneously.** Total, permanent loss of access to all past private
+  notes. There is no server-side recovery path — this is a deliberate
+  consequence of the zero-backend design, not an oversight. A *hybrid*
+  recovery option (storing the wrapped key on-chain, retrievable from
+  any device with just the password) was explicitly considered and
+  rejected for the initial release: it would make encrypted key material
+  permanently public, conflicting with this project's minimal-on-chain-data
+  philosophy, in exchange for convenience that can instead be addressed
+  with better backup UX. Tracked as a possible future addition, pending
+  real usage data on how often creators actually lose backups.
+* **Device-with-active-malware while a session is unlocked.** No
+  client-side-only system can fully defend against this; auto-lock
+  limits the exposure window but cannot eliminate it.
+
+### Premium gating and its CSP cost
+
+Private notes are a paid, opt-in feature
+(`growthip-creator-registry`, 6 XLM one-time activation) and are
+**mandatory, not optional**, for a given creator once enabled — a
+supporter cannot tip a creator who has not activated encryption at all
+(no silent plaintext fallback). Enabling this feature in the browser
+required two CSP adjustments beyond a typical "strict" policy, both
+found only through actual runtime testing rather than predicted in
+advance: `'wasm-unsafe-eval'` for `hash-wasm`'s WebAssembly compilation
+inside the Argon2id worker, and replacing a `new Function(module,
+exports, src)` pattern (functionally identical to `eval()`) used to
+load the circom-generated `witness_calculator.js` with real `<script>`
+tag injection instead, which `'self'` permits without needing the
+broader `'unsafe-eval'`. See
+[apps/web/README.md](apps/web/README.md#content-security-policy) for
+the full CSP configuration and reasoning.
+
+
 ---
 
 ## Trusted Setup
@@ -395,10 +511,18 @@ is listed explicitly under Phase 3 in the project [Roadmap](README.md#roadmap).
   (especially in a low-traffic pool) may be able to make probabilistic
   guesses about which claim corresponds to which deposit, even without
   breaking any cryptographic guarantee.
-* **Off-chain, unencrypted note delivery.** Growthip does not provide a
-  built-in encrypted channel for supporters to send private notes to
-  creators. Users are responsible for choosing a secure delivery method.
-  Encrypted in-app note delivery is a roadmap item.
+* **Private note encryption is opt-in and paid.** End-to-end encrypted
+  note delivery exists (see
+  [Private Note Encryption](#private-note-encryption-tahap-3) above) but
+  requires the creator to activate it (6 XLM one-time). Once activated
+  it is mandatory for that creator going forward -- there is no
+  plaintext fallback -- but a creator who never activates it cannot
+  receive tips at all, rather than receiving them with weaker privacy.
+* **No hybrid on-chain key recovery.** Forgetting both the password and
+  the recovery phrase (and not having a backup file) means permanent
+  loss of access to past private notes, with no server-side recovery
+  path. See the encryption section above for why this trade-off was
+  chosen deliberately over storing recoverable key material on-chain.
 * **Admin key authority.** The admin key can upgrade the pool's WASM,
   change the configured token (before first deposit only), change the
   verifier address, and withdraw accumulated fees. This is a standard
