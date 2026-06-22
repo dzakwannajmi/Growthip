@@ -14,9 +14,9 @@ deployment.
 
 | Crate | Role | Status |
 |---|---|---|
-| `growthip-pool` | Main escrow + claim contract | ✅ Active, production |
-| `growthip-merkle-verifier-v3-1` | Native BN254 Groth16 verifier for the V3.1 circuit (adds deposit-index public output) | ✅ Active, production |
-| `growthip-creator-registry` | Global creator identity: encryption pubkey + premium status, deployed once (not per-token) | ✅ Active, production |
+| `growthip-pool` | Main escrow + claim contract | ✅ Active (testnet) |
+| `growthip-merkle-verifier-v3-1` | Native BN254 Groth16 verifier for the V3.1 circuit (adds deposit-index public output) | ✅ Active (testnet) |
+| `growthip-creator-registry` | Global creator identity: encryption pubkey + premium status, deployed once (not per-token) | ✅ Active (testnet) |
 | `growthip-merkle-verifier-v3` | Verifier for the V3 circuit (3 public inputs, no deposit-amount binding) | Deprecated — superseded by V3.1, see [SECURITY.md Issue #3](../SECURITY.md#self-found-issue-3--deposit-amount-aware-claims) |
 | `growthip-merkle-verifier-v2` | V2 verifier | Deprecated — kept as a `dev-dependency` for one historical test only, not in the production build |
 | `growthip-merkle-verifier` | V1 verifier | Deprecated — kept for reference/test coverage |
@@ -47,11 +47,8 @@ contracts/growthip-pool/
     ├── poseidon_verify_test.rs           # Verifies Soroban's native
     │                                      # poseidon_permutation() matches
     │                                      # circomlibjs byte-for-byte
-    ├── merkle_verify_test.rs             # Verifies on-chain Merkle root
-    │                                      # matches the frontend's merkle.ts
-    └── public_message_test.rs            # Verifies the optional 50-byte
-                                           # public donor message round-trips
-                                           # correctly through deposit_paid()
+    └── merkle_verify_test.rs             # Verifies on-chain Merkle root
+                                           # matches the frontend's merkle.ts
 ```
 
 ### Why `poseidon_constants_generated.rs` exists
