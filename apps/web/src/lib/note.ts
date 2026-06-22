@@ -41,6 +41,7 @@ export interface PrivateNote {
   claimed:       boolean;
   claimedAt?:    number;
   txHash?:       string;
+  recipientAddress?: string;  // wallet address of the creator (namespace key)
 }
 
 /** Legacy, pre-namespacing storage key. Read-only after migration exists —

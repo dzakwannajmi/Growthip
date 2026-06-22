@@ -210,8 +210,12 @@ export default function PublicTipPage() {
         commitment: commitmentHex, nullifierHash: decimalToHex32(nullifierHash),
         root: "0".padStart(64, "0"), token: token.symbol as TokenSymbol,
         amount: String(contractAmount), timestamp: Date.now(), depositIndex, claimed: false,
+        recipientAddress: recipientAddress ?? undefined,
       };
-      saveNote(address, newNote);
+      // Save under recipientAddress (creator), not address (supporter).
+      // The note is what the creator needs to claim -- it belongs in their
+      // namespace, not the supporter's.
+      if (recipientAddress) saveNote(recipientAddress, newNote);
       setSentNote(newNote);
 
       setStatus("Encrypting note for the creator...");

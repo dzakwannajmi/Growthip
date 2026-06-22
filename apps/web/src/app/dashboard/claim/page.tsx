@@ -205,7 +205,9 @@ function ClaimContent() {
       }
 
       setTxHash(hash);
-      markNoteAsClaimed(address, note.nullifierHash, hash);
+      // Use note.recipientAddress (creator namespace) if available,
+      // fall back to connected address for legacy notes.
+      markNoteAsClaimed(note.recipientAddress ?? address, note.nullifierHash, hash);
       setStage("done");
     } catch (err) {
       console.error(err);

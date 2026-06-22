@@ -207,6 +207,10 @@ export default function DashboardPage() {
   const [claimStage, setClaimStage] = useState<"idle" | "loading" | "proving" | "submitting" | "done" | "error">("idle");
   const [claimTxHash, setClaimTxHash] = useState("");
   const [claimError, setClaimError] = useState("");
+  const [needsUnlock, setNeedsUnlock] = useState(false);
+  const [unlockPassword, setUnlockPassword] = useState("");
+  const [unlockError, setUnlockError] = useState("");
+  const [unlockBusy, setUnlockBusy] = useState(false);
 
   // Notes state
   const [pending, setPending] = useState<PrivateNote[]>([]);
@@ -396,10 +400,20 @@ export default function DashboardPage() {
 
       if (!raw.startsWith("{")) {
         // Try treating it as an encrypted bundle first.
-        const { decryptIncomingNote } = await import("@/lib/encryption/keyManagement");
-        const { isUnlocked } = await import("@/lib/encryption/keyManagement");
+        const { decryptIncomingNote, isUnlocked, getStoredPublicKeyRaw } = await import("@/lib/encryption/keyManagement");
         try {
           if (!isUnlocked()) {
+            // Check if an identity exists in IndexedDB -- if it does,
+            // the creator set up encryption but the session expired
+            // (navigating between pages clears in-memory session state).
+            // Show an inline unlock form rather than a dead-end error.
+            const stored = await getStoredPublicKeyRaw();
+            if (stored) {
+              setNeedsUnlock(true);
+              setClaimStage("idle");
+              setClaimBusy(false);
+              return;
+            }
             throw new Error(
               "Your private notes are locked. Unlock them in Settings before claiming.",
             );
@@ -469,7 +483,9 @@ export default function DashboardPage() {
 
       const hash = sent.sendTransactionResponse?.hash ?? "submitted";
       setClaimTxHash(hash);
-      markNoteAsClaimed(address, note.nullifierHash, hash);
+      // Use note.recipientAddress (creator namespace) if available,
+      // fall back to connected address for legacy notes without the field.
+      markNoteAsClaimed(note.recipientAddress ?? address, note.nullifierHash, hash);
       setClaimStage("done");
       setNoteInput("");
     } catch (err) {
@@ -841,6 +857,62 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <>
+                    {needsUnlock && (
+                      <div style={{ padding: "16px", borderRadius: "12px", border: "1px solid #FDE68A", background: "#FFFBEB" }}>
+                        <p style={{ fontSize: "13px", fontWeight: 700, color: "#92400E", marginBottom: "8px" }}>
+                          🔐 Unlock your encryption session to decrypt this note
+                        </p>
+                        <p style={{ fontSize: "12px", color: "#92400E", marginBottom: "12px" }}>
+                          Your session expired after navigating. Enter your password to continue.
+                        </p>
+                        <input
+                          type="password"
+                          value={unlockPassword}
+                          onChange={(e) => setUnlockPassword(e.target.value)}
+                          onKeyDown={async (e) => {
+                            if (e.key !== "Enter" || unlockBusy) return;
+                            setUnlockBusy(true);
+                            setUnlockError("");
+                            try {
+                              const { unlockWithPassword } = await import("@/lib/encryption/keyManagement");
+                              await unlockWithPassword(unlockPassword);
+                              setNeedsUnlock(false);
+                              setUnlockPassword("");
+                            } catch {
+                              setUnlockError("Incorrect password. Try again.");
+                            } finally {
+                              setUnlockBusy(false);
+                            }
+                          }}
+                          placeholder="Enter your encryption password..."
+                          disabled={unlockBusy}
+                          style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #FDE68A", fontSize: "13px", marginBottom: "8px", outline: "none" }}
+                        />
+                        {unlockError && (
+                          <p style={{ fontSize: "12px", color: "#EF4444", marginBottom: "8px" }}>{unlockError}</p>
+                        )}
+                        <button
+                          onClick={async () => {
+                            setUnlockBusy(true);
+                            setUnlockError("");
+                            try {
+                              const { unlockWithPassword } = await import("@/lib/encryption/keyManagement");
+                              await unlockWithPassword(unlockPassword);
+                              setNeedsUnlock(false);
+                              setUnlockPassword("");
+                            } catch {
+                              setUnlockError("Incorrect password. Try again.");
+                            } finally {
+                              setUnlockBusy(false);
+                            }
+                          }}
+                          disabled={unlockBusy || !unlockPassword.trim()}
+                          style={{ padding: "8px 16px", borderRadius: "8px", background: "#0A0A0A", color: "white", fontSize: "13px", fontWeight: 700, border: "none", cursor: unlockBusy ? "not-allowed" : "pointer", opacity: unlockBusy || !unlockPassword.trim() ? 0.5 : 1 }}
+                        >
+                          {unlockBusy ? "Unlocking..." : "Unlock"}
+                        </button>
+                      </div>
+                    )}
                     <div>
                       <SectionTitle>Private Note</SectionTitle>
                       <textarea

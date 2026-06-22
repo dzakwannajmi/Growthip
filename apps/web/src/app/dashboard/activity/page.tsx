@@ -197,7 +197,9 @@ export default function ActivityPage() {
 
       const hash = sent.sendTransactionResponse?.hash ?? "submitted";
       setClaimTxHash(hash);
-      markNoteAsClaimed(address, note.nullifierHash, hash);
+      // Use note.recipientAddress (creator namespace) if available,
+      // fall back to connected address for legacy notes.
+      markNoteAsClaimed(note.recipientAddress ?? address, note.nullifierHash, hash);
       setClaimStage("done");
       loadNotes();
     } catch (err) {
