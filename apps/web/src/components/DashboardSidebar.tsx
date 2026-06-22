@@ -134,7 +134,7 @@ export default function DashboardSidebar() {
           >
             {logoHover
               ? <Icon icon="ph:sidebar-simple" className="text-2xl" />
-              : <span className="font-extrabold text-xl">G</span>
+              : <img src="/growthip-logo.png" alt="Growthip" className="w-7 h-7 object-contain" />
             }
           </button>
           {collapsed && (

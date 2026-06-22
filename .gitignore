@@ -38,3 +38,6 @@ apps/web/node_modules/
 .stellar/
 *.seed
 *.secret
+
+testnet.env
+deployments/testnet.env
