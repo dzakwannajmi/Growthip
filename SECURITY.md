@@ -17,7 +17,7 @@ against the source code — not as marketing copy.
 - [Self-Found Issue #1 — Root Forgery](#self-found-issue-1--root-forgery)
 - [Self-Found Issue #2 — Verifier Interface Leak](#self-found-issue-2--verifier-interface-leak)
 - [Self-Found Issue #3 — Deposit-Amount-Aware Claims](#self-found-issue-3--deposit-amount-aware-claims)
-- [Private Note Encryption (Tahap 3)](#private-note-encryption-tahap-3)
+- [Private Note Encryption (Phase 3)](#private-note-encryption-phase-3)
 - [Trusted Setup](#trusted-setup)
 - [Known Limitations](#known-limitations)
 - [Reporting a Vulnerability](#reporting-a-vulnerability)
@@ -60,7 +60,7 @@ Honest accounting of what still requires trust, as of this deployment:
 | Merkle root | **None.** Computed on-chain via the native Poseidon host function, validated against on-chain history. | Fixed in [Issue #1](#self-found-issue-1--root-forgery) below. |
 | Verifying key | Compiled into the verifier contract at build time from a local trusted-setup ceremony. | See [Trusted Setup](#trusted-setup). |
 | Admin key | Controls contract upgrades (`upgrade`), token configuration (`set_token`, blocked after first deposit), verifier address (`update_verifier`), and fee withdrawal (`withdraw_fees`). | Standard admin-key pattern for an upgradeable contract; not eliminated in this prototype phase. |
-| Note delivery | Off-chain, unencrypted by Growthip itself (the user is responsible for sharing the note securely, e.g. via an encrypted channel). | Documented limitation; see [Known Limitations](#known-limitations). |
+| Note delivery | For premium creators: end-to-end encrypted (X25519 + AES-GCM), mandatory with no plaintext fallback. For non-premium: not applicable — a creator must activate encryption to receive tips at all. | See [Private Note Encryption](#private-note-encryption-phase-3) and [Known Limitations](#known-limitations). |
 
 ---
 
@@ -495,7 +495,7 @@ specific verifying key.
 A production deployment handling real funds would require a dedicated,
 publicly-coordinated phase-2 MPC ceremony with multiple independent
 participants, none of whom alone could reconstruct the toxic waste. This
-is listed explicitly under Phase 3 in the project [Roadmap](README.md#roadmap).
+is listed explicitly under Phase 4 (Production Hardening) in the project [Roadmap](README.md#roadmap).
 
 ---
 
@@ -513,7 +513,7 @@ is listed explicitly under Phase 3 in the project [Roadmap](README.md#roadmap).
   breaking any cryptographic guarantee.
 * **Private note encryption is opt-in and paid.** End-to-end encrypted
   note delivery exists (see
-  [Private Note Encryption](#private-note-encryption-tahap-3) above) but
+  [Private Note Encryption](#private-note-encryption-phase-3) above) but
   requires the creator to activate it (6 XLM one-time). Once activated
   it is mandatory for that creator going forward -- there is no
   plaintext fallback -- but a creator who never activates it cannot
