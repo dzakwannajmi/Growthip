@@ -58,6 +58,10 @@ const PROGRESS_LABELS: Record<ProofProgress, string> = {
 
 export default function ActivityPage() {
   const [filter, setFilter]     = useState<Filter>("all");
+  const [encLocked, setEncLocked]   = useState(false);
+  const [unlockPw, setUnlockPw]     = useState("");
+  const [unlockBusy, setUnlockBusy] = useState(false);
+  const [unlockErr, setUnlockErr]   = useState("");
   const [pending, setPending]   = useState<PrivateNote[]>([]);
   const [claimed, setClaimed]   = useState<PrivateNote[]>([]);
 
@@ -104,7 +108,14 @@ export default function ActivityPage() {
     if (!address || !PoolClient) return;
     try {
       const { decryptIncomingNote, isUnlocked } = await import("@/lib/encryption/keyManagement");
-      if (!isUnlocked()) return;
+      if (!isUnlocked()) {
+        console.log("[fetchOnChainNotes] encryption not unlocked, skipping");
+        setEncLocked(true);
+        return;
+      } else {
+        setEncLocked(false);
+      }
+      console.log("[fetchOnChainNotes] starting fetch for", address);
       for (const tokenSymbol of ["XLM", "USDC"] as const) {
         try {
           const client = buildClient(address, tokenSymbol);
@@ -132,6 +143,19 @@ export default function ActivityPage() {
     } catch { /* silent fail */ }
   }
   useEffect(() => { fetchOnChainNotes(); }, [address, PoolClient]);
+  // Poll for encryption unlock -- fetchOnChainNotes skips if locked.
+  // Once unlocked (e.g. user visits Settings and unlocks), re-trigger fetch.
+  useEffect(() => {
+    if (!address || !PoolClient) return;
+    const interval = setInterval(async () => {
+      const { isUnlocked } = await import("@/lib/encryption/keyManagement");
+      if (isUnlocked()) {
+        clearInterval(interval);
+        fetchOnChainNotes();
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [address, PoolClient]);
 
   async function connectWallet() {
     try {
@@ -260,6 +284,50 @@ export default function ActivityPage() {
           <p style={{ fontSize: "14px", color: "#737373", marginTop: "4px" }}>Your tip transaction history</p>
         </div>
 
+        {/* Unlock banner */}
+        {encLocked && (
+          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "16px 20px", display: "flex", flexDirection: "column", gap: "10px" }}>
+            <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>🔐 Unlock encryption to see pending tips</p>
+            <p style={{ fontSize: "12px", color: "#737373" }}>Enter your encryption password to auto-fetch incoming tips from the pool.</p>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <input
+                type="password"
+                placeholder="Encryption password..."
+                value={unlockPw}
+                onChange={(e) => setUnlockPw(e.target.value)}
+                onKeyDown={async (e) => {
+                  if (e.key !== "Enter" || unlockBusy) return;
+                  setUnlockBusy(true);
+                  try {
+                    const { unlockWithPassword } = await import("@/lib/encryption/keyManagement");
+                    await unlockWithPassword(unlockPw);
+                    setEncLocked(false);
+                    setUnlockErr("");
+                    fetchOnChainNotes();
+                  } catch { setUnlockErr("Wrong password."); } finally { setUnlockBusy(false); }
+                }}
+                style={{ flex: 1, padding: "10px 12px", borderRadius: "10px", border: "1px solid #E5E5E5", fontSize: "13px", outline: "none" }}
+              />
+              <button
+                disabled={unlockBusy || !unlockPw.trim()}
+                onClick={async () => {
+                  setUnlockBusy(true);
+                  try {
+                    const { unlockWithPassword } = await import("@/lib/encryption/keyManagement");
+                    await unlockWithPassword(unlockPw);
+                    setEncLocked(false);
+                    setUnlockErr("");
+                    fetchOnChainNotes();
+                  } catch { setUnlockErr("Wrong password."); } finally { setUnlockBusy(false); }
+                }}
+                style={{ padding: "10px 16px", borderRadius: "10px", background: "#0A0A0A", color: "white", border: "none", fontSize: "13px", fontWeight: 700, cursor: unlockBusy ? "not-allowed" : "pointer", opacity: unlockBusy || !unlockPw.trim() ? 0.5 : 1 }}
+              >
+                {unlockBusy ? "Unlocking..." : "Unlock"}
+              </button>
+            </div>
+            {unlockErr && <p style={{ fontSize: "12px", color: "#EF4444" }}>{unlockErr}</p>}
+          </div>
+        )}
         {/* Filter */}
         <div style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "12px 16px", display: "flex", alignItems: "center", gap: "16px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#A3A3A3", paddingRight: "16px", borderRight: "1px solid #E5E5E5" }}>
