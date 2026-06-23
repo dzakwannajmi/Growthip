@@ -54,10 +54,19 @@ const TOKEN_ICONS: Record<string, string> = {
   EURC: "cryptocurrency-color:eur",
 };
 
+async function fetchXlmPrice(): Promise<number> {
+  try {
+    const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=stellar&vs_currencies=usd");
+    const data = await res.json();
+    return data?.stellar?.usd ?? 0;
+  } catch { return 0; }
+}
+
 export default function AnalyticsPage() {
 
   const [stats, setStats]     = useState<Record<string, PoolStats>>({});
   const [loading, setLoading] = useState(true);
+  const [xlmPrice, setXlmPrice] = useState(0);
   const [pending, setPending] = useState<PrivateNote[]>([]);
   const [claimed, setClaimed] = useState<PrivateNote[]>([]);
 
@@ -113,9 +122,20 @@ export default function AnalyticsPage() {
 
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => {
+    fetchXlmPrice().then(setXlmPrice);
+  }, []);
+  useEffect(() => {
     if (!address) { setPending([]); setClaimed([]); return; }
-    setPending(getPendingNotes(address));
-    setClaimed(getClaimedNotes(address));
+    const currentPoolId = process.env.NEXT_PUBLIC_POOL_ID;
+    const currentUsdcPoolId = process.env.NEXT_PUBLIC_POOL_USDC_ID;
+    const filterByPool = (notes: ReturnType<typeof getPendingNotes>) =>
+      notes.filter((n) => {
+        if (!n.poolId) return true; // legacy notes without poolId: show
+        if (n.token === "USDC") return n.poolId === currentUsdcPoolId;
+        return n.poolId === currentPoolId;
+      });
+    setPending(filterByPool(getPendingNotes(address)));
+    setClaimed(filterByPool(getClaimedNotes(address)));
   }, [address]);
 
   const allStats      = Object.values(stats);
@@ -234,7 +254,7 @@ export default function AnalyticsPage() {
                       <Icon icon={TOKEN_ICONS[token.symbol] || "ph:coin-bold"} style={{ fontSize: "28px" }} />
                       <div>
                         <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>{totalReceived} {token.symbol}</p>
-                        <p style={{ fontSize: "12px", color: "#A3A3A3" }}>$0.00</p>
+                        <p style={{ fontSize: "12px", color: "#A3A3A3" }}>{token.symbol === "XLM" && xlmPrice > 0 ? `$${(totalReceived * xlmPrice).toFixed(2)}` : token.symbol === "USDC" ? `$${totalReceived.toFixed(2)}` : "$0.00"}</p>
                       </div>
                     </div>
                     <p style={{ fontSize: "12px", color: "#A3A3A3" }}>{loading ? "—" : `${s?.totalDeposits ?? 0} tips`}</p>
@@ -271,7 +291,7 @@ export default function AnalyticsPage() {
                       <Icon icon={TOKEN_ICONS[token.symbol] || "ph:coin-bold"} style={{ fontSize: "28px" }} />
                       <div>
                         <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>{loading ? "—" : tipHuman} {token.symbol}</p>
-                        <p style={{ fontSize: "12px", color: "#A3A3A3" }}>$0.00</p>
+                        <p style={{ fontSize: "12px", color: "#A3A3A3" }}>{token.symbol === "XLM" && xlmPrice > 0 ? `$${(parseFloat(tipHuman) * xlmPrice).toFixed(2)}` : token.symbol === "USDC" ? `$${parseFloat(tipHuman).toFixed(2)}` : "$0.00"}</p>
                       </div>
                     </div>
                     <p style={{ fontSize: "12px", color: "#A3A3A3" }}>per tip</p>
@@ -320,7 +340,7 @@ export default function AnalyticsPage() {
                       />
                       <div>
                         <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>{formatAmount(note)}</p>
-                        <p style={{ fontSize: "12px", color: "#A3A3A3" }}>$0.00</p>
+                        <p style={{ fontSize: "12px", color: "#A3A3A3" }}>{note.token === "XLM" && xlmPrice > 0 ? `$${(Number(note.amount) / 1e7 * xlmPrice).toFixed(2)}` : note.token === "USDC" ? `$${(Number(note.amount) / 1e7).toFixed(2)}` : "$0.00"}</p>
                       </div>
                     </div>
                     <div style={{ textAlign: "right" }}>

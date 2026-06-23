@@ -204,6 +204,9 @@ export default function PublicTipPage() {
         root: "0".padStart(64, "0"), token: token.symbol as TokenSymbol,
         amount: String(contractAmount), timestamp: Date.now(), depositIndex: -1, claimed: false,
         recipientAddress: recipientAddress ?? undefined,
+        poolId: buildClient(address, token.symbol) ? (token.symbol === "USDC"
+          ? process.env.NEXT_PUBLIC_POOL_USDC_ID
+          : process.env.NEXT_PUBLIC_POOL_ID) : undefined,
       };
       const noteBytes = new TextEncoder().encode(JSON.stringify(partialNote));
       const encryptedBundle = await encryptNoteForRecipient(creatorEncryptionPubKey, noteBytes);

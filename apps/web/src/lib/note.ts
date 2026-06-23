@@ -42,6 +42,7 @@ export interface PrivateNote {
   claimedAt?:    number;
   txHash?:       string;
   recipientAddress?: string;  // wallet address of the creator (namespace key)
+  poolId?: string;             // contract address of the pool this note belongs to
 }
 
 /** Legacy, pre-namespacing storage key. Read-only after migration exists —
