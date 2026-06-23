@@ -98,8 +98,16 @@ export default function ActivityPage() {
 
   function loadNotes() {
     if (!address) { setPending([]); setClaimed([]); return; }
-    setPending(getPendingNotes(address));
-    setClaimed(getClaimedNotes(address));
+    const currentPoolId = process.env.NEXT_PUBLIC_POOL_ID;
+    const currentUsdcPoolId = process.env.NEXT_PUBLIC_POOL_USDC_ID;
+    const filterByPool = (notes: ReturnType<typeof getPendingNotes>) =>
+      notes.filter((n) => {
+        if (!n.poolId) return false; // hide legacy notes
+        if (n.token === "USDC") return n.poolId === currentUsdcPoolId;
+        return n.poolId === currentPoolId;
+      });
+    setPending(filterByPool(getPendingNotes(address)));
+    setClaimed(filterByPool(getClaimedNotes(address)));
   }
 
   useEffect(() => { loadNotes(); }, [address, claimTxHash]);
