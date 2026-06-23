@@ -485,6 +485,7 @@ export default function DashboardPage() {
       setClaimTxHash(hash);
       // Use note.recipientAddress (creator namespace) if available,
       // fall back to connected address for legacy notes without the field.
+      saveNote(note.recipientAddress ?? address, note);
       markNoteAsClaimed(note.recipientAddress ?? address, note.nullifierHash, hash);
       setClaimStage("done");
       setNoteInput("");
