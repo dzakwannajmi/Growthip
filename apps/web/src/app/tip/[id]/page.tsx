@@ -195,34 +195,36 @@ export default function PublicTipPage() {
       const commitmentHex = decimalToHex32(commitment);
       const client        = buildClient(address, token.symbol);
 
+      // Encrypt note BEFORE deposit so bundle can be stored on-chain
+      // as the `message` field -- creator auto-fetches it later.
+      setStatus("Encrypting note for the creator...");
+      const partialNote: PrivateNote = {
+        version: "growthip-v3", secret, nullifier, recipientHash,
+        commitment: commitmentHex, nullifierHash: decimalToHex32(nullifierHash),
+        root: "0".padStart(64, "0"), token: token.symbol as TokenSymbol,
+        amount: String(contractAmount), timestamp: Date.now(), depositIndex: -1, claimed: false,
+        recipientAddress: recipientAddress ?? undefined,
+      };
+      const noteBytes = new TextEncoder().encode(JSON.stringify(partialNote));
+      const encryptedBundle = await encryptNoteForRecipient(creatorEncryptionPubKey, noteBytes);
+
       setStatus("Approve the deposit transaction in Freighter...");
       const tx = await client.deposit_paid({
         depositor:  address,
         commitment: Buffer.from(commitmentHex, "hex"),
         amount:     BigInt(contractAmount),
-        message:    message.trim() ? message.trim() : undefined,
+        // Encrypted bundle stored on-chain -- creator fetches automatically.
+        message:    encryptedBundle
+          ? encryptedBundle
+          : message.trim() ? message.trim() : undefined,
       });
       const { result } = await tx.signAndSend({ force: true });
       const depositIndex = Number(result ?? 0);
 
-      const newNote: PrivateNote = {
-        version: "growthip-v3", secret, nullifier, recipientHash,
-        commitment: commitmentHex, nullifierHash: decimalToHex32(nullifierHash),
-        root: "0".padStart(64, "0"), token: token.symbol as TokenSymbol,
-        amount: String(contractAmount), timestamp: Date.now(), depositIndex, claimed: false,
-        recipientAddress: recipientAddress ?? undefined,
-      };
-      // Save under recipientAddress (creator), not address (supporter).
-      // The note is what the creator needs to claim -- it belongs in their
-      // namespace, not the supporter's.
+      const newNote: PrivateNote = { ...partialNote, depositIndex };
       if (recipientAddress) saveNote(recipientAddress, newNote);
       setSentNote(newNote);
-
-      setStatus("Encrypting note for the creator...");
-      const noteBytes = new TextEncoder().encode(JSON.stringify(newNote));
-      const bundle = await encryptNoteForRecipient(creatorEncryptionPubKey, noteBytes);
-      setEncryptedNoteBundle(bundle);
-
+      setEncryptedNoteBundle(encryptedBundle);
       setStatus("Tip sent!");
       setStep("done");
     } catch (err) {

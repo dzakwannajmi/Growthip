@@ -46,7 +46,7 @@ pub enum DataKey {
 /// equivalent to a 50-character cap, but multi-byte UTF-8 (e.g. emoji)
 /// would hit this limit sooner than 50 visible characters. Acceptable
 /// simplification for a cosmetic donor-message feature.
-pub const MAX_MESSAGE_LEN: u32 = 50;
+pub const MAX_MESSAGE_LEN: u32 = 2048;
 
 /// Platform fee: 1% of every claimed amount, expressed in basis points
 /// (1% = 100 bps out of 10_000). Fee accrues in contract storage at

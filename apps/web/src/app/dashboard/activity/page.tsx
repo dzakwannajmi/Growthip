@@ -22,6 +22,7 @@ import { generateProof, toClaimArgs, type ProofProgress } from "@/lib/zkp";
 import {
   getPendingNotes,
   getClaimedNotes,
+  saveNote,
   markNoteAsClaimed,
   formatRelativeTime,
   type PrivateNote,
@@ -98,6 +99,39 @@ export default function ActivityPage() {
   }
 
   useEffect(() => { loadNotes(); }, [address, claimTxHash]);
+
+  async function fetchOnChainNotes() {
+    if (!address || !PoolClient) return;
+    try {
+      const { decryptIncomingNote, isUnlocked } = await import("@/lib/encryption/keyManagement");
+      if (!isUnlocked()) return;
+      for (const tokenSymbol of ["XLM", "USDC"] as const) {
+        try {
+          const client = buildClient(address, tokenSymbol);
+          const totalTx = await client.total_deposits();
+          const total = Number(totalTx.result ?? 0);
+          for (let i = 0; i < total; i++) {
+            try {
+              const msgTx = await client.get_message({ index: i });
+              const msg = msgTx.result;
+              if (!msg) continue;
+              // Try to decrypt as encrypted bundle
+              const decrypted = await decryptIncomingNote(msg).catch(() => null);
+              if (!decrypted) continue;
+              const note = JSON.parse(new TextDecoder().decode(decrypted));
+              if (note.version !== "growthip-v3") continue;
+              if (note.recipientAddress !== address) continue;
+              // Save with real depositIndex
+              const finalNote = { ...note, depositIndex: i };
+              saveNote(address, finalNote);
+            } catch { /* skip unreadable messages */ }
+          }
+        } catch { /* skip token if pool not configured */ }
+      }
+      loadNotes();
+    } catch { /* silent fail */ }
+  }
+  useEffect(() => { fetchOnChainNotes(); }, [address, PoolClient]);
 
   async function connectWallet() {
     try {
