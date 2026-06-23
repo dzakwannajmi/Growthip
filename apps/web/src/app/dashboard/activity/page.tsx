@@ -352,51 +352,78 @@ export default function ActivityPage() {
           </div>
         )}
         {/* Filter */}
-        <div style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "12px 16px", display: "flex", flexDirection: "column", gap: "12px" }}>
-          {/* Status filter */}
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#A3A3A3", paddingRight: "16px", borderRight: "1px solid #E5E5E5", whiteSpace: "nowrap" }}>
+        <div style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "12px 16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            {/* Filter icon + label */}
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#A3A3A3" }}>
               <Icon icon="ph:funnel-bold" style={{ fontSize: "16px" }} />
-              STATUS
+              FILTER
             </div>
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-              {(["all", "pending", "withdrawn"] as Filter[]).map((f) => (
-                <button key={f} onClick={() => setFilter(f)} style={{ padding: "6px 16px", borderRadius: "8px", fontSize: "13px", fontWeight: filter === f ? 700 : 500, background: filter === f ? "#0A0A0A" : "transparent", color: filter === f ? "white" : "#525252", border: "none", cursor: "pointer", transition: "all 0.15s" }}>
-                  {f === "all" ? "All Tips" : f === "pending" ? `Pending (${pending.length})` : `Withdrawn (${claimed.length})`}
-                </button>
-              ))}
+            <div style={{ width: "1px", height: "20px", background: "#E5E5E5" }} />
+            {/* Status dropdown */}
+            <div style={{ position: "relative" }}>
+              <select
+                value={filter}
+                onChange={(e) => setFilter(e.target.value as Filter)}
+                style={{ padding: "6px 28px 6px 12px", borderRadius: "8px", fontSize: "13px", fontWeight: 500, color: filter !== "all" ? "white" : "#525252", background: filter !== "all" ? "#0A0A0A" : "#F5F5F5", border: "none", cursor: "pointer", outline: "none", appearance: "none", WebkitAppearance: "none" }}
+              >
+                <option value="all">All Status</option>
+                <option value="pending">Pending ({pending.length})</option>
+                <option value="withdrawn">Withdrawn ({claimed.length})</option>
+              </select>
+              <Icon icon="ph:caret-down-bold" style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: filter !== "all" ? "white" : "#525252", pointerEvents: "none" }} />
             </div>
-          </div>
-          {/* Token + Sort filter */}
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", paddingTop: "10px", borderTop: "1px solid #F5F5F5", flexWrap: "wrap" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#A3A3A3", paddingRight: "16px", borderRight: "1px solid #E5E5E5", whiteSpace: "nowrap" }}>
-              <Icon icon="ph:coin-bold" style={{ fontSize: "16px" }} />
-              TOKEN
+            {/* Token dropdown */}
+            <div style={{ position: "relative" }}>
+              <select
+                value={tokenFilter}
+                onChange={(e) => setTokenFilter(e.target.value as TokenFilter)}
+                style={{ padding: "6px 28px 6px 12px", borderRadius: "8px", fontSize: "13px", fontWeight: 500, color: tokenFilter !== "all" ? "white" : "#525252", background: tokenFilter !== "all" ? "#0A0A0A" : "#F5F5F5", border: "none", cursor: "pointer", outline: "none", appearance: "none", WebkitAppearance: "none" }}
+              >
+                <option value="all">All Tokens</option>
+                <option value="XLM">XLM</option>
+                <option value="USDC">USDC</option>
+              </select>
+              <Icon icon="ph:caret-down-bold" style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: tokenFilter !== "all" ? "white" : "#525252", pointerEvents: "none" }} />
             </div>
-            <div style={{ display: "flex", gap: "8px", flex: 1, flexWrap: "wrap" }}>
-              {(["all", "XLM", "USDC"] as TokenFilter[]).map((t) => (
-                <button key={t} onClick={() => setTokenFilter(t)} style={{ padding: "6px 14px", borderRadius: "8px", fontSize: "13px", fontWeight: tokenFilter === t ? 700 : 500, background: tokenFilter === t ? "#0A0A0A" : "transparent", color: tokenFilter === t ? "white" : "#525252", border: "none", cursor: "pointer", transition: "all 0.15s" }}>
-                  {t === "all" ? "All Tokens" : t}
-                </button>
-              ))}
-              <button disabled style={{ padding: "6px 14px", borderRadius: "8px", fontSize: "13px", fontWeight: 500, background: "transparent", color: "#D4D4D4", border: "none", cursor: "not-allowed" }}>
-                EURC <span style={{ fontSize: "10px" }}>Soon</span>
-              </button>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <Icon icon="ph:clock-bold" style={{ fontSize: "16px", color: "#A3A3A3" }} />
+            {/* Sort dropdown */}
+            <div style={{ position: "relative", marginLeft: "auto" }}>
               <select
                 value={sortOrder}
                 onChange={(e) => setSortOrder(e.target.value as SortOrder)}
-                style={{ fontSize: "13px", fontWeight: 500, color: "#525252", border: "none", background: "transparent", cursor: "pointer", outline: "none" }}
+                style={{ padding: "6px 28px 6px 12px", borderRadius: "8px", fontSize: "13px", fontWeight: 500, color: "#525252", background: "#F5F5F5", border: "none", cursor: "pointer", outline: "none", appearance: "none", WebkitAppearance: "none" }}
               >
                 <option value="newest">Newest first</option>
                 <option value="oldest">Oldest first</option>
               </select>
+              <Icon icon="ph:caret-down-bold" style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#525252", pointerEvents: "none" }} />
             </div>
           </div>
+          {/* Active filter chips */}
+          {(filter !== "all" || tokenFilter !== "all") && (
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "10px", paddingTop: "10px", borderTop: "1px solid #F5F5F5" }}>
+              {filter !== "all" && (
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "4px 10px", borderRadius: "999px", background: "#0A0A0A", color: "white", fontSize: "12px", fontWeight: 700 }}>
+                  {filter === "pending" ? `Pending (${pending.length})` : `Withdrawn (${claimed.length})`}
+                  <button onClick={() => setFilter("all")} style={{ background: "none", border: "none", color: "white", cursor: "pointer", padding: "0", display: "flex", alignItems: "center" }}>
+                    <Icon icon="ph:x-bold" style={{ fontSize: "12px" }} />
+                  </button>
+                </div>
+              )}
+              {tokenFilter !== "all" && (
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "4px 10px", borderRadius: "999px", background: "#0A0A0A", color: "white", fontSize: "12px", fontWeight: 700 }}>
+                  {tokenFilter}
+                  <button onClick={() => setTokenFilter("all")} style={{ background: "none", border: "none", color: "white", cursor: "pointer", padding: "0", display: "flex", alignItems: "center" }}>
+                    <Icon icon="ph:x-bold" style={{ fontSize: "12px" }} />
+                  </button>
+                </div>
+              )}
+              <button onClick={() => { setFilter("all"); setTokenFilter("all"); }} style={{ padding: "4px 10px", borderRadius: "999px", background: "#F5F5F5", color: "#525252", fontSize: "12px", fontWeight: 600, border: "none", cursor: "pointer" }}>
+                Clear all
+              </button>
+            </div>
+          )}
         </div>
-
         {/* Notes list */}
         {notes.length === 0 ? (
           <div style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "64px 24px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
