@@ -384,11 +384,7 @@ export default function PublicTipPage() {
                 <AmountSelector
                   key={token.symbol}
                   token={{ ...token, presets: poolTipAmount !== null
-                    ? token.presets.filter((p) => {
-                        const stroops = Math.round(p * 1e7);
-                        const base = poolTipAmount;
-                        return [1, 5, 10, 20].some((m) => stroops === base * m);
-                      })
+                    ? [1, 5, 10, 20].map((m) => (poolTipAmount * m) / 1e7)
                     : token.presets }}
                   onAmountChange={(ca, da) => { setContractAmount(ca); setDisplayAmount(da); }}
                 />
