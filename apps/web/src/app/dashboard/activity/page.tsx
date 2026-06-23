@@ -140,8 +140,11 @@ export default function ActivityPage() {
               const note = JSON.parse(new TextDecoder().decode(decrypted));
               if (note.version !== "growthip-v3") continue;
               if (note.recipientAddress !== address) continue;
-              // Save with real depositIndex
-              const finalNote = { ...note, depositIndex: i };
+              // Save with real depositIndex and poolId for filtering.
+              const currentPoolId = tokenSymbol === "USDC"
+                ? process.env.NEXT_PUBLIC_POOL_USDC_ID
+                : process.env.NEXT_PUBLIC_POOL_ID;
+              const finalNote = { ...note, depositIndex: i, poolId: currentPoolId };
               saveNote(address, finalNote);
             } catch { /* skip unreadable messages */ }
           }
