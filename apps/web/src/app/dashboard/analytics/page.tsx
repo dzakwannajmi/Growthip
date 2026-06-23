@@ -245,19 +245,19 @@ export default function AnalyticsPage() {
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               {availableTokens.map((token) => {
-                const s = stats[token.symbol];
-                const tipHuman = s ? (s.tipAmount / Math.pow(10, 7)).toFixed(token.symbol === "XLM" ? 0 : 1) : "0";
-                const totalReceived = s ? parseFloat((Number(s.totalDeposits) * parseFloat(tipHuman)).toFixed(4)) : 0;
+                const tokenNotes = [...claimed, ...pending].filter((n) => n.token === token.symbol);
+                const totalReceived = tokenNotes.reduce((sum, n) => sum + Number(n.amount) / 1e7, 0);
+                const tipCount = tokenNotes.length;
                 return (
                   <div key={token.symbol} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                       <Icon icon={TOKEN_ICONS[token.symbol] || "ph:coin-bold"} style={{ fontSize: "28px" }} />
                       <div>
-                        <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>{totalReceived} {token.symbol}</p>
+                        <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>{totalReceived % 1 === 0 ? totalReceived.toFixed(0) : totalReceived.toFixed(1)} {token.symbol}</p>
                         <p style={{ fontSize: "12px", color: "#A3A3A3" }}>{token.symbol === "XLM" && xlmPrice > 0 ? `$${(totalReceived * xlmPrice).toFixed(2)}` : token.symbol === "USDC" ? `$${totalReceived.toFixed(2)}` : "$0.00"}</p>
                       </div>
                     </div>
-                    <p style={{ fontSize: "12px", color: "#A3A3A3" }}>{loading ? "—" : `${s?.totalDeposits ?? 0} tips`}</p>
+                    <p style={{ fontSize: "12px", color: "#A3A3A3" }}>{`${tipCount} tips`}</p>
                   </div>
                 );
               })}
@@ -283,15 +283,18 @@ export default function AnalyticsPage() {
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               {availableTokens.map((token) => {
-                const s = stats[token.symbol];
-                const tipHuman = s ? (s.tipAmount / Math.pow(10, 7)).toFixed(token.symbol === "XLM" ? 0 : 1) : "0";
+                const tokenNotes = [...claimed, ...pending].filter((n) => n.token === token.symbol);
+                const avgAmount = tokenNotes.length > 0
+                  ? tokenNotes.reduce((sum, n) => sum + Number(n.amount) / 1e7, 0) / tokenNotes.length
+                  : 0;
+                const avgHuman = avgAmount % 1 === 0 ? avgAmount.toFixed(0) : avgAmount.toFixed(1);
                 return (
                   <div key={token.symbol} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                       <Icon icon={TOKEN_ICONS[token.symbol] || "ph:coin-bold"} style={{ fontSize: "28px" }} />
                       <div>
-                        <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>{loading ? "—" : tipHuman} {token.symbol}</p>
-                        <p style={{ fontSize: "12px", color: "#A3A3A3" }}>{token.symbol === "XLM" && xlmPrice > 0 ? `$${(parseFloat(tipHuman) * xlmPrice).toFixed(2)}` : token.symbol === "USDC" ? `$${parseFloat(tipHuman).toFixed(2)}` : "$0.00"}</p>
+                        <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>{tokenNotes.length > 0 ? avgHuman : "—"} {token.symbol}</p>
+                        <p style={{ fontSize: "12px", color: "#A3A3A3" }}>{token.symbol === "XLM" && xlmPrice > 0 ? `$${(avgAmount * xlmPrice).toFixed(2)}` : token.symbol === "USDC" ? `$${avgAmount.toFixed(2)}` : "$0.00"}</p>
                       </div>
                     </div>
                     <p style={{ fontSize: "12px", color: "#A3A3A3" }}>per tip</p>
