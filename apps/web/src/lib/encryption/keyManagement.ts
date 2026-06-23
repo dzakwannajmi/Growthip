@@ -43,7 +43,7 @@ import {
   bytesToBase64Url,
   base64UrlToBytes,
 } from "./cryptoUtils";
-import { saveIdentity, loadIdentity, hasIdentity, type StoredIdentity, type KdfParams } from "./storage";
+import { saveIdentity, loadIdentity, hasIdentity, deleteIdentity, type StoredIdentity, type KdfParams } from "./storage";
 import type { KdfRequest, KdfResponse } from "./kdfWorker";
 
 /* ------------------------------------------------------------------ */
@@ -483,6 +483,21 @@ export async function importBackupFile(file: Blob): Promise<void> {
  * Useful for re-displaying "your encryption is set up" UI state without
  * prompting for a password.
  */
+/**
+ * Replaces the current identity with a new one. The old private key is
+ * permanently discarded. Call this when the on-chain pubkey has drifted
+ * from what is stored locally (e.g. the creator set up on a new device
+ * and the old key was overwritten on-chain). After rotating, the caller
+ * must re-register the new public key on-chain via register_encryption_pubkey().
+ */
+export async function rotateIdentity(
+  newPassword: string,
+): Promise<{ publicKeyRaw: Uint8Array; recoveryPhrase: string }> {
+  await deleteIdentity();
+  sessionPrivateKey = null;
+  return createIdentity(newPassword);
+}
+
 export async function getStoredPublicKeyRaw(): Promise<Uint8Array | null> {
   const identity = await loadIdentity();
   return identity?.publicKeyRaw ?? null;

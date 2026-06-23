@@ -62,7 +62,8 @@ type Step =
   | "backup"
   | "restore-password"
   | "restore-file"
-  | "done";
+  | "done"
+  | "rotate-confirm";
 
 interface EncryptionSetupProps {
   address: string;
@@ -243,11 +244,76 @@ export default function EncryptionSetup({ address, onComplete }: EncryptionSetup
 
   if (step === "done") {
     return (
-      <div style={{ padding: "16px", borderRadius: "12px", border: "1px solid #D1FAE5", background: "#F0FDF4", display: "flex", alignItems: "center", gap: "10px" }}>
-        <Icon icon="ph:check-circle-bold" style={{ fontSize: "20px", color: "#22C55E" }} />
-        <div>
-          <p style={{ fontSize: "13px", fontWeight: 700, color: "#171717" }}>Private notes are active</p>
-          <p style={{ fontSize: "12px", color: "#737373" }}>Your encryption key is set up on this device.</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        <div style={{ padding: "16px", borderRadius: "12px", border: "1px solid #D1FAE5", background: "#F0FDF4", display: "flex", alignItems: "center", gap: "10px" }}>
+          <Icon icon="ph:check-circle-bold" style={{ fontSize: "20px", color: "#22C55E" }} />
+          <div>
+            <p style={{ fontSize: "13px", fontWeight: 700, color: "#171717" }}>Private notes are active</p>
+            <p style={{ fontSize: "12px", color: "#737373" }}>Your encryption key is set up on this device.</p>
+          </div>
+        </div>
+        <button
+          onClick={() => setStep("rotate-confirm")}
+          style={{ padding: "10px 14px", borderRadius: "10px", background: "transparent", color: "#737373", fontSize: "12px", fontWeight: 600, border: "1px solid #E5E5E5", cursor: "pointer", textAlign: "left" }}
+        >
+          🔄 Update encryption key (if your on-chain key is out of sync)
+        </button>
+      </div>
+    );
+  }
+
+  if (step === "rotate-confirm") {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <div style={{ padding: "14px", borderRadius: "12px", border: "1px solid #FCA5A5", background: "#FEF2F2" }}>
+          <p style={{ fontSize: "13px", fontWeight: 700, color: "#EF4444" }}>⚠️ This will replace your local encryption key</p>
+          <p style={{ fontSize: "12px", color: "#737373", marginTop: "4px" }}>
+            A new key will be generated and registered on-chain. Old encrypted notes (from before this update) will no longer be decryptable. Only do this if your on-chain key is out of sync with this browser.
+          </p>
+        </div>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="New password for your key..."
+          style={{ padding: "10px 12px", borderRadius: "8px", border: "1px solid #E5E5E5", fontSize: "13px" }}
+        />
+        {error && <p style={{ fontSize: "12px", color: "#EF4444" }}>{error}</p>}
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button
+            onClick={async () => {
+              setError("");
+              if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
+              setBusy(true);
+              try {
+                const { rotateIdentity } = await import("@/lib/encryption/keyManagement");
+                const { publicKeyRaw } = await rotateIdentity(password);
+                // Re-register new pubkey on-chain (free -- already premium)
+                const client = buildRegistryClient(address);
+                const tx = await client.register_encryption_pubkey({
+                  recipient: address,
+                  pubkey: Buffer.from(publicKeyRaw),
+                });
+                await tx.signAndSend({ force: true });
+                setPassword("");
+                setStep("done");
+              } catch (err) {
+                setError(err instanceof Error ? err.message : "Key rotation failed.");
+              } finally {
+                setBusy(false);
+              }
+            }}
+            disabled={busy || password.length < 8}
+            style={{ flex: 1, padding: "10px", borderRadius: "10px", background: "#EF4444", color: "white", fontSize: "13px", fontWeight: 700, border: "none", cursor: busy ? "not-allowed" : "pointer", opacity: busy || password.length < 8 ? 0.5 : 1 }}
+          >
+            {busy ? "Updating..." : "Update Key"}
+          </button>
+          <button
+            onClick={() => { setPassword(""); setStep("done"); }}
+            style={{ padding: "10px 16px", borderRadius: "10px", background: "transparent", color: "#737373", fontSize: "13px", fontWeight: 600, border: "1px solid #E5E5E5", cursor: "pointer" }}
+          >
+            Cancel
+          </button>
         </div>
       </div>
     );
