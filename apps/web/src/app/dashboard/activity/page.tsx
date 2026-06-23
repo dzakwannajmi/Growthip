@@ -34,6 +34,8 @@ const RPC_URL            = config.network.rpcUrl;
 const NETWORK_PASSPHRASE = config.network.passphrase;
 
 type Filter = "all" | "pending" | "withdrawn";
+type TokenFilter = "all" | "XLM" | "USDC";
+type SortOrder = "newest" | "oldest";
 type ClaimStage = "idle" | "loading" | "proving" | "submitting" | "done" | "error";
 
 function formatAmount(note: PrivateNote): string {
@@ -57,7 +59,9 @@ const PROGRESS_LABELS: Record<ProofProgress, string> = {
 };
 
 export default function ActivityPage() {
-  const [filter, setFilter]     = useState<Filter>("all");
+  const [filter, setFilter]         = useState<Filter>("all");
+  const [tokenFilter, setTokenFilter] = useState<TokenFilter>("all");
+  const [sortOrder, setSortOrder]     = useState<SortOrder>("newest");
   const [encLocked, setEncLocked]   = useState(false);
   const [unlockPw, setUnlockPw]     = useState("");
   const [unlockBusy, setUnlockBusy] = useState(false);
@@ -279,11 +283,19 @@ export default function ActivityPage() {
     }
   }
 
-  const notes = filter === "all"
-    ? [...claimed, ...pending].sort((a, b) => b.timestamp - a.timestamp)
+  const baseNotes = filter === "all"
+    ? [...claimed, ...pending]
     : filter === "pending"
-    ? [...pending].sort((a, b) => b.timestamp - a.timestamp)
-    : [...claimed].sort((a, b) => (b.claimedAt ?? 0) - (a.claimedAt ?? 0));
+    ? [...pending]
+    : [...claimed];
+  const tokenFiltered = tokenFilter === "all"
+    ? baseNotes
+    : baseNotes.filter((n) => n.token === tokenFilter);
+  const notes = tokenFiltered.sort((a, b) => {
+    const aTime = a.claimedAt ?? a.timestamp;
+    const bTime = b.claimedAt ?? b.timestamp;
+    return sortOrder === "newest" ? bTime - aTime : aTime - bTime;
+  });
 
   return (
     <div style={{ padding: "32px", background: "#FAFAFA", minHeight: "100%" }}>
@@ -340,17 +352,48 @@ export default function ActivityPage() {
           </div>
         )}
         {/* Filter */}
-        <div style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "12px 16px", display: "flex", alignItems: "center", gap: "16px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#A3A3A3", paddingRight: "16px", borderRight: "1px solid #E5E5E5" }}>
-            <Icon icon="ph:funnel-bold" style={{ fontSize: "16px" }} />
-            FILTER
+        <div style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "12px 16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+          {/* Status filter */}
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#A3A3A3", paddingRight: "16px", borderRight: "1px solid #E5E5E5", whiteSpace: "nowrap" }}>
+              <Icon icon="ph:funnel-bold" style={{ fontSize: "16px" }} />
+              STATUS
+            </div>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              {(["all", "pending", "withdrawn"] as Filter[]).map((f) => (
+                <button key={f} onClick={() => setFilter(f)} style={{ padding: "6px 16px", borderRadius: "8px", fontSize: "13px", fontWeight: filter === f ? 700 : 500, background: filter === f ? "#0A0A0A" : "transparent", color: filter === f ? "white" : "#525252", border: "none", cursor: "pointer", transition: "all 0.15s" }}>
+                  {f === "all" ? "All Tips" : f === "pending" ? `Pending (${pending.length})` : `Withdrawn (${claimed.length})`}
+                </button>
+              ))}
+            </div>
           </div>
-          <div style={{ display: "flex", gap: "8px" }}>
-            {(["all", "pending", "withdrawn"] as Filter[]).map((f) => (
-              <button key={f} onClick={() => setFilter(f)} style={{ padding: "6px 16px", borderRadius: "8px", fontSize: "13px", fontWeight: filter === f ? 700 : 500, background: filter === f ? "#0A0A0A" : "transparent", color: filter === f ? "white" : "#525252", border: "none", cursor: "pointer", transition: "all 0.15s" }}>
-                {f === "all" ? "All Tips" : f === "pending" ? `Pending (${pending.length})` : `Withdrawn (${claimed.length})`}
+          {/* Token + Sort filter */}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", paddingTop: "10px", borderTop: "1px solid #F5F5F5", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#A3A3A3", paddingRight: "16px", borderRight: "1px solid #E5E5E5", whiteSpace: "nowrap" }}>
+              <Icon icon="ph:coin-bold" style={{ fontSize: "16px" }} />
+              TOKEN
+            </div>
+            <div style={{ display: "flex", gap: "8px", flex: 1, flexWrap: "wrap" }}>
+              {(["all", "XLM", "USDC"] as TokenFilter[]).map((t) => (
+                <button key={t} onClick={() => setTokenFilter(t)} style={{ padding: "6px 14px", borderRadius: "8px", fontSize: "13px", fontWeight: tokenFilter === t ? 700 : 500, background: tokenFilter === t ? "#0A0A0A" : "transparent", color: tokenFilter === t ? "white" : "#525252", border: "none", cursor: "pointer", transition: "all 0.15s" }}>
+                  {t === "all" ? "All Tokens" : t}
+                </button>
+              ))}
+              <button disabled style={{ padding: "6px 14px", borderRadius: "8px", fontSize: "13px", fontWeight: 500, background: "transparent", color: "#D4D4D4", border: "none", cursor: "not-allowed" }}>
+                EURC <span style={{ fontSize: "10px" }}>Soon</span>
               </button>
-            ))}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <Icon icon="ph:clock-bold" style={{ fontSize: "16px", color: "#A3A3A3" }} />
+              <select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value as SortOrder)}
+                style={{ fontSize: "13px", fontWeight: 500, color: "#525252", border: "none", background: "transparent", cursor: "pointer", outline: "none" }}
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+              </select>
+            </div>
           </div>
         </div>
 
