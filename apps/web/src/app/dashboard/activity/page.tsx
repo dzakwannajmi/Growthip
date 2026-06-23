@@ -97,7 +97,7 @@ export default function ActivityPage() {
     setClaimed(getClaimedNotes(address));
   }
 
-  useEffect(() => { loadNotes(); }, [claimTxHash]);
+  useEffect(() => { loadNotes(); }, [address, claimTxHash]);
 
   async function connectWallet() {
     try {
