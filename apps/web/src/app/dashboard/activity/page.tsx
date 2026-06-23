@@ -62,6 +62,7 @@ export default function ActivityPage() {
   const [filter, setFilter]         = useState<Filter>("all");
   const [tokenFilter, setTokenFilter] = useState<TokenFilter>("all");
   const [sortOrder, setSortOrder]     = useState<SortOrder>("newest");
+  const [openDropdown, setOpenDropdown] = useState<"status"|"token"|"sort"|null>(null);
   const [encLocked, setEncLocked]   = useState(false);
   const [unlockPw, setUnlockPw]     = useState("");
   const [unlockBusy, setUnlockBusy] = useState(false);
@@ -354,51 +355,87 @@ export default function ActivityPage() {
         {/* Filter */}
         <div style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "12px 16px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-            {/* Filter icon + label */}
             <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#A3A3A3" }}>
               <Icon icon="ph:funnel-bold" style={{ fontSize: "16px" }} />
               FILTER
             </div>
             <div style={{ width: "1px", height: "20px", background: "#E5E5E5" }} />
-            {/* Status dropdown */}
+
+            {/* Status custom dropdown */}
             <div style={{ position: "relative" }}>
-              <select
-                value={filter}
-                onChange={(e) => setFilter(e.target.value as Filter)}
-                style={{ padding: "6px 28px 6px 12px", borderRadius: "8px", fontSize: "13px", fontWeight: 500, color: filter !== "all" ? "white" : "#525252", background: filter !== "all" ? "#0A0A0A" : "#F5F5F5", border: "none", cursor: "pointer", outline: "none", appearance: "none", WebkitAppearance: "none" }}
+              <button
+                onClick={() => setOpenDropdown(openDropdown === "status" ? null : "status")}
+                style={{ display: "flex", alignItems: "center", gap: "8px", padding: "7px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: 600, color: filter !== "all" ? "white" : "#171717", background: filter !== "all" ? "#0A0A0A" : "#F5F5F5", border: "none", cursor: "pointer" }}
               >
-                <option value="all">All Status</option>
-                <option value="pending">Pending ({pending.length})</option>
-                <option value="withdrawn">Withdrawn ({claimed.length})</option>
-              </select>
-              <Icon icon="ph:caret-down-bold" style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: filter !== "all" ? "white" : "#525252", pointerEvents: "none" }} />
+                {filter === "all" ? "All Status" : filter === "pending" ? `Pending (${pending.length})` : `Withdrawn (${claimed.length})`}
+                <Icon icon="ph:caret-down-bold" style={{ fontSize: "11px", opacity: 0.6 }} />
+              </button>
+              {openDropdown === "status" && (
+                <div style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, background: "white", borderRadius: "14px", border: "1px solid #E5E5E5", boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 50, minWidth: "180px", padding: "6px", display: "flex", flexDirection: "column", gap: "2px" }}>
+                  {(["all", "pending", "withdrawn"] as Filter[]).map((f) => (
+                    <button key={f} onClick={() => { setFilter(f); setOpenDropdown(null); }}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: filter === f ? 700 : 500, color: "#171717", background: filter === f ? "#F5F5F5" : "transparent", border: "none", cursor: "pointer", textAlign: "left", width: "100%" }}
+                    >
+                      {f === "all" ? "All Status" : f === "pending" ? `Pending (${pending.length})` : `Withdrawn (${claimed.length})`}
+                      {filter === f && <Icon icon="ph:check-bold" style={{ fontSize: "14px", color: "#0A0A0A" }} />}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-            {/* Token dropdown */}
+
+            {/* Token custom dropdown */}
             <div style={{ position: "relative" }}>
-              <select
-                value={tokenFilter}
-                onChange={(e) => setTokenFilter(e.target.value as TokenFilter)}
-                style={{ padding: "6px 28px 6px 12px", borderRadius: "8px", fontSize: "13px", fontWeight: 500, color: tokenFilter !== "all" ? "white" : "#525252", background: tokenFilter !== "all" ? "#0A0A0A" : "#F5F5F5", border: "none", cursor: "pointer", outline: "none", appearance: "none", WebkitAppearance: "none" }}
+              <button
+                onClick={() => setOpenDropdown(openDropdown === "token" ? null : "token")}
+                style={{ display: "flex", alignItems: "center", gap: "8px", padding: "7px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: 600, color: tokenFilter !== "all" ? "white" : "#171717", background: tokenFilter !== "all" ? "#0A0A0A" : "#F5F5F5", border: "none", cursor: "pointer" }}
               >
-                <option value="all">All Tokens</option>
-                <option value="XLM">XLM</option>
-                <option value="USDC">USDC</option>
-              </select>
-              <Icon icon="ph:caret-down-bold" style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: tokenFilter !== "all" ? "white" : "#525252", pointerEvents: "none" }} />
+                {tokenFilter === "all" ? "All Tokens" : tokenFilter}
+                <Icon icon="ph:caret-down-bold" style={{ fontSize: "11px", opacity: 0.6 }} />
+              </button>
+              {openDropdown === "token" && (
+                <div style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, background: "white", borderRadius: "14px", border: "1px solid #E5E5E5", boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 50, minWidth: "180px", padding: "6px", display: "flex", flexDirection: "column", gap: "2px" }}>
+                  {(["all", "XLM", "USDC"] as TokenFilter[]).map((t) => (
+                    <button key={t} onClick={() => { setTokenFilter(t); setOpenDropdown(null); }}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: tokenFilter === t ? 700 : 500, color: "#171717", background: tokenFilter === t ? "#F5F5F5" : "transparent", border: "none", cursor: "pointer", textAlign: "left", width: "100%" }}
+                    >
+                      {t === "all" ? "All Tokens" : t}
+                      {tokenFilter === t && <Icon icon="ph:check-bold" style={{ fontSize: "14px", color: "#0A0A0A" }} />}
+                    </button>
+                  ))}
+                  <div style={{ borderTop: "1px solid #F5F5F5", margin: "4px 0" }} />
+                  <button disabled style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: 500, color: "#A3A3A3", background: "transparent", border: "none", cursor: "not-allowed", textAlign: "left", width: "100%" }}>
+                    EURC
+                    <span style={{ fontSize: "10px", padding: "2px 6px", borderRadius: "6px", background: "#F5F5F5", color: "#A3A3A3" }}>Soon</span>
+                  </button>
+                </div>
+              )}
             </div>
-            {/* Sort dropdown */}
+
+            {/* Sort custom dropdown */}
             <div style={{ position: "relative", marginLeft: "auto" }}>
-              <select
-                value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value as SortOrder)}
-                style={{ padding: "6px 28px 6px 12px", borderRadius: "8px", fontSize: "13px", fontWeight: 500, color: "#525252", background: "#F5F5F5", border: "none", cursor: "pointer", outline: "none", appearance: "none", WebkitAppearance: "none" }}
+              <button
+                onClick={() => setOpenDropdown(openDropdown === "sort" ? null : "sort")}
+                style={{ display: "flex", alignItems: "center", gap: "8px", padding: "7px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: 600, color: "#171717", background: "#F5F5F5", border: "none", cursor: "pointer" }}
               >
-                <option value="newest">Newest first</option>
-                <option value="oldest">Oldest first</option>
-              </select>
-              <Icon icon="ph:caret-down-bold" style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#525252", pointerEvents: "none" }} />
+                {sortOrder === "newest" ? "Newest first" : "Oldest first"}
+                <Icon icon="ph:caret-down-bold" style={{ fontSize: "11px", opacity: 0.6 }} />
+              </button>
+              {openDropdown === "sort" && (
+                <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: "white", borderRadius: "14px", border: "1px solid #E5E5E5", boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 50, minWidth: "160px", padding: "6px", display: "flex", flexDirection: "column", gap: "2px" }}>
+                  {(["newest", "oldest"] as SortOrder[]).map((s) => (
+                    <button key={s} onClick={() => { setSortOrder(s); setOpenDropdown(null); }}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: sortOrder === s ? 700 : 500, color: "#171717", background: sortOrder === s ? "#F5F5F5" : "transparent", border: "none", cursor: "pointer", textAlign: "left", width: "100%" }}
+                    >
+                      {s === "newest" ? "Newest first" : "Oldest first"}
+                      {sortOrder === s && <Icon icon="ph:check-bold" style={{ fontSize: "14px", color: "#0A0A0A" }} />}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
+
           {/* Active filter chips */}
           {(filter !== "all" || tokenFilter !== "all") && (
             <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "10px", paddingTop: "10px", borderTop: "1px solid #F5F5F5" }}>
@@ -424,6 +461,7 @@ export default function ActivityPage() {
             </div>
           )}
         </div>
+        {/* Notes list */}
         {/* Notes list */}
         {notes.length === 0 ? (
           <div style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "64px 24px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
