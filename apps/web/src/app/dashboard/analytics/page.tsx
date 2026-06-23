@@ -130,7 +130,7 @@ export default function AnalyticsPage() {
     const currentUsdcPoolId = process.env.NEXT_PUBLIC_POOL_USDC_ID;
     const filterByPool = (notes: ReturnType<typeof getPendingNotes>) =>
       notes.filter((n) => {
-        if (!n.poolId) return true; // legacy notes without poolId: show
+        if (!n.poolId) return false; // legacy notes without poolId: hide
         if (n.token === "USDC") return n.poolId === currentUsdcPoolId;
         return n.poolId === currentPoolId;
       });
