@@ -73,6 +73,7 @@ export default function PublicTipPage() {
   const [token, setToken]                   = useState<Token>(getAvailableTokens()[0]);
   const [contractAmount, setContractAmount] = useState(0);
   const [displayAmount, setDisplayAmount]   = useState(0);
+  const [poolTipAmount, setPoolTipAmount]   = useState<number | null>(null);
   const [message, setMessage]               = useState("");
   const [busy, setBusy]                     = useState(false);
   const [status, setStatus]                 = useState("");
@@ -91,6 +92,26 @@ export default function PublicTipPage() {
       setPoolClient({ Client: mod.Client, networks: mod.networks })
     );
   }, []);
+  // Fetch tip_amount from contract so AmountSelector is locked to valid amount.
+  useEffect(() => {
+    if (!PoolClient || !token) return;
+    (async () => {
+      try {
+        const { Client, networks } = PoolClient;
+        const poolId = token.symbol === "USDC"
+          ? (process.env.NEXT_PUBLIC_POOL_USDC_ID || networks.testnet.contractId)
+          : networks.testnet.contractId;
+        const client = new Client({ ...networks.testnet, contractId: poolId, rpcUrl: process.env.NEXT_PUBLIC_RPC_URL || "https://soroban-testnet.stellar.org" });
+        const tx = await client.tip_amount();
+        const amount = Number(tx.result ?? 0);
+        setPoolTipAmount(amount);
+        setContractAmount(amount);
+        setDisplayAmount(amount / 1e7);
+      } catch (e) {
+        console.error("Failed to fetch tip_amount:", e);
+      }
+    })();
+  }, [PoolClient, token]);
 
   // Decode the tip ID into a real Stellar address on mount.
   useEffect(() => {
@@ -362,9 +383,20 @@ export default function PublicTipPage() {
 
                 <AmountSelector
                   key={token.symbol}
-                  token={token}
+                  token={{ ...token, presets: poolTipAmount !== null
+                    ? token.presets.filter((p) => {
+                        const stroops = Math.round(p * 1e7);
+                        const base = poolTipAmount;
+                        return [1, 5, 10, 20].some((m) => stroops === base * m);
+                      })
+                    : token.presets }}
                   onAmountChange={(ca, da) => { setContractAmount(ca); setDisplayAmount(da); }}
                 />
+                {poolTipAmount !== null && (
+                  <p style={{ fontSize: "11px", color: "#A3A3A3" }}>
+                    Minimum tip: {poolTipAmount / 1e7} {token.symbol}
+                  </p>
+                )}
 
                 <div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
