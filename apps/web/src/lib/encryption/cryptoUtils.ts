@@ -21,7 +21,7 @@
  * BufferSource -- this makes a fresh, guaranteed-compatible copy.
  */
 function toBufferSource(bytes: Uint8Array): ArrayBuffer {
-  return new Uint8Array(bytes).buffer as ArrayBuffer;
+  return bytes.buffer instanceof ArrayBuffer ? bytes.buffer : new Uint8Array(bytes).buffer as ArrayBuffer;
 }
 
 /* ------------------------------------------------------------------ */
