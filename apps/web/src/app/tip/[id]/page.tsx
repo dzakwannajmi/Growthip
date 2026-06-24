@@ -414,6 +414,20 @@ export default function PublicTipPage() {
                   <div style={{ padding: "16px", borderRadius: "12px", border: "1px solid #D1FAE5", background: "#F0FDF4" }}>
                     <p style={{ fontSize: "12px", color: "#737373" }}>You will send</p>
                     <p style={{ fontSize: "20px", fontWeight: 800, color: "#0A0A0A" }}>{fmtDisplay(displayAmount)} {token.symbol}</p>
+                    <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid #D1FAE5", display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#737373" }}>
+                        <span>Platform fee (1%)</span>
+                        <span>~{(displayAmount * 0.01).toFixed(2)} {token.symbol}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#737373" }}>
+                        <span>Est. network fee</span>
+                        <span>~0.021 XLM</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontWeight: 700, color: "#0A0A0A", marginTop: "4px", paddingTop: "4px", borderTop: "1px solid #D1FAE5" }}>
+                        <span>Creator receives</span>
+                        <span>~{(displayAmount * 0.99).toFixed(2)} {token.symbol}</span>
+                      </div>
+                    </div>
                   </div>
                 )}
 

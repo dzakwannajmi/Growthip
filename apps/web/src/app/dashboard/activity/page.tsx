@@ -610,6 +610,23 @@ export default function ActivityPage() {
                     </div>
                   )}
 
+                  {/* Fee breakdown */}
+                  {claimStage === "idle" && modalNote && (
+                    <div style={{ padding: "12px", borderRadius: "10px", background: "#F5F5F5", display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px", color: "#737373", marginBottom: "8px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span>Platform fee (1%)</span>
+                        <span>~{(Number(modalNote.amount) / 1e7 * 0.01).toFixed(2)} {modalNote.token}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span>Est. network fee</span>
+                        <span>~0.015 XLM</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, color: "#0A0A0A", paddingTop: "4px", borderTop: "1px solid #E5E5E5", marginTop: "2px" }}>
+                        <span>You receive</span>
+                        <span>~{(Number(modalNote.amount) / 1e7 * 0.99).toFixed(2)} {modalNote.token}</span>
+                      </div>
+                    </div>
+                  )}
                   {/* Claim button */}
                   <button
                     onClick={handleClaim}

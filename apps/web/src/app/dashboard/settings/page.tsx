@@ -259,7 +259,7 @@ export default function SettingsPage() {
                     </div>
                     <div className="text-left">
                       <div className="font-bold text-sm" style={{ color: "#0A0A0A" }}>Security & Private Notes</div>
-                      <div className="text-xs" style={{ color: "#737373" }}>Enable encrypted notes from supporters</div>
+                      <div className="text-xs" style={{ color: "#737373" }}>Enable encrypted notes from supporters · Est. fee ~0.016 XLM</div>
                     </div>
                   </div>
                   <Icon icon={showSecurity ? "ph:caret-up-bold" : "ph:caret-right-bold"} style={{ color: "#A3A3A3" }} />
