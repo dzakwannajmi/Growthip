@@ -21,7 +21,11 @@
  * BufferSource -- this makes a fresh, guaranteed-compatible copy.
  */
 function toBufferSource(bytes: Uint8Array): ArrayBuffer {
-  return bytes.buffer instanceof ArrayBuffer ? bytes.buffer : new Uint8Array(bytes).buffer as ArrayBuffer;
+  // Explicitly construct a plain ArrayBuffer to satisfy TypeScript 5.x strict
+  // BufferSource constraint — avoids SharedArrayBuffer vs ArrayBuffer mismatch.
+  const ab = new ArrayBuffer(bytes.length);
+  new Uint8Array(ab).set(bytes);
+  return ab;
 }
 
 /* ------------------------------------------------------------------ */
