@@ -71,6 +71,50 @@ export default function DashboardTopbar() {
   const [networkOpen, setNetworkOpen]     = useState(false);
   const [activeNetwork, setActiveNetwork] = useState<Network>("testnet");
   const [toasts, setToasts]               = useState<Toast[]>([]);
+  const [encLocked, setEncLocked]         = useState(true);
+  const [showUnlock, setShowUnlock]       = useState(false);
+  const [unlockPw, setUnlockPw]           = useState("");
+  const [unlockBusy, setUnlockBusy]       = useState(false);
+  const [unlockErr, setUnlockErr]         = useState("");
+  const unlockRef                         = useRef<HTMLDivElement>(null);
+
+  // Poll encryption session status every 2s
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const { isUnlocked } = await import("@/lib/encryption/keyManagement");
+        setEncLocked(!isUnlocked());
+      } catch { setEncLocked(true); }
+    };
+    check();
+    const interval = setInterval(check, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Close unlock popup on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (unlockRef.current && !unlockRef.current.contains(e.target as Node)) {
+        setShowUnlock(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  async function handleUnlock() {
+    setUnlockBusy(true);
+    setUnlockErr("");
+    try {
+      const { unlockWithPassword } = await import("@/lib/encryption/keyManagement");
+      await unlockWithPassword(unlockPw);
+      setEncLocked(false);
+      setShowUnlock(false);
+      setUnlockPw("");
+      showToast("Encryption unlocked — pending tips will now load");
+    } catch { setUnlockErr("Wrong password."); }
+    finally { setUnlockBusy(false); }
+  }
   const dropdownRef                       = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -188,6 +232,39 @@ export default function DashboardTopbar() {
                     <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded" style={{ color: "#737373", background: "#E5E5E5" }}>Soon</span>
                   </button>
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* Encryption status badge */}
+          <div style={{ position: "relative" }} ref={unlockRef}>
+            <button
+              onClick={() => { setShowUnlock(!showUnlock); setUnlockErr(""); }}
+              style={{ display: "flex", alignItems: "center", gap: "6px", padding: "6px 12px", borderRadius: "999px", fontSize: "12px", fontWeight: 700, border: "none", cursor: "pointer", background: encLocked ? "#FEF2F2" : "#F0FDF4", color: encLocked ? "#EF4444" : "#22c55e", transition: "all 0.2s" }}
+            >
+              <Icon icon={encLocked ? "ph:lock-key-bold" : "ph:lock-key-open-bold"} style={{ fontSize: "14px" }} />
+              {encLocked ? "Locked" : "Active"}
+            </button>
+            {showUnlock && encLocked && (
+              <div style={{ position: "absolute", right: 0, top: "calc(100% + 10px)", background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", boxShadow: "0 8px 24px rgba(0,0,0,0.10)", padding: "16px", zIndex: 100, width: "280px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                <p style={{ fontSize: "13px", fontWeight: 700, color: "#0A0A0A" }}>🔐 Unlock Encryption</p>
+                <p style={{ fontSize: "12px", color: "#737373" }}>Enter your password to decrypt incoming tips automatically.</p>
+                <input
+                  type="password"
+                  placeholder="Encryption password..."
+                  value={unlockPw}
+                  onChange={(e) => setUnlockPw(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && !unlockBusy) handleUnlock(); }}
+                  style={{ padding: "10px 12px", borderRadius: "10px", border: "1px solid #E5E5E5", fontSize: "13px", outline: "none", width: "100%" }}
+                />
+                {unlockErr && <p style={{ fontSize: "12px", color: "#EF4444" }}>{unlockErr}</p>}
+                <button
+                  onClick={handleUnlock}
+                  disabled={unlockBusy || !unlockPw.trim()}
+                  style={{ padding: "10px", borderRadius: "10px", background: "#0A0A0A", color: "white", fontSize: "13px", fontWeight: 700, border: "none", cursor: unlockBusy ? "not-allowed" : "pointer", opacity: unlockBusy || !unlockPw.trim() ? 0.5 : 1 }}
+                >
+                  {unlockBusy ? "Unlocking..." : "Unlock"}
+                </button>
               </div>
             )}
           </div>
