@@ -157,7 +157,7 @@ export async function deriveAesKeyFromSharedSecret(
   const info = new TextEncoder().encode("growthip-private-note-v1");
 
   return crypto.subtle.deriveKey(
-    { name: "HKDF", hash: "SHA-256", salt: toBufferSource(salt), info },
+    { name: "HKDF", hash: "SHA-256", salt: toBufferSource(salt), info: toBufferSource(info) },
     hkdfBaseKey,
     { name: "AES-GCM", length: 256 },
     false, // non-extractable; this key only needs to encrypt/decrypt once
