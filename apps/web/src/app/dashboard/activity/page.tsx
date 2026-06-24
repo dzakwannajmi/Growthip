@@ -619,7 +619,7 @@ export default function ActivityPage() {
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between" }}>
                         <span>Est. network fee</span>
-                        <span>~0.015 XLM</span>
+                        <span>~0.022 XLM</span>
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, color: "#0A0A0A", paddingTop: "4px", borderTop: "1px solid #E5E5E5", marginTop: "2px" }}>
                         <span>You receive</span>
