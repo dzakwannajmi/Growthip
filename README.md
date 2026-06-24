@@ -177,6 +177,40 @@ CAP-0075: Cryptographic Primitives for Poseidon/Poseidon2 Hash Functions defines
 
 ## Protocol Design
 
+```mermaid
+flowchart TD
+    subgraph SUP["👤 Supporter Browser"]
+        A[Connect Freighter] --> B[Open tip link]
+        B --> C[Select token and amount]
+        C --> D[Encrypt private note - X25519 + AES-GCM]
+        D --> E[deposit_paid commitment + encrypted bundle]
+    end
+    subgraph CHAIN["⛓️ Stellar Soroban"]
+        E --> F[Pool stores commitment anonymously]
+        F --> G[Poseidon Merkle root recomputed on-chain]
+        G --> H[Encrypted bundle stored as message field]
+    end
+    subgraph CRE["🎨 Creator Browser"]
+        H --> I[Dashboard auto-fetches encrypted bundle]
+        I --> J[Decrypt with password]
+        J --> K[Generate Groth16 ZK proof in-browser]
+        K --> L[claim_to recipient + proof + public inputs]
+    end
+    subgraph VER["✅ On-chain Verification"]
+        L --> M{Root in history?}
+        M -->|yes| N{Nullifier unused?}
+        N -->|yes| O{Proof valid?}
+        O -->|yes| P{recipientHash match?}
+        P -->|yes| Q[Transfer 99% to creator]
+        Q --> R[Nullifier marked used forever]
+    end
+    style SUP fill:#F0FDF4,stroke:#BBF7D0
+    style CHAIN fill:#EFF6FF,stroke:#BFDBFE
+    style CRE fill:#FAF5FF,stroke:#DDD6FE
+    style VER fill:#FFF7ED,stroke:#FED7AA
+```
+
+
 ### Privacy Model
 
 Growthip implements a **fixed-denomination privacy pool** model:
