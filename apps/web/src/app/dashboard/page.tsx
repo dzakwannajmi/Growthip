@@ -196,6 +196,8 @@ export default function DashboardPage() {
   const [copiedNote, setCopiedNote] = useState(false);
   const [showSendQR, setShowSendQR] = useState(false);
   const [showLinkQR, setShowLinkQR] = useState(false);
+  const [poolDeposits, setPoolDeposits] = useState<number | null>(null);
+  const MAX_POOL_LEAVES = 8;
   const [linkCopied, setLinkCopied] = useState(false);
 
   // Withdraw (claim) state
@@ -227,9 +229,12 @@ export default function DashboardPage() {
   }>(null);
 
   useEffect(() => {
-    import("@/lib/growthipPoolClient").then((mod) =>
-      setPoolClient({ Client: mod.Client, networks: mod.networks })
-    );
+    import("@/lib/growthipPoolClient").then((mod) => {
+      setPoolClient({ Client: mod.Client, networks: mod.networks });
+      // Fetch pool deposits for privacy indicator
+      const client = new mod.Client({ ...mod.networks.testnet, contractId: process.env.NEXT_PUBLIC_POOL_ID ?? mod.networks.testnet.contractId, rpcUrl: process.env.NEXT_PUBLIC_RPC_URL ?? "https://soroban-testnet.stellar.org" });
+      client.total_deposits().then((tx) => setPoolDeposits(Number(tx.result ?? 0))).catch(() => {});
+    });
   }, []);
 
   // Load notes from localStorage, namespaced per connected address.
@@ -1023,6 +1028,23 @@ export default function DashboardPage() {
                     <QRCodeSVG value={tipLink} size={180} level="M" />
                   </div>
                   <p style={{ fontSize: "12px", color: "#737373", textAlign: "center" }}>Scan to open your tip page</p>
+                </div>
+              )}
+              {/* Pool Privacy Indicator */}
+              {poolDeposits !== null && (
+                <div style={{ marginTop: "12px", padding: "12px 14px", borderRadius: "12px", border: "1px solid #E5E5E5", background: "#FAFAFA", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <Icon icon="ph:shield-check-bold" style={{ fontSize: "16px", color: poolDeposits >= 6 ? "#22c55e" : poolDeposits >= 3 ? "#f59e0b" : "#ef4444" }} />
+                    <div>
+                      <p style={{ fontSize: "12px", fontWeight: 700, color: "#0A0A0A" }}>Pool Privacy</p>
+                      <p style={{ fontSize: "11px", color: "#737373" }}>{poolDeposits}/{MAX_POOL_LEAVES} deposits · {poolDeposits >= 6 ? "Strong" : poolDeposits >= 3 ? "Moderate" : "Weak"}</p>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: "3px" }}>
+                    {Array.from({ length: MAX_POOL_LEAVES }).map((_, i) => (
+                      <div key={i} style={{ width: "6px", height: "20px", borderRadius: "3px", background: i < poolDeposits ? (poolDeposits >= 6 ? "#22c55e" : poolDeposits >= 3 ? "#f59e0b" : "#ef4444") : "#E5E5E5" }} />
+                    ))}
+                  </div>
                 </div>
               )}
             </>
