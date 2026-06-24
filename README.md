@@ -179,100 +179,118 @@ CAP-0075: Cryptographic Primitives for Poseidon/Poseidon2 Hash Functions defines
 
 ```mermaid
 graph TD
+
+    %% ==================== BROWSER ====================
     subgraph Browser ["USER BROWSER"]
         direction TB
-        subgraph SupporterFlow ["👤 Supporter Flow"]
+
+        subgraph Supporter ["Supporter Flow"]
             direction TB
-            S1["Connect Freighter wallet"]
-            S2["Open /tip/creator-id page"]
-            S3["Select token and amount"]
-            S4["Encrypt private note\nX25519 ECDH + AES-GCM"]
-            S5["deposit_paid commitment + encrypted_bundle"]
+            S1["1. Connect Freighter Wallet"]
+            S2["2. Open /tip/creator-id"]
+            S3["3. Select token and amount"]
+            S4["4. Encrypt private note\nX25519 ECDH + AES-GCM"]
+            S5["5. deposit_paid commitment + encrypted_bundle"]
             S1 --> S2 --> S3 --> S4 --> S5
         end
-        subgraph CreatorFlow ["🎨 Creator Flow"]
+
+        subgraph Creator ["Creator Flow"]
             direction TB
-            C1["Connect Freighter wallet"]
-            C2["Auto-register recipient hash\non all token pools"]
-            C3["Auto-fetch encrypted bundle\nfrom on-chain message field"]
-            C4["Decrypt with password\nX25519 private key"]
-            C5["Generate Groth16 ZK proof\nBN254 Circom in-browser WASM"]
-            C6["claim_to recipient + proof + public_inputs"]
+            C1["1. Connect Freighter Wallet"]
+            C2["2. Auto-register recipient hash\nto all token pools"]
+            C3["3. Auto-fetch encrypted bundle\nfrom on-chain message field"]
+            C4["4. Decrypt note with password\nX25519 private key"]
+            C5["5. Generate Groth16 ZK Proof\nBN254 Circom WASM in-browser"]
+            C6["6. claim_to recipient + proof + public_inputs"]
             C1 --> C2 --> C3 --> C4 --> C5 --> C6
         end
-        subgraph BrowserCore ["⚙️ Browser Core"]
+
+        subgraph Core ["Browser Core Modules"]
             direction TB
-            BC1["keyManagement.ts → X25519 key generation + AES-GCM wrapping"]
-            BC2["merkle.ts → Poseidon commitment + Merkle path builder"]
-            BC3["zkp.ts → snarkjs Groth16 fullProve in WASM"]
-            BC4["growthipPoolClient.ts → Soroban RPC client"]
-            BC5["note.ts → PrivateNote encode/decode + localStorage namespace"]
+            BC1["keyManagement.ts\nX25519 keygen + AES-GCM wrapping"]
+            BC2["merkle.ts\nPoseidon commitment + Merkle path"]
+            BC3["zkp.ts\nsnarkjs Groth16 fullProve in WASM"]
+            BC4["growthipPoolClient.ts\nSoroban RPC client"]
+            BC5["note.ts\nPrivateNote encode/decode + localStorage namespace"]
         end
-        SupporterFlow --> BrowserCore
-        CreatorFlow --> BrowserCore
+
+        Supporter & Creator --> Core
     end
 
-    Browser -- "Freighter signing + Soroban RPC" --> Contracts
-
-    subgraph Contracts ["⛓️ STELLAR SOROBAN CONTRACTS"]
+    %% ==================== CONTRACTS ====================
+    subgraph Contracts ["STELLAR SOROBAN CONTRACTS"]
         direction TB
-        subgraph Pool ["GrowthipPool (per token)"]
-            P1["deposit_paid commitment + amount + message"]
-            P2["→ Store commitment on-chain"]
-            P3["→ Recompute Merkle root via Poseidon host fn"]
-            P4["→ Append root to bounded root history"]
-            P5["→ Store encrypted bundle as message field"]
+
+        subgraph Pool ["GrowthipPool - deployed per token"]
+            direction TB
+            P1["Receive deposit_paid\ncommitment + amount + message"]
+            P2["Store commitment on-chain\nanonymously - no identity link"]
+            P3["Recompute Merkle root\nvia Poseidon host function"]
+            P4["Append root to bounded\non-chain root history"]
+            P5["Store encrypted bundle\nin message field - max 2048 bytes"]
             P1 --> P2 & P3 & P4 & P5
         end
-        subgraph Claim ["claim_to verification"]
+
+        subgraph Claim ["Claim Verification - fail-fast order"]
+            direction TB
             V1["1. Root present in on-chain history?"]
-            V2["2. Nullifier unused?"]
+            V2["2. Nullifier not yet used?"]
             V3["3. Groth16 proof valid? BN254 Protocol 25/26"]
-            V4["4. recipientHash match registered hash?"]
+            V4["4. recipientHash matches registry?"]
             V5["5. Lookup actual deposit amount via index"]
-            V6["Transfer 99% to creator + accrue 1% fee"]
-            V7["Mark nullifier as used forever"]
+            V6["6. Transfer 99% to creator\n1% accrues as platform fee"]
+            V7["7. Mark nullifier as used forever\ndouble-claim impossible"]
             V1 --> V2 --> V3 --> V4 --> V5 --> V6 --> V7
         end
+
         subgraph Verifier ["GrowthipMerkleVerifierV3.1"]
+            direction TB
             VR1["verify proof_bytes + public_inputs"]
-            VR2["BN254 MSM + pairing check\nProtocol 25/26 host functions"]
+            VR2["BN254 multi-scalar multiplication\n+ pairing check via Protocol 25/26 host fns"]
             VR1 --> VR2
         end
-        subgraph Registry ["GrowthipCreatorRegistry"]
+
+        subgraph Registry ["GrowthipCreatorRegistry - global, deployed once"]
+            direction TB
             RG1["register_encryption_pubkey\n6 XLM one-time activation"]
             RG2["is_premium + get_encryption_pubkey"]
-            RG3["withdraw_fees admin-gated batch"]
+            RG3["withdraw_fees - admin-gated batch"]
         end
+
         Pool --> Claim
         Claim --> Verifier
     end
 
-    subgraph ZKCircuit ["🔐 ZK CIRCUIT V3.1"]
+    %% ==================== ZK CIRCUIT ====================
+    subgraph ZK ["ZK CIRCUIT V3.1 - Groth16 BN254"]
         direction TB
-        ZK1["Private inputs: secret, nullifier, recipientHash, pathElements, pathIndices"]
+        ZK1["Private inputs:\nsecret + nullifier + recipientHash\npathElements + pathIndices"]
         ZK2["commitment = Poseidon secret + nullifier + recipientHash"]
         ZK3["nullifierHash = Poseidon nullifier"]
-        ZK4["Merkle membership proof depth-3 8 leaves"]
-        ZK5["index = leaf position from pathIndices"]
-        ZK6["Public outputs: root + nullifierHash + recipientHash + index"]
-        ZK1 --> ZK2 & ZK3 --> ZK4 --> ZK5 --> ZK6
+        ZK4["Merkle membership proof\ndepth-3 tree - 8 leaves max"]
+        ZK5["Public outputs:\nroot + nullifierHash + recipientHash + index"]
+        ZK1 --> ZK2 & ZK3
+        ZK2 & ZK3 --> ZK4 --> ZK5
     end
 
-    BrowserCore --> ZKCircuit
-    ZKCircuit -- "Groth16 proof + public inputs" --> Contracts
-    Registry -- "Encryption pubkey" --> SupporterFlow
+    %% ==================== CONNECTIONS ====================
+    Browser -- "Freighter signing + Soroban RPC" --> Contracts
+    Core --> ZK
+    ZK -- "Groth16 proof + public inputs" --> Claim
+    Registry -- "Encryption pubkey on-chain" --> Supporter
 
+    %% ==================== STYLING ====================
+    classDef default fill:#ffffff,stroke:#D4D4D4,stroke-width:1.5px,color:#171717
     style Browser fill:#F8FAFC,stroke:#E2E8F0
-    style SupporterFlow fill:#F0FDF4,stroke:#BBF7D0
-    style CreatorFlow fill:#FAF5FF,stroke:#DDD6FE
-    style BrowserCore fill:#F0F9FF,stroke:#BAE6FD
+    style Supporter fill:#F0FDF4,stroke:#BBF7D0
+    style Creator fill:#FAF5FF,stroke:#DDD6FE
+    style Core fill:#F0F9FF,stroke:#BAE6FD
     style Contracts fill:#FFF7ED,stroke:#FED7AA
     style Pool fill:#FFFBEB,stroke:#FDE68A
     style Claim fill:#FEF2F2,stroke:#FECACA
     style Verifier fill:#F0FDF4,stroke:#BBF7D0
     style Registry fill:#EFF6FF,stroke:#BFDBFE
-    style ZKCircuit fill:#FDF4FF,stroke:#E9D5FF
+    style ZK fill:#FDF4FF,stroke:#E9D5FF
 ```
 
 
