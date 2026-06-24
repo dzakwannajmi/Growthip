@@ -72,37 +72,10 @@ export default function AmountSelector({ token, onAmountChange }: AmountSelector
         })}
       </div>
 
-      {/* Custom input */}
-      <div style={{ position: "relative" }}>
-        <input
-          type="number"
-          placeholder="Custom amount..."
-          value={custom}
-          onChange={(e) => { setUseCustom(true); setSelected(null); handleCustom(e.target.value); }}
-          min="0"
-          step="0.1"
-          style={{
-            width: "100%", borderRadius: "10px", padding: "10px 52px 10px 14px",
-            fontSize: "13px", color: "#0A0A0A", background: "#FAFAFA",
-            border: useCustom && custom
-              ? isValidCustom ? "1px solid #22c55e" : "1px solid #ef4444"
-              : "1px solid #E5E5E5",
-            outline: "none",
-          }}
-        />
-        <span style={{ position: "absolute", right: "14px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#A3A3A3", fontWeight: 600 }}>
-          {token.symbol}
-        </span>
-      </div>
 
-      {useCustom && custom && !isValidCustom && (
-        <p style={{ fontSize: "12px", color: "#ef4444" }}>
-          Must be one of: {token.presets.map((p) => `${fmtPreset(p)} ${token.symbol}`).join(", ")}
-        </p>
-      )}
-      {useCustom && custom && isValidCustom && (
-        <p style={{ fontSize: "12px", color: "#22c55e" }}>Valid amount</p>
-      )}
+
+
+
     </div>
   );
 }

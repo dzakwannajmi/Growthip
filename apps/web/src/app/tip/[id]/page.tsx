@@ -73,6 +73,8 @@ export default function PublicTipPage() {
   const [token, setToken]                   = useState<Token>(getAvailableTokens()[0]);
   const [contractAmount, setContractAmount] = useState(0);
   const [displayAmount, setDisplayAmount]   = useState(0);
+  const [simFee, setSimFee]                 = useState<number | null>(null);
+  const [simFeeLoading, setSimFeeLoading]   = useState(false);
   const [poolTipAmount, setPoolTipAmount]   = useState<number | null>(null);
   const [message, setMessage]               = useState("");
   const [busy, setBusy]                     = useState(false);
@@ -92,6 +94,23 @@ export default function PublicTipPage() {
       setPoolClient({ Client: mod.Client, networks: mod.networks })
     );
   }, []);
+  // Fetch simulated network fee from Stellar RPC fee stats.
+  async function fetchNetworkFee() {
+    setSimFeeLoading(true);
+    try {
+      const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL ?? "https://soroban-testnet.stellar.org";
+      const res = await fetch(rpcUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getFeeStats", params: {} }),
+      });
+      const data = await res.json();
+      const p90 = data?.result?.sorobanInclusionFee?.p90;
+      if (p90) setSimFee(Math.ceil(Number(p90)) / 1e7);
+    } catch { /* silent fail */ }
+    finally { setSimFeeLoading(false); }
+  }
+
   // Fetch tip_amount from contract so AmountSelector is locked to valid amount.
   useEffect(() => {
     if (!PoolClient || !token) return;
@@ -105,8 +124,6 @@ export default function PublicTipPage() {
         const tx = await client.tip_amount();
         const amount = Number(tx.result ?? 0);
         setPoolTipAmount(amount);
-        setContractAmount(amount);
-        setDisplayAmount(amount / 1e7);
       } catch (e) {
         console.error("Failed to fetch tip_amount:", e);
       }
@@ -291,14 +308,12 @@ export default function PublicTipPage() {
 
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: "8px" }}>
-          <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#0A0A0A", margin: "0 auto 12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: "20px", fontWeight: 800, color: "white", fontFamily: "monospace" }}>
-              {recipientAddress.slice(0, 2)}
-            </span>
+          <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#F5F5F5", border: "2px dashed #D4D4D4", margin: "0 auto 12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Icon icon="ph:user-circle-dashed-bold" style={{ fontSize: "32px", color: "#A3A3A3" }} />
           </div>
           <h1 style={{ fontSize: "20px", fontWeight: 800, color: "#0A0A0A" }}>Send a Private Tip</h1>
           <p style={{ fontSize: "13px", color: "#737373", marginTop: "4px", fontFamily: "monospace" }}>
-            to {shortAddr}
+            to {tipId ? `${tipId.slice(0, 6)}...${tipId.slice(-4)}` : ""}
           </p>
         </div>
 
@@ -386,7 +401,7 @@ export default function PublicTipPage() {
                   token={{ ...token, presets: poolTipAmount !== null
                     ? [1, 5, 10, 20].map((m) => (poolTipAmount * m) / 1e7)
                     : token.presets }}
-                  onAmountChange={(ca, da) => { setContractAmount(ca); setDisplayAmount(da); }}
+                  onAmountChange={(ca, da) => { setContractAmount(ca); setDisplayAmount(da); fetchNetworkFee(); }}
                 />
                 {poolTipAmount !== null && (
                   <p style={{ fontSize: "11px", color: "#A3A3A3" }}>
@@ -416,12 +431,36 @@ export default function PublicTipPage() {
                     <p style={{ fontSize: "20px", fontWeight: 800, color: "#0A0A0A" }}>{fmtDisplay(displayAmount)} {token.symbol}</p>
                     <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid #D1FAE5", display: "flex", flexDirection: "column", gap: "4px" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#737373" }}>
-                        <span>Platform fee (1%)</span>
+                        <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Platform fee (1%)
+                          <span style={{ position: "relative", display: "inline-flex" }}
+                            onMouseEnter={(e) => { const t = e.currentTarget.querySelector("[data-tooltip]") as HTMLElement; if (t) t.style.display = "block"; }}
+                            onMouseLeave={(e) => { const t = e.currentTarget.querySelector("[data-tooltip]") as HTMLElement; if (t) t.style.display = "none"; }}
+                          >
+                            <Icon icon="ph:info-bold" style={{ fontSize: "12px", color: "#A3A3A3", cursor: "pointer" }} />
+                            <span data-tooltip style={{ display: "none", position: "absolute", bottom: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)", background: "white", color: "#171717", fontSize: "12px", borderRadius: "12px", padding: "10px 12px", width: "220px", zIndex: 50, lineHeight: 1.6, pointerEvents: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.12)", border: "1px solid #E5E5E5", whiteSpace: "normal", fontWeight: 400 }}>
+                              A small 1% fee goes to Growthip to keep the platform running. This is automatically deducted when the creator withdraws their tip — you always send the full amount you choose.
+                              <span style={{ position: "absolute", bottom: "-5px", left: "50%", transform: "translateX(-50%) rotate(45deg)", width: "8px", height: "8px", background: "white", border: "1px solid #E5E5E5", borderTop: "none", borderLeft: "none", display: "block" }} />
+                            </span>
+                          </span>
+                        </span>
                         <span>~{(displayAmount * 0.01).toFixed(2)} {token.symbol}</span>
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#737373" }}>
-                        <span>Est. network fee</span>
-                        <span>~0.021 XLM</span>
+                        <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                          Est. network fee
+                          <span style={{ position: "relative", display: "inline-flex" }}
+                            onMouseEnter={(e) => { const t = e.currentTarget.querySelector("[data-tooltip]") as HTMLElement; if (t) t.style.display = "block"; }}
+                            onMouseLeave={(e) => { const t = e.currentTarget.querySelector("[data-tooltip]") as HTMLElement; if (t) t.style.display = "none"; }}
+                          >
+                            <Icon icon="ph:info-bold" style={{ fontSize: "12px", color: "#A3A3A3", cursor: "pointer" }} />
+                            <span data-tooltip style={{ display: "none", position: "absolute", bottom: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)", background: "white", color: "#171717", fontSize: "12px", borderRadius: "12px", padding: "10px 12px", width: "220px", zIndex: 50, lineHeight: 1.6, pointerEvents: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.12)", border: "1px solid #E5E5E5", whiteSpace: "normal", fontWeight: 400 }}>
+                              This is an estimate of the small fee paid to the Stellar network to process your transaction — like a postage stamp for your tip. The actual amount may vary slightly depending on network conditions at the time you send.
+                              <span style={{ position: "absolute", bottom: "-5px", left: "50%", transform: "translateX(-50%) rotate(45deg)", width: "8px", height: "8px", background: "white", border: "1px solid #E5E5E5", borderTop: "none", borderLeft: "none", display: "block" }} />
+                            </span>
+                          </span>
+                        </span>
+                        <span>~0.134 XLM</span>
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontWeight: 700, color: "#0A0A0A", marginTop: "4px", paddingTop: "4px", borderTop: "1px solid #D1FAE5" }}>
                         <span>Creator receives</span>
@@ -444,12 +483,27 @@ export default function PublicTipPage() {
             {step === "confirm" && (
               <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                 <p style={{ fontSize: "16px", fontWeight: 700, color: "#0A0A0A" }}>Confirm Tip</p>
-                {[["Amount", `${fmtDisplay(displayAmount)} ${token.symbol}`], ["To", shortAddr], ["Message", message || "(none)"]].map(([l, v]) => (
+                {[["Amount", `${fmtDisplay(displayAmount)} ${token.symbol}`], ["To", tipId ? `${tipId.slice(0, 6)}...${tipId.slice(-4)}` : ""], ["Message", message || "(none)"]].map(([l, v]) => (
                   <div key={l} style={{ display: "flex", justifyContent: "space-between", padding: "12px 16px", borderRadius: "10px", border: "1px solid #E5E5E5", background: "#FAFAFA" }}>
                     <span style={{ fontSize: "13px", color: "#A3A3A3" }}>{l}</span>
                     <span style={{ fontSize: "13px", fontWeight: 600, color: "#0A0A0A", textAlign: "right", maxWidth: "220px", overflow: "hidden", textOverflow: "ellipsis" }}>{v}</span>
                   </div>
                 ))}
+                <div style={{ padding: "12px 14px", borderRadius: "12px", border: "1px solid #E5E5E5", background: "#FAFAFA", display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <p style={{ fontSize: "11px", fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "2px" }}>Fee Estimate</p>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#737373" }}>
+                    <span>Platform fee (1%)</span>
+                    <span>~{(displayAmount * 0.01).toFixed(2)} {token.symbol}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#737373" }}>
+                    <span>Est. network fee</span>
+                    <span>~0.134 XLM</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", fontWeight: 700, color: "#0A0A0A", paddingTop: "6px", borderTop: "1px solid #E5E5E5", marginTop: "2px" }}>
+                    <span>Creator receives</span>
+                    <span>~{(displayAmount * 0.99).toFixed(2)} {token.symbol}</span>
+                  </div>
+                </div>
                 <div style={{ padding: "14px", borderRadius: "12px", border: "1px solid #DDD6FE", background: "#FAF5FF" }}>
                   <p style={{ fontSize: "13px", color: "#525252", lineHeight: 1.6 }}>
                     A private note will be generated after sending — save it, it&apos;s the only way the creator can claim this tip.

@@ -187,6 +187,7 @@ export default function DashboardPage() {
 
   // Send tip state
   const [sendToken, setSendToken] = useState<Token>(getAvailableTokens()[0]);
+  const [poolTipAmount, setPoolTipAmount] = useState<number | null>(null);
   const [contractAmount, setContractAmount] = useState(0);
   const [displayAmount, setDisplayAmount] = useState(0);
   const [sendStep, setSendStep] = useState<"select" | "confirm" | "done">("select");
@@ -231,6 +232,9 @@ export default function DashboardPage() {
   useEffect(() => {
     import("@/lib/growthipPoolClient").then((mod) => {
       setPoolClient({ Client: mod.Client, networks: mod.networks });
+      // Fetch tip_amount for amount selector
+      const tipClient = new mod.Client({ ...mod.networks.testnet, contractId: process.env.NEXT_PUBLIC_POOL_ID ?? mod.networks.testnet.contractId, rpcUrl: process.env.NEXT_PUBLIC_RPC_URL ?? "https://soroban-testnet.stellar.org" });
+      tipClient.tip_amount().then((tx) => setPoolTipAmount(Number(tx.result ?? 0))).catch(() => {});
       // Fetch pool deposits for privacy indicator
       const client = new mod.Client({ ...mod.networks.testnet, contractId: process.env.NEXT_PUBLIC_POOL_ID ?? mod.networks.testnet.contractId, rpcUrl: process.env.NEXT_PUBLIC_RPC_URL ?? "https://soroban-testnet.stellar.org" });
       client.total_deposits().then((tx) => setPoolDeposits(Number(tx.result ?? 0))).catch(() => {});
@@ -709,7 +713,9 @@ export default function DashboardPage() {
                     </div>
                     <AmountSelector
                       key={sendToken.symbol}
-                      token={sendToken}
+                      token={{ ...sendToken, presets: poolTipAmount !== null
+                        ? [1, 5, 10, 20].map((m) => (poolTipAmount * m) / 1e7)
+                        : sendToken.presets }}
                       onAmountChange={(ca, da) => { setContractAmount(ca); setDisplayAmount(da); }}
                     />
                     {contractAmount > 0 && (
@@ -718,7 +724,6 @@ export default function DashboardPage() {
                           <div>
                             <p style={{ fontSize: "12px", color: "#737373" }}>You will deposit</p>
                             <p style={{ fontSize: "20px", fontWeight: 800, color: "#0A0A0A" }}>{fmtDisplay(displayAmount)} {sendToken.symbol}</p>
-                            <p style={{ fontSize: "11px", color: "#A3A3A3", marginTop: "2px" }}>+ ~0.008 XLM network fee</p>
                           </div>
                           <div style={{ textAlign: "right" }}>
                             <p style={{ fontSize: "11px", color: "#A3A3A3" }}>Pool</p>
@@ -747,23 +752,44 @@ export default function DashboardPage() {
                       </div>
                     ))}
                     <div style={{ borderRadius: "12px", border: "1px solid #E5E5E5", background: "white", padding: "14px" }}>
+
                       <p style={{ fontSize: "11px", fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "10px" }}>Fee Estimate</p>
                       <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                         <div style={{ display: "flex", justifyContent: "space-between" }}>
-                          <span style={{ fontSize: "12px", color: "#737373" }}>Soroban resource fee</span>
-                          <span style={{ fontSize: "12px", fontWeight: 600, color: "#0A0A0A" }}>~0.008 XLM</span>
+                          <span style={{ fontSize: "12px", color: "#737373", display: "flex", alignItems: "center", gap: "4px" }}>
+                            Est. network fee
+                            <span style={{ position: "relative", display: "inline-flex" }}
+                              onMouseEnter={(e) => { const t = e.currentTarget.querySelector("[data-tooltip]") as HTMLElement; if (t) t.style.display = "block"; }}
+                              onMouseLeave={(e) => { const t = e.currentTarget.querySelector("[data-tooltip]") as HTMLElement; if (t) t.style.display = "none"; }}
+                            >
+                              <Icon icon="ph:info-bold" style={{ fontSize: "12px", color: "#A3A3A3", cursor: "pointer" }} />
+                              <span data-tooltip style={{ display: "none", position: "absolute", bottom: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)", background: "white", color: "#171717", fontSize: "12px", borderRadius: "12px", padding: "10px 12px", width: "220px", zIndex: 50, lineHeight: 1.6, pointerEvents: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.12)", border: "1px solid #E5E5E5", whiteSpace: "normal", fontWeight: 400 }}>
+                                This is an estimate of the small fee paid to the Stellar network to process your transaction — like a postage stamp for your tip. The actual amount may vary slightly depending on network conditions.
+                                <span style={{ position: "absolute", bottom: "-5px", left: "50%", transform: "translateX(-50%) rotate(45deg)", width: "8px", height: "8px", background: "white", border: "1px solid #E5E5E5", borderTop: "none", borderLeft: "none", display: "block" }} />
+                              </span>
+                            </span>
+                          </span>
+                          <span style={{ fontSize: "12px", fontWeight: 600, color: "#0A0A0A" }}>~0.134 XLM</span>
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between" }}>
-                          <span style={{ fontSize: "12px", color: "#737373" }}>Recipient registration (first time)</span>
-                          <span style={{ fontSize: "12px", fontWeight: 600, color: "#0A0A0A" }}>~0.005 XLM</span>
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "space-between" }}>
-                          <span style={{ fontSize: "12px", color: "#737373" }}>ZK commitment generation</span>
-                          <span style={{ fontSize: "12px", fontWeight: 600, color: "#22c55e" }}>Browser-side (free)</span>
+                          <span style={{ fontSize: "12px", color: "#737373", display: "flex", alignItems: "center", gap: "4px" }}>
+                            Platform fee (1%)
+                            <span style={{ position: "relative", display: "inline-flex" }}
+                              onMouseEnter={(e) => { const t = e.currentTarget.querySelector("[data-tooltip]") as HTMLElement; if (t) t.style.display = "block"; }}
+                              onMouseLeave={(e) => { const t = e.currentTarget.querySelector("[data-tooltip]") as HTMLElement; if (t) t.style.display = "none"; }}
+                            >
+                              <Icon icon="ph:info-bold" style={{ fontSize: "12px", color: "#A3A3A3", cursor: "pointer" }} />
+                              <span data-tooltip style={{ display: "none", position: "absolute", bottom: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)", background: "white", color: "#171717", fontSize: "12px", borderRadius: "12px", padding: "10px 12px", width: "220px", zIndex: 50, lineHeight: 1.6, pointerEvents: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.12)", border: "1px solid #E5E5E5", whiteSpace: "normal", fontWeight: 400 }}>
+                                A small 1% fee goes to Growthip to keep the platform running. This is automatically deducted when the creator withdraws — you always send the full amount you choose.
+                                <span style={{ position: "absolute", bottom: "-5px", left: "50%", transform: "translateX(-50%) rotate(45deg)", width: "8px", height: "8px", background: "white", border: "1px solid #E5E5E5", borderTop: "none", borderLeft: "none", display: "block" }} />
+                              </span>
+                            </span>
+                          </span>
+                          <span style={{ fontSize: "12px", fontWeight: 600, color: "#0A0A0A" }}>~{(displayAmount * 0.01).toFixed(2)} {sendToken.symbol}</span>
                         </div>
                         <div style={{ borderTop: "1px solid #E5E5E5", paddingTop: "8px", display: "flex", justifyContent: "space-between" }}>
                           <span style={{ fontSize: "13px", fontWeight: 700, color: "#0A0A0A" }}>Total est.</span>
-                          <span style={{ fontSize: "13px", fontWeight: 800, color: "#0A0A0A" }}>{fmtDisplay(displayAmount)} {sendToken.symbol} + ~0.014 XLM</span>
+                          <span style={{ fontSize: "13px", fontWeight: 800, color: "#0A0A0A" }}>{fmtDisplay(displayAmount)} {sendToken.symbol} + ~0.134 XLM</span>
                         </div>
                       </div>
                     </div>
@@ -1038,10 +1064,14 @@ export default function DashboardPage() {
                     <div>
                       <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                         <p style={{ fontSize: "12px", fontWeight: 700, color: "#0A0A0A" }}>Pool Privacy</p>
-                        <div style={{ position: "relative", display: "inline-flex" }} className="group">
+                        <div style={{ position: "relative", display: "inline-flex" }}
+                          onMouseEnter={(e) => { const t = e.currentTarget.querySelector("[data-tooltip]") as HTMLElement; if (t) t.style.display = "block"; }}
+                          onMouseLeave={(e) => { const t = e.currentTarget.querySelector("[data-tooltip]") as HTMLElement; if (t) t.style.display = "none"; }}
+                        >
                           <Icon icon="ph:info-bold" style={{ fontSize: "13px", color: "#A3A3A3", cursor: "pointer" }} />
-                          <div style={{ display: "none", position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)", background: "#0A0A0A", color: "white", fontSize: "11px", borderRadius: "8px", padding: "8px 10px", width: "220px", zIndex: 50, lineHeight: 1.5, pointerEvents: "none" }} className="group-hover:block">
-                            More deposits = stronger privacy. A fuller pool makes it harder to link a specific deposit to a withdrawal. This pool holds up to {MAX_POOL_LEAVES} commitments (ZK Merkle tree depth-3).
+                          <div data-tooltip style={{ display: "none", position: "absolute", bottom: "calc(100% + 10px)", left: "50%", transform: "translateX(-50%)", background: "white", color: "#171717", fontSize: "12px", borderRadius: "12px", padding: "10px 12px", width: "220px", zIndex: 50, lineHeight: 1.6, pointerEvents: "none", whiteSpace: "normal", boxShadow: "0 4px 20px rgba(0,0,0,0.12)", border: "1px solid #E5E5E5" }}>
+                            The more tips in the pool, the harder it is for anyone to trace which tip belongs to you. A full pool of {MAX_POOL_LEAVES} means maximum anonymity for your supporters.
+                            <div style={{ position: "absolute", bottom: "-5px", left: "50%", transform: "translateX(-50%) rotate(45deg)", width: "8px", height: "8px", background: "white", border: "1px solid #E5E5E5", borderTop: "none", borderLeft: "none" }} />
                           </div>
                         </div>
                       </div>
