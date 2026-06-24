@@ -169,15 +169,35 @@ export default function DashboardPage() {
   const [walletStatus, setWalletStatus] = useState("");
 
   const isTestnet = network.toUpperCase() === "TESTNET";
+  const isMainnet = network.toUpperCase() === "PUBLIC" || network.toUpperCase() === "MAINNET";
 
   // Load wallet from localStorage after mount (avoids SSR hydration mismatch)
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const addr = localStorage.getItem("growthip:wallet") ?? "";
-    const net = localStorage.getItem("growthip:network") ?? "";
-    setAddress(addr);
-    setNetwork(net);
-    setRecipient(addr);
+    const load = async () => {
+      const addr = localStorage.getItem("growthip:wallet") ?? "";
+      setAddress(addr);
+      setRecipient(addr);
+      // Detect active network from wallet extension
+      try {
+        const { getNetwork } = await import("@stellar/freighter-api");
+        const net = await getNetwork();
+        // Check networkPassphrase — Freighter keeps net.network as "TESTNET"
+        // but changes networkPassphrase when switching networks
+        const passphrase = (net.networkPassphrase ?? "").toLowerCase();
+        const isMainnetPassphrase = passphrase.includes("public global stellar");
+        const resolvedNet = isMainnetPassphrase ? "PUBLIC" : "TESTNET";
+        setNetwork(resolvedNet);
+        localStorage.setItem("growthip:network", resolvedNet);
+      } catch {
+        const net = localStorage.getItem("growthip:network") || (addr ? "TESTNET" : "");
+        setNetwork(net);
+      }
+    };
+    load();
+    // Poll every 2s to detect network changes in wallet extension
+    const interval = setInterval(load, 2000);
+    return () => clearInterval(interval);
   }, []);
 
   // UI state
@@ -519,6 +539,29 @@ export default function DashboardPage() {
   // ══════════════════════════════════════════════════════════════════════
   return (
     <div style={{ padding: "32px", background: "#FAFAFA" }}>
+      {/* Mainnet warning overlay */}
+      {isMainnet && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}>
+          <div style={{ background: "white", borderRadius: "20px", maxWidth: "420px", width: "100%", padding: "28px", display: "flex", flexDirection: "column", alignItems: "center", gap: "16px", textAlign: "center" }}>
+            <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#FEF2F2", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Icon icon="ph:warning-circle-bold" style={{ fontSize: "28px", color: "#EF4444" }} />
+            </div>
+            <div>
+              <p style={{ fontSize: "17px", fontWeight: 800, color: "#0A0A0A", marginBottom: "8px" }}>Mainnet not supported</p>
+              <p style={{ fontSize: "13px", color: "#737373", lineHeight: 1.6 }}>
+                Growthip is currently testnet-only. Your wallet is set to <strong>Mainnet</strong> — real funds are at risk if you proceed.
+                Please switch your wallet back to <strong>Testnet</strong> to continue using Growthip safely.
+              </p>
+            </div>
+            <div style={{ padding: "12px 16px", borderRadius: "12px", background: "#FFF7ED", border: "1px solid #FED7AA", width: "100%" }}>
+              <p style={{ fontSize: "12px", color: "#9A3412", lineHeight: 1.6 }}>
+                Smart contracts on mainnet are unaudited. The ZK trusted setup is not a public ceremony. <strong>Do not use with real funds.</strong>
+              </p>
+            </div>
+            <p style={{ fontSize: "12px", color: "#A3A3A3" }}>Switch to Testnet in your wallet extension to dismiss this warning.</p>
+          </div>
+        </div>
+      )}
       <div style={{ maxWidth: "700px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "24px", paddingBottom: "80px" }}>
 
         {/* Header */}
@@ -661,9 +704,9 @@ export default function DashboardPage() {
                   {network === "TESTNET" ? "Testnet" : network === "FUTURENET" ? "Futurenet" : network}
                 </span>
                 <button
-                  onClick={() => { }}
-                  title="Swap wallet (coming soon)"
-                  style={{ width: 32, height: 32, borderRadius: "8px", border: "1px solid #E5E5E5", background: "#FAFAFA", cursor: "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.5 }}
+                  onClick={() => setShowWalletModal(true)}
+                  title="Switch wallet"
+                  style={{ width: 32, height: 32, borderRadius: "8px", border: "1px solid #E5E5E5", background: "#FAFAFA", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                 >
                   <Icon icon="ph:arrows-left-right-bold" style={{ fontSize: "14px", color: "#525252" }} />
                 </button>

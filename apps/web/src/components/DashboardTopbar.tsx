@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Icon } from "@iconify/react";
+import WalletModal from "@/components/WalletModal";
 import { getProfile, avatarUrlFor } from "@/lib/profile";
 
 type Network = "testnet" | "futurenet";
@@ -15,6 +16,7 @@ interface Toast {
 function WalletAvatar() {
   const [address, setAddress] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [showWalletModal, setShowWalletModal] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -50,19 +52,67 @@ function WalletAvatar() {
     : "Not connected";
 
   const label = displayName || shortAddr;
-
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "6px 14px 6px 6px", borderRadius: "999px", background: "#F5F5F5", border: "1px solid #E5E5E5" }}>
-      <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", background: "#E5E5E5", flexShrink: 0 }}>
-        {address ? (
-          <img src={avatarUrlFor(address)} alt="avatar" width={32} height={32} style={{ width: 32, height: 32 }} />
-        ) : (
-          <div style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", color: "#A3A3A3" }}>?</div>
-        )}
-      </div>
-      <span style={{ fontSize: "13px", fontWeight: 600, color: "#171717" }} className="hidden sm:block">
-        {label}
-      </span>
+    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+      {!address ? (
+        <button
+          onClick={() => setShowWalletModal(true)}
+          style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 16px", borderRadius: "999px", background: "#0A0A0A", color: "white", border: "none", cursor: "pointer", fontSize: "13px", fontWeight: 700 }}
+        >
+          <Icon icon="ph:wallet-bold" style={{ fontSize: "15px" }} />
+          <span className="hidden sm:block">Connect Wallet</span>
+        </button>
+      ) : (
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 12px 6px 6px", borderRadius: "999px", background: "#F5F5F5", border: "1px solid #E5E5E5" }}>
+          <div style={{ width: 32, height: 32, borderRadius: "50%", overflow: "hidden", background: "#E5E5E5", flexShrink: 0 }}>
+            <img src={avatarUrlFor(address)} alt="avatar" width={32} height={32} style={{ width: 32, height: 32 }} />
+          </div>
+          <span style={{ fontSize: "13px", fontWeight: 600, color: "#171717" }} className="hidden sm:block">
+            {label}
+          </span>
+          <button
+            title="Switch wallet"
+            onClick={() => setShowWalletModal(true)}
+            style={{ width: 28, height: 28, borderRadius: "8px", border: "1px solid #E5E5E5", background: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#F5F5F5"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "white"; }}
+          >
+            <Icon icon="ph:arrows-left-right-bold" style={{ fontSize: "13px", color: "#525252" }} />
+          </button>
+          <button
+            title="Disconnect wallet"
+            onClick={() => {
+              localStorage.removeItem("growthip:wallet");
+              localStorage.removeItem("growthip:walletId");
+              localStorage.removeItem("growthip:network");
+              setAddress("");
+              import("@/lib/wallet").then(({ disconnectWallet }) => disconnectWallet());
+            }}
+            style={{ width: 28, height: 28, borderRadius: "8px", border: "1px solid #E5E5E5", background: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "#FEF2F2"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "white"; }}
+          >
+            <Icon icon="ph:sign-out-bold" style={{ fontSize: "13px", color: "#EF4444" }} />
+          </button>
+        </div>
+      )}
+      {showWalletModal && (
+        <WalletModal
+          onClose={() => setShowWalletModal(false)}
+          onSelectWallet={async (walletId) => {
+            try {
+              const { connectWithWallet } = await import("@/lib/wallet");
+              const addr = await connectWithWallet(walletId);
+              localStorage.setItem("growthip:wallet", addr);
+              localStorage.setItem("growthip:walletId", walletId);
+              setAddress(addr);
+              setShowWalletModal(false);
+            } catch (err) {
+              console.error("Wallet switch failed:", err);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
