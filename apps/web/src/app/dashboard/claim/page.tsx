@@ -76,15 +76,12 @@ function ClaimContent() {
     setError(null);
     setStage("connecting");
     try {
-      const conn = await isConnected();
-      if (!conn.isConnected) throw new Error("Freighter not installed.");
-      await setAllowed();
-      const access = await requestAccess();
-      if (access.error) throw new Error(String(access.error));
-      setAddress(access.address);
-      if (!recipient) setRecipient(access.address);
-      const net = await getNetwork();
-      setNetwork(net.network ?? "");
+      const { connectWalletModal } = await import("@/lib/wallet");
+      const addr = await connectWalletModal();
+      setAddress(addr);
+      if (!recipient) setRecipient(addr);
+      setNetwork("TESTNET");
+      localStorage.setItem("growthip:wallet", addr);
       setStage("idle");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Connection failed.");

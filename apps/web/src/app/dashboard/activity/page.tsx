@@ -174,17 +174,13 @@ export default function ActivityPage() {
 
   async function connectWallet() {
     try {
-      const conn = await isConnected();
-      if (!conn.isConnected) { alert("Freighter not installed."); return; }
-      await setAllowed();
-      const access = await requestAccess();
-      if (access.error) throw new Error(String(access.error));
-      setAddress(access.address);
-      setRecipient(access.address);
-      localStorage.setItem("growthip:wallet", access.address);
-      const net = await getNetwork();
-      setNetwork(net.network ?? "");
-      localStorage.setItem("growthip:network", net.network ?? "");
+      const { connectWalletModal } = await import("@/lib/wallet");
+      const addr = await connectWalletModal();
+      setAddress(addr);
+      setRecipient(addr);
+      localStorage.setItem("growthip:wallet", addr);
+      setNetwork("TESTNET");
+      localStorage.setItem("growthip:network", "TESTNET");
     } catch (err) {
       alert(err instanceof Error ? err.message : "Connection failed.");
     }

@@ -82,20 +82,13 @@ export default function DepositPage() {
 
   async function connectWallet() {
     setBusy(true);
-    setStatus("Connecting Freighter...");
+    setStatus("Connecting wallet...");
     try {
-      const conn = await isConnected();
-      if (!conn.isConnected) {
-        setStatus("Freighter not installed.");
-        return;
-      }
-      await setAllowed();
-      const access = await requestAccess();
-      if (access.error) throw new Error(String(access.error));
-      setAddress(access.address);
-      const net = await getNetwork();
-      if (net.error) throw new Error(String(net.error));
-      setNetwork(net.network ?? "");
+      const { connectWalletModal } = await import("@/lib/wallet");
+      const addr = await connectWalletModal();
+      setAddress(addr);
+      setNetwork("TESTNET");
+      localStorage.setItem("growthip:wallet", addr);
       void warmPoseidon();
       setStatus("Wallet connected.");
       setStep("select");

@@ -24,10 +24,8 @@ export default function SettingsPage() {
 
   useEffect(() => {
     (async () => {
-      const conn = await isConnected();
-      if (!conn.isConnected) return;
-      const access = await requestAccess();
-      if (!access.error) setAddress(access.address);
+      const stored = localStorage.getItem("growthip:wallet");
+      if (stored) setAddress(stored);
     })();
   }, []);
 
