@@ -293,23 +293,9 @@ export default function DashboardPage() {
     setWalletBusy(true);
     setWalletStatus("Connecting...");
     try {
-      const { connectWalletModal } = await import("@/lib/wallet");
-      const addr = await connectWalletModal();
-      setAddress(addr);
-      localStorage.setItem("growthip:wallet", addr);
-      setRecipient(addr);
-      setNetwork("TESTNET");
-      localStorage.setItem("growthip:network", "TESTNET");
-      void warmPoseidon();
-      setWalletStatus("Connected!");
-      refetchBalances();
-
-      // Auto-register this wallet as a tip recipient on every available
-      // token pool, so the creator's public /tip/[id] link works
-      // immediately without a separate manual "activate" step. Only
-      // registers on pools where it isn't already registered (checked
-      // first to avoid an unnecessary signed transaction).
-      void autoRegisterRecipient(addr);
+      // Wallet connection is handled via WalletModal component
+      // which calls handleWalletSelect(walletId) directly
+      setShowWalletModal(true);
     } catch (err) {
       setWalletStatus(err instanceof Error ? err.message : "Failed.");
     } finally {
@@ -1111,9 +1097,27 @@ export default function DashboardPage() {
         {showWalletModal && (
           <WalletModal
             onClose={() => setShowWalletModal(false)}
-            onSelectFreighter={async () => {
-              setShowWalletModal(false);
-              await connectWallet();
+            onSelectWallet={async (walletId) => {
+              setWalletBusy(true);
+              setWalletStatus("Connecting...");
+              try {
+                const { connectWithWallet } = await import("@/lib/wallet");
+                const addr = await connectWithWallet(walletId);
+                setAddress(addr);
+                localStorage.setItem("growthip:wallet", addr);
+                setRecipient(addr);
+                setNetwork("TESTNET");
+                localStorage.setItem("growthip:network", "TESTNET");
+                void warmPoseidon();
+                setWalletStatus("Connected!");
+                refetchBalances();
+                void autoRegisterRecipient(addr);
+                setShowWalletModal(false);
+              } catch (err) {
+                setWalletStatus(err instanceof Error ? err.message : "Failed.");
+              } finally {
+                setWalletBusy(false);
+              }
             }}
             connecting={walletBusy}
           />

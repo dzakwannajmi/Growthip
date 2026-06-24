@@ -80,13 +80,11 @@ export default function AnalyticsPage() {
   const [isPremium, setIsPremium] = useState(false);
 
   useEffect(() => {
-    (async () => {
-      const conn = await isConnected();
-      if (!conn.isConnected) { setPremiumChecked(true); return; }
-      const access = await requestAccess();
-      if (access.error) { setPremiumChecked(true); return; }
-      setAddress(access.address);
-    })();
+    if (typeof window === "undefined") return;
+    // Only use address from explicit dashboard connect — not auto-detect
+    const stored = localStorage.getItem("growthip:wallet");
+    if (!stored) { setPremiumChecked(true); return; }
+    setAddress(stored);
   }, []);
 
   useEffect(() => {
@@ -180,6 +178,31 @@ export default function AnalyticsPage() {
       iconBg: "#FEF2F2",
     },
   ];
+
+  // Not connected gate — show immediately without waiting for premium check
+  if (!address) {
+    return (
+      <div style={{ padding: "32px", background: "#FAFAFA", minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ maxWidth: "360px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+          <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#F5F5F5", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Icon icon="ph:wallet-bold" style={{ fontSize: "32px", color: "#A3A3A3" }} />
+          </div>
+          <p style={{ fontSize: "16px", fontWeight: 700, color: "#171717" }}>Connect your wallet first</p>
+          <p style={{ fontSize: "13px", color: "#737373", lineHeight: 1.6 }}>
+            To see your analytics, you need to connect your Stellar wallet. It's like logging in — just one click and your earnings data will appear here.
+          </p>
+          
+          <a
+            href="/dashboard"
+            style={{ marginTop: "8px", padding: "10px 20px", borderRadius: "10px", background: "#0A0A0A", color: "white", fontSize: "13px", fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", gap: "8px" }}
+          >
+            <Icon icon="ph:arrow-left-bold" style={{ fontSize: "14px" }} />
+            Go to Dashboard to Connect
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   // Premium gate: Analytics is locked behind growthip-creator-registry's
   // is_premium(), the same activation flow as private notes.

@@ -40,20 +40,7 @@ export default function FaucetPage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const stored = localStorage.getItem("growthip:wallet");
-    if (stored) { setAddress(stored); setInputAddr(stored); fetchBalances(stored); }
-    (async () => {
-      try {
-        const conn = await isConnected();
-        if (!conn.isConnected) return;
-        const access = await requestAccess();
-        if (!access.error) {
-          setAddress(access.address);
-          setInputAddr(access.address);
-          fetchBalances(access.address);
-        }
-      } catch {}
-    })();
+    // Address only set when user explicitly clicks "Fill with wallet"
   }, [fetchBalances]);
 
   async function claimXlm() {

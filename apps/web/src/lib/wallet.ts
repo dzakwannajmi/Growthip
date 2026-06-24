@@ -1,8 +1,6 @@
 /**
  * wallet.ts — Unified wallet abstraction for Growthip.
- *
- * Wraps @creit.tech/stellar-wallets-kit (v2+ static API).
- * Supports Freighter and xBull.
+ * Supports Freighter and xBull only.
  */
 "use client";
 
@@ -13,6 +11,23 @@ import { XBULL_ID, xBullModule } from "@creit.tech/stellar-wallets-kit/modules/x
 const NETWORK_PASSPHRASE = "Test SDF Network ; September 2015";
 
 let _initialized = false;
+
+export const SUPPORTED_WALLETS = [
+  {
+    id: FREIGHTER_ID,
+    name: "Freighter",
+    description: "Browser extension for Stellar",
+    icon: "ph:wallet-bold",
+    installUrl: "https://www.freighter.app",
+  },
+  {
+    id: XBULL_ID,
+    name: "xBull Wallet",
+    description: "Secure wallet & multi-platform",
+    icon: "ph:shield-bold",
+    installUrl: "https://xbull.app",
+  },
+];
 
 function ensureInit() {
   if (_initialized) return;
@@ -27,23 +42,30 @@ function ensureInit() {
 }
 
 /**
- * Open the wallet auth modal.
- * Resolves with the connected wallet address, or rejects on cancel.
+ * Connect with a specific wallet id directly (no modal).
  */
-export async function connectWalletModal(): Promise<string> {
+export async function connectWithWallet(walletId: string): Promise<string> {
   ensureInit();
-  const result = await StellarWalletsKit.authModal();
-  const { address } = await StellarWalletsKit.getAddress();
+  StellarWalletsKit.setWallet(walletId);
+  const { address } = await StellarWalletsKit.fetchAddress();
   if (typeof window !== "undefined") {
-    const walletId = localStorage.getItem("swk-selected-module-id") ?? FREIGHTER_ID;
     localStorage.setItem("growthip:walletId", walletId);
   }
   return address;
 }
 
 /**
+ * Open the wallet selection modal (uses custom UI via WalletModal component).
+ * This is kept for compatibility — prefer connectWithWallet directly.
+ */
+export async function connectWalletModal(): Promise<string> {
+  // This will be triggered via WalletModal component
+  // which calls connectWithWallet(walletId) directly.
+  throw new Error("Use WalletModal component instead");
+}
+
+/**
  * Reconnect silently to the previously selected wallet.
- * Returns the address, or null if not previously connected.
  */
 export async function reconnectWallet(): Promise<string | null> {
   if (typeof window === "undefined") return null;
@@ -90,9 +112,6 @@ export async function disconnectWallet(): Promise<void> {
   _initialized = false;
 }
 
-/**
- * Get the currently active wallet id.
- */
 export function getActiveWalletId(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("growthip:walletId");
