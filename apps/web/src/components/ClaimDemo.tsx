@@ -101,9 +101,6 @@ export default function ClaimDemo() {
       networkPassphrase: NETWORK_PASSPHRASE,
     });
 
-    if (signed.error) {
-      throw new Error(getErrorMessage(signed.error));
-    }
 
     return {
       signedTxXdr: signed.signedTxXdr,

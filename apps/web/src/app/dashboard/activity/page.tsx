@@ -8,7 +8,6 @@ import {
   requestAccess,
   setAllowed,
   getNetwork,
-  signTransaction as freighterSign,
 } from "@stellar/freighter-api";
 import {
   buildMerkleTree,
@@ -204,8 +203,8 @@ export default function ActivityPage() {
         rpcUrl: RPC_URL,
         publicKey,
         signTransaction: async (xdr: string) => {
-          const signed = await freighterSign(xdr, { address: publicKey, networkPassphrase: NETWORK_PASSPHRASE });
-          if (signed.error) throw new Error(String(signed.error));
+          const { signTransaction: walletSign } = await import("@/lib/wallet");
+          const signed = await walletSign(xdr, { address: publicKey, networkPassphrase: NETWORK_PASSPHRASE });
           return { signedTxXdr: signed.signedTxXdr, signerAddress: publicKey };
         },
       });

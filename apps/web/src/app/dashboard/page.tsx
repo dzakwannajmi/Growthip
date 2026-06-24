@@ -10,7 +10,6 @@ import {
   requestAccess,
   setAllowed,
   getNetwork,
-  signTransaction as freighterSign,
 } from "@stellar/freighter-api";
 import {
   generateSecret,
@@ -280,8 +279,8 @@ export default function DashboardPage() {
         rpcUrl: RPC_URL,
         publicKey,
         signTransaction: async (xdr: string) => {
-          const signed = await freighterSign(xdr, { address: publicKey, networkPassphrase: NETWORK_PASSPHRASE });
-          if (signed.error) throw new Error(String(signed.error));
+          const { signTransaction: walletSign } = await import("@/lib/wallet");
+          const signed = await walletSign(xdr, { address: publicKey, networkPassphrase: NETWORK_PASSPHRASE });
           return { signedTxXdr: signed.signedTxXdr, signerAddress: publicKey };
         },
       });
@@ -294,17 +293,13 @@ export default function DashboardPage() {
     setWalletBusy(true);
     setWalletStatus("Connecting...");
     try {
-      const conn = await isConnected();
-      if (!conn.isConnected) { setWalletStatus("Freighter not installed."); return; }
-      await setAllowed();
-      const access = await requestAccess();
-      if (access.error) throw new Error(String(access.error));
-      setAddress(access.address);
-      localStorage.setItem("growthip:wallet", access.address);
-      setRecipient(access.address);
-      const net = await getNetwork();
-      setNetwork(net.network ?? "");
-      localStorage.setItem("growthip:network", net.network ?? "");
+      const { connectWalletModal } = await import("@/lib/wallet");
+      const addr = await connectWalletModal();
+      setAddress(addr);
+      localStorage.setItem("growthip:wallet", addr);
+      setRecipient(addr);
+      setNetwork("TESTNET");
+      localStorage.setItem("growthip:network", "TESTNET");
       void warmPoseidon();
       setWalletStatus("Connected!");
       refetchBalances();
@@ -314,7 +309,7 @@ export default function DashboardPage() {
       // immediately without a separate manual "activate" step. Only
       // registers on pools where it isn't already registered (checked
       // first to avoid an unnecessary signed transaction).
-      void autoRegisterRecipient(access.address);
+      void autoRegisterRecipient(addr);
     } catch (err) {
       setWalletStatus(err instanceof Error ? err.message : "Failed.");
     } finally {
