@@ -151,13 +151,13 @@ CAP-0075: Cryptographic Primitives for Poseidon/Poseidon2 Hash Functions defines
 | Contract | Address |
 |---|---|
 | Growthip Merkle Verifier V3.1 | `CA5IHK2NAUVQ6NLS7CWSGPZWEXY6CAFAQBLMM43GCKSFYC2BZXZQIA2L` |
-| Growthip Pool — XLM | `CD5345ZWDWWTJJ5PFMWA46YDADYBKFNWDCAEGE7Q3J3UZQTXWLUI5ZGP` |
+| Growthip Pool — XLM | `CBNENJSASWTULXMJT3MI35Z4MZRY5WVNB6MROEVQIU5TBVEGPKRZOKMK` |
 | Growthip Pool — USDC | `CBKTJKSGQ7Y4WOLM6PQWNKHTHMYQ2MBWPZJYCH3KNZPK7SERD5ZGAXK7` |
 | Growthip Creator Registry | `CDX52ACO6MVXDBC4IS3AG6NIKQASJLY24BED3S5KJEA4PPPAXTWSRGNU` |
 | Native XLM Token (SAC) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
 | USDC Token (SAC) | `CA2R3TBJRDGPAPIXZXVBAZDD63Q5HLJF7JFOLIPBABMDMWJAJ6AV7ZUY` |
 | Admin / Treasury | `GDPAPDZWAKBXUPCNMI4YHAZ7DS7UOUTPGXAFDSWZG4URRMWHFSQTDQBM` |
-| Tip Amount — XLM pool | `10,000,000 stroops = 1 XLM` (base; 5x/10x/20x also accepted) |
+| Tip Amount — XLM pool | `100,000,000 stroops = 10 XLM` (base; 5x/10x/20x also accepted) |
 | Tip Amount — USDC pool | `1,000,000 stroops = 0.1 USDC` (base; 5x/10x/20x also accepted) |
 | Premium activation fee | `60,000,000 stroops = 6 XLM` (one-time, global per creator) |
 | Network | Stellar Testnet |
@@ -165,7 +165,10 @@ CAP-0075: Cryptographic Primitives for Poseidon/Poseidon2 Hash Functions defines
 > Contracts have been redeployed multiple times from earlier versions,
 > after three self-discovered issues were found and fixed — a
 > root-validation vulnerability, a verifier interface leak, and a
-> deposit-amount payout bug. See
+> deposit-amount payout bug. The XLM pool has been redeployed multiple
+> times during testnet to expand `MAX_MESSAGE_LEN` (50 → 2048 bytes)
+> for encrypted bundle delivery, and to reset the 8-leaf Merkle tree
+> as it fills up during testing. See
 > [Security History](#security-history-honest-disclosure) below for all
 > three, each verified working on real testnet transactions, not just in
 > local tests.
@@ -181,8 +184,11 @@ Growthip implements a **fixed-denomination privacy pool** model:
 1. **Supporter calls `deposit_paid(commitment, amount, message?)`**
    * → tip locked in pool (1x/5x/10x/20x base denomination)
    * → commitment stored on-chain (anonymous — no identity link)
-   * → an optional **public** message (max 50 bytes) may be attached,
-     stored on-chain, never linked to the depositor's wallet address
+   * → an optional **encrypted bundle** (max 2048 bytes) is stored on-chain
+     as the `message` field — the supporter's browser encrypts the private
+     note *before* depositing, so the creator can auto-fetch and decrypt it
+     without any manual copy-paste. A plain public donor message (max 50 chars,
+     legacy) is also supported as a fallback
    * → **the pool recomputes its Merkle root on-chain**, using the native
      Poseidon host function, and appends the new root to an on-chain
      bounded root history
@@ -219,7 +225,7 @@ Growthip implements a **fixed-denomination privacy pool** model:
 * ✅ Commitment list (anonymous — not linked to identity)
 * ✅ Used nullifier list (anonymous — not linked to secret)
 * ✅ Root history (anonymous — just a list of hashes, not linked to depositors)
-* ✅ A deposit's optional public message, if the supporter chose to attach one
+* ✅ A deposit's optional on-chain message field (encrypted bundle or plain donor message — stored on-chain, max 2048 bytes, not linked to the depositor's identity)
 * ✅ A premium creator's encryption public key (necessary for supporters
   to encrypt notes — a public key, not a secret)
 
@@ -632,7 +638,7 @@ When you tip a street musician, nobody records your name. When you support a cre
 * Local creator profile (avatar, display name, bio) in Settings
 * Per-address-namespaced local storage for notes and profile data
 
-**Phase 3 — Encrypted Note Delivery & Premium ✅**
+**Phase 3 — Encrypted Note Delivery, Auto-Fetch & Premium ✅**
 * `growthip-creator-registry` contract — global creator identity
 * X25519 ECDH + AES-GCM end-to-end note encryption
 * Password + independent recovery-phrase key wrapping ("OR gate")
@@ -640,6 +646,11 @@ When you tip a street musician, nobody records your name. When you support a cre
 * 6 XLM one-time premium activation, gating private notes (mandatory once
   active) and analytics
 * Strict-baseline CSP, hardened through real-world testing
+* **Auto-delivery of encrypted notes via on-chain `message` field** — supporter encrypts the private note before depositing and stores the ciphertext on-chain (max 2048 bytes); creator's dashboard auto-fetches and decrypts all pending tips on load, no manual copy-paste required
+* Per-pool activity filtering and filter UI (status, token, sort order)
+* Pool privacy indicator with anonymity set visualization
+* Encryption session badge in topbar with inline unlock
+* Real-time fee breakdown with user-friendly tooltips
 
 **Phase 4 — Production Hardening**
 * Formal security audit
