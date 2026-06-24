@@ -35,7 +35,7 @@ const cspDirectives = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://assets.stellar.org https://assets.coingecko.com https://api.dicebear.com",
   "font-src 'self' data:",
-  "connect-src 'self' https://soroban-testnet.stellar.org https://horizon-testnet.stellar.org https://api.coingecko.com https://api.dicebear.com https://api.iconify.design https://api.simplesvg.com https://api.unisvg.com",
+  "connect-src 'self' https://soroban-testnet.stellar.org https://horizon-testnet.stellar.org https://api.coingecko.com https://api.dicebear.com https://api.iconify.design https://api.simplesvg.com https://api.unisvg.com https://friendbot.stellar.org https://friendbot-testnet.circle.com",
   "frame-src 'none'",
   "object-src 'none'",
   "base-uri 'self'",

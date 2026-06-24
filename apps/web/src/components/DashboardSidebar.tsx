@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: "/dashboard",           icon: "ph:house-line-bold",       label: "Dashboard" },
   { href: "/dashboard/activity",  icon: "ph:activity-bold",         label: "Activities" },
   { href: "/dashboard/analytics", icon: "ph:chart-bar-bold",        label: "Analytics", premium: true },
+  { href: "/dashboard/faucet",    icon: "ph:drop-bold",             label: "Testnet Faucet" },
 ];
 
 const ACTION_ITEMS: { href: string; icon: string; label: string }[] = [];

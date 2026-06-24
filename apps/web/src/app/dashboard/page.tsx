@@ -241,6 +241,24 @@ export default function DashboardPage() {
     });
   }, []);
 
+  // Fetch tip_amount from correct pool whenever sendToken changes
+  useEffect(() => {
+    if (!PoolClient) return;
+    (async () => {
+      try {
+        const { Client, networks } = PoolClient;
+        const poolId = sendToken.symbol === "USDC"
+          ? (process.env.NEXT_PUBLIC_POOL_USDC_ID || networks.testnet.contractId)
+          : (process.env.NEXT_PUBLIC_POOL_ID || networks.testnet.contractId);
+        const client = new Client({ ...networks.testnet, contractId: poolId, rpcUrl: process.env.NEXT_PUBLIC_RPC_URL ?? "https://soroban-testnet.stellar.org" });
+        const tx = await client.tip_amount();
+        setPoolTipAmount(Number(tx.result ?? 0));
+        setContractAmount(0);
+        setDisplayAmount(0);
+      } catch {}
+    })();
+  }, [PoolClient, sendToken]);
+
   // Load notes from localStorage, namespaced per connected address.
   useEffect(() => {
     if (!address) { setPending([]); setClaimed([]); return; }
