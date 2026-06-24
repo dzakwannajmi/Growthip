@@ -1036,7 +1036,15 @@ export default function DashboardPage() {
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     <Icon icon="ph:shield-check-bold" style={{ fontSize: "16px", color: poolDeposits >= 6 ? "#22c55e" : poolDeposits >= 3 ? "#f59e0b" : "#ef4444" }} />
                     <div>
-                      <p style={{ fontSize: "12px", fontWeight: 700, color: "#0A0A0A" }}>Pool Privacy</p>
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                        <p style={{ fontSize: "12px", fontWeight: 700, color: "#0A0A0A" }}>Pool Privacy</p>
+                        <div style={{ position: "relative", display: "inline-flex" }} className="group">
+                          <Icon icon="ph:info-bold" style={{ fontSize: "13px", color: "#A3A3A3", cursor: "pointer" }} />
+                          <div style={{ display: "none", position: "absolute", bottom: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)", background: "#0A0A0A", color: "white", fontSize: "11px", borderRadius: "8px", padding: "8px 10px", width: "220px", zIndex: 50, lineHeight: 1.5, pointerEvents: "none" }} className="group-hover:block">
+                            More deposits = stronger privacy. A fuller pool makes it harder to link a specific deposit to a withdrawal. This pool holds up to {MAX_POOL_LEAVES} commitments (ZK Merkle tree depth-3).
+                          </div>
+                        </div>
+                      </div>
                       <p style={{ fontSize: "11px", color: "#737373" }}>{poolDeposits}/{MAX_POOL_LEAVES} deposits · {poolDeposits >= 6 ? "Strong" : poolDeposits >= 3 ? "Moderate" : "Weak"}</p>
                     </div>
                   </div>
