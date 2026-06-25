@@ -31,13 +31,19 @@ export const SUPPORTED_WALLETS = [
 
 function ensureInit() {
   if (_initialized) return;
+  // Restore previously selected wallet from localStorage
+  const savedId = typeof window !== "undefined"
+    ? (localStorage.getItem("growthip:walletId") ?? FREIGHTER_ID)
+    : FREIGHTER_ID;
   StellarWalletsKit.init({
-    selectedWalletId: FREIGHTER_ID,
+    selectedWalletId: savedId,
     modules: [
       new FreighterModule(),
       new xBullModule(),
     ],
   });
+  // Explicitly set the wallet to ensure it matches saved selection
+  StellarWalletsKit.setWallet(savedId);
   _initialized = true;
 }
 
