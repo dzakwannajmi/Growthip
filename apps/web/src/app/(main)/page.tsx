@@ -68,7 +68,7 @@ export default function Home() {
 
   const faqs = [
     { q: "How does the privacy mechanism work?", a: "In short: your tip is mixed into a shared pool so it can't be traced back to you, and only your chosen creator can claim it. For the technically curious — when you send a tip, your funds go into a shared smart contract pool, and your browser generates a mathematical 'commitment'. When a creator claims the tip, they provide a Zero-Knowledge Proof (Groth16) that matches the commitment. The smart contract verifies this proof without ever revealing which specific tip belongs to which creator." },
-    { q: "What wallets are supported?", a: "Currently, Growthip primarily supports the Freighter wallet for the Stellar network. We highly recommend using the browser extension for the best experience. Ensure your wallet is configured to the Stellar Testnet." },
+    { q: "What wallets are supported?", a: "Growthip supports Freighter and xBull wallet. Both are Stellar browser extensions. Connect either one to start tipping or receiving tips. Make sure your wallet is set to Stellar Testnet." },
     { q: "Which tokens can I use to tip?", a: "The protocol currently supports XLM and USDC on the Stellar Testnet, each with its own dedicated pool. Because the pools are modular, EURC and other Stellar assets are planned next." },
     { q: "Is there a platform fee?", a: "Yes — a transparent 1% platform fee, calculated on the actual amount deposited. The creator receives 99% of every tip, sent directly to their wallet on claim. The 1% accrues on-chain in the pool contract and is publicly auditable via the contract's accumulated_fees() function — anyone can verify the exact total at any time. This fee funds ongoing maintenance, infrastructure, and feature development to keep the protocol sustainable. Standard Stellar network fees still apply on top, as with any on-chain transaction." },
     { q: "Where does the 1% fee go?", a: "It accrues inside the pool smart contract's own storage, not to any hidden account — you can read the running total on-chain via accumulated_fees(). It is withdrawn later in batches via an admin-gated withdraw_fees() call, deliberately disconnected in time from any individual claim so that a specific claim cannot be linked to a treasury transfer. The treasury address is public, so aggregate fee revenue is fully observable." },
@@ -299,7 +299,7 @@ export default function Home() {
                 Ready to Accept Tips<br className="hidden md:block" /> Privately?
               </h2>
               <p className="mx-auto max-w-xl text-lg text-white/60 mb-10 leading-relaxed">
-                Join creators who value privacy and security. No sign-up, no passwords — just connect your Freighter wallet and you're ready.
+                Join creators who value privacy and security. No sign-up, no passwords — just connect your Stellar wallet and you're ready.
               </p>
 
               <Link href="/dashboard" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-10 py-4 text-lg font-bold text-[#0A0A0A] transition-all hover:scale-[1.02] shadow-lg">
