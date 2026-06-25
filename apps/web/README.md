@@ -1,7 +1,7 @@
 # Growthip Web
 
 Next.js 16 frontend for Growthip — dashboard, ZK proof generation,
-end-to-end note encryption, and Freighter wallet integration, all
+end-to-end note encryption, and multi-wallet integration (Freighter + xBull), all
 running client-side in the browser.
 
 For protocol-level design, see the [root README](../../README.md). For
@@ -25,7 +25,8 @@ contract addresses and ABI, see [contracts/README.md](../../contracts/README.md)
   as a base64 string instead of a separate `.wasm` file, sidestepping
   the issue
 * **@scure/bip39** — recovery-phrase (mnemonic) generation, audited
-* **@stellar/freighter-api** — Freighter wallet integration
+* **@stellar/freighter-api** — Freighter wallet integration (kept for network detection)
+* **@creit.tech/stellar-wallets-kit** — unified multi-wallet abstraction (Freighter + xBull)
 * **@stellar/stellar-sdk** — Stellar address/key utilities
 * **qrcode.react** — QR codes for tip links, recovery phrases, and
   encrypted note bundles
@@ -225,18 +226,12 @@ npm run dev
 
 ## Wallet Support
 
-* **Freighter** — fully supported, the only wallet currently wired up for
-  signing transactions. Note: Freighter's active account is a single
-  global browser-extension state, not per-tab — switching wallets for
-  testing (e.g. one as creator, one as supporter) requires either
-  separate Chrome *profiles* (not just separate windows, which share one
-  profile's extension state), separate browsers, or manually switching
-  accounts inside the Freighter popup between actions
-* **xBull Wallet**, **Albedo** — shown in the connect-wallet modal as
-  "coming soon"; not yet integrated. Adding either is a roadmap item via
-  [Stellar Wallets Kit](https://github.com/Creit-Tech/Stellar-Wallets-Kit)
-
----
+* **Freighter** — fully supported. Browser extension for Stellar.
+* **xBull Wallet** — fully supported via `@creit.tech/stellar-wallets-kit`. Desktop extension + PWA.
+* Both wallets use unified `src/lib/wallet.ts` abstraction — `connectWithWallet(id)`, `signTransaction(xdr)`, `disconnectWallet()`. All signing flows use dynamic imports to avoid SSR issues.
+* **WalletModal** (`src/components/WalletModal.tsx`) — custom wallet selector showing Freighter + xBull with PNG icons.
+* For E2E testing (supporter + creator), use two separate Chrome profiles — each with its own wallet extension state and localStorage namespace.
+* Mainnet detection via `networkPassphrase` polling every 2s — shows a blocking warning overlay if wallet is switched to mainnet.
 
 ## Dashboard Structure
 

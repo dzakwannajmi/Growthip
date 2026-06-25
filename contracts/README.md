@@ -87,6 +87,18 @@ scratch on every deposit — 7 total `hash2` calls at most (4 + 2 + 1
 levels). This is correct and cheap at this scale; it would not be the
 right approach for a tree large enough to need true incremental updates.
 
+**Known limitation:** With max 8 deposits per pool, a new pool must be
+deployed each time the tree fills up. This is manageable for testnet
+(~5 minutes to deploy + initialize) but is not production-scalable.
+
+**Phase 4 roadmap:** Replace the fixed-depth rebuild with an incremental
+Merkle tree (depth-20, 2^20 = 1,048,576 leaves). The incremental approach
+stores only the frontier nodes on-chain and recomputes just the path from
+the new leaf to the root (20 Poseidon calls regardless of tree size),
+eliminating the need for pool redeployment as deposits grow. This requires
+a new circuit (`pathElements[20]`), new trusted setup, new verifier, and a
+rewrite of `merkle_onchain.rs` to store frontier nodes in contract storage.
+
 ### Why `claim_to()` looks up `CommitmentAmount(index)` instead of a flat `TipAmount`
 
 This is the fix for a critical bug found via a real testnet transaction —

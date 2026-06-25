@@ -665,8 +665,7 @@ growthip/
 │                                          # extraction
 ├── packages/                             # Generated TypeScript contract
 │                                          # bindings
-└── testnet.env                           # Testnet contract addresses
-                                           # (reference only)
+└── .env.example                          # Environment variable template
 ```
 
 ---
@@ -690,7 +689,7 @@ cd growthip
 npm install
 
 cp apps/web/.env.example apps/web/.env.local
-# Fill in contract addresses from testnet.env
+# Fill in contract addresses (see Testnet Deployment section in README)
 ```
 
 ### Run Frontend
