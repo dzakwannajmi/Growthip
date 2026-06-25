@@ -151,7 +151,7 @@ CAP-0075: Cryptographic Primitives for Poseidon/Poseidon2 Hash Functions defines
 | Contract | Address |
 |---|---|
 | Growthip Merkle Verifier V3.1 | `CA5IHK2NAUVQ6NLS7CWSGPZWEXY6CAFAQBLMM43GCKSFYC2BZXZQIA2L` |
-| Growthip Pool — XLM | `CBNENJSASWTULXMJT3MI35Z4MZRY5WVNB6MROEVQIU5TBVEGPKRZOKMK` |
+| Growthip Pool — XLM | `CAXQ3JMCPRQH5FGDVY36BHZEYHREMXE56SZSTJN3Y4VIK337EJC44DQW` |
 | Growthip Pool — USDC | `CBUPHDORLRNQWH2WWLZFN5TX2XM74EEFELAZJY3Z3YOPUMCCMZTMQSEG` |
 | Growthip Creator Registry | `CDX52ACO6MVXDBC4IS3AG6NIKQASJLY24BED3S5KJEA4PPPAXTWSRGNU` |
 | Native XLM Token (SAC) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
@@ -168,7 +168,7 @@ CAP-0075: Cryptographic Primitives for Poseidon/Poseidon2 Hash Functions defines
 > deposit-amount payout bug. The XLM pool has been redeployed multiple
 > times during testnet to expand `MAX_MESSAGE_LEN` (50 → 2048 bytes)
 > for encrypted bundle delivery, and to reset the 8-leaf Merkle tree
-> as it fills up during testing. See
+> as it fills up during testing. Current active XLM pool: `CAXQ3JMC...`. See
 > [Security History](#security-history-honest-disclosure) below for all
 > three, each verified working on real testnet transactions, not just in
 > local tests.
@@ -267,7 +267,7 @@ graph TD
         ZK1["Private inputs:\nsecret + nullifier + recipientHash\npathElements + pathIndices"]
         ZK2["commitment = Poseidon secret + nullifier + recipientHash"]
         ZK3["nullifierHash = Poseidon nullifier"]
-        ZK4["Merkle membership proof\ndepth-3 tree - 8 leaves max"]
+        ZK4["Merkle membership proof\ndepth-3 tree - 8 leaves (testnet)\nPhase 4: upgrade to depth-20"]
         ZK5["Public outputs:\nroot + nullifierHash + recipientHash + index"]
         ZK1 --> ZK2 & ZK3
         ZK2 & ZK3 --> ZK4 --> ZK5
@@ -356,8 +356,11 @@ Growthip implements a **fixed-denomination privacy pool** model:
 
 ### Known Limitations
 * ⚠️ Deposit and withdrawal timestamps are public — timing correlation is possible
-* ⚠️ Small anonymity set on testnet (max 8 leaves per Merkle tree) — privacy
-  improves with more participants and larger trees
+* ⚠️ Small anonymity set on testnet (max 8 leaves per Merkle tree, depth-3) — privacy
+  improves with more participants and larger trees. The current fixed-depth design
+  rebuilds the full tree on every deposit (7 Poseidon calls), which is cheap at
+  depth-3 but does not scale. An incremental Merkle tree supporting 2^20 leaves
+  is planned for Phase 4 — see [Roadmap](#roadmap)
 * ⚠️ Private note encryption is opt-in and paid (6 XLM) — a creator who
   hasn't activated it cannot receive tips at all, rather than receiving
   them with weaker privacy. See [SECURITY.md](SECURITY.md) for the full
@@ -567,7 +570,7 @@ Binary constraint: pathIndices[i] ∈ {0, 1}
 
 `index` is derived entirely from the `pathIndices[]` bits the circuit
 already computed to prove Merkle membership — no new private inputs. It
-reveals only the deposit's position in a small (max 8-leaf) tree, no more
+reveals only the deposit's position in a small (max 8-leaf, depth-3 testnet) tree, no more
 sensitive than the commitment list itself, already fully public on-chain.
 
 **Public inputs** (visible on-chain): `root`, `nullifierHash`,
@@ -769,10 +772,11 @@ When you tip a street musician, nobody records your name. When you support a cre
 * Encryption session badge in topbar with inline unlock
 * Real-time fee breakdown with user-friendly tooltips
 
-**Phase 4 — Production Hardening**
+**Phase 4 — Production Hardening & Scalability**
 * Formal security audit
 * Public, multi-party trusted-setup ceremony for the V3.1 circuit
 * Nonce-based CSP (removing `'unsafe-inline'`)
+* **Incremental Merkle tree (depth-20, 2^20 = 1,048,576 leaves)** — the current fixed-depth-3 design rebuilds the full tree (7 Poseidon calls) on every deposit, which is cheap now but does not scale. An incremental tree stores only the frontier nodes, recomputing just the path from leaf to root (20 Poseidon calls regardless of tree size), enabling millions of deposits without pool redeployment
 * View key for compliance reporting
 * Allowlist / eligibility gate
 * Association Set Provider (ASP) integration
@@ -800,7 +804,7 @@ Growthip is a hackathon/testnet prototype.
   public multi-party one
 * Private note encryption is opt-in, paid, and has no server-side
   recovery path if both the password and recovery phrase are lost
-* Small anonymity set on testnet (max 8 leaves per tree)
+* Small anonymity set on testnet (max 8 leaves per tree, depth-3) — incremental Merkle tree with 2^20 capacity planned for Phase 4
 * Merkle root is NOT admin-controlled — computed on-chain natively
 * Honest about all limitations, including three self-found vulnerabilities
   and their fixes (see [SECURITY.md](SECURITY.md))
