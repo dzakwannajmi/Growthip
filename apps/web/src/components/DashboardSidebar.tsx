@@ -19,7 +19,7 @@ const ACTION_ITEMS: { href: string; icon: string; label: string }[] = [];
 function SpeechBubble({ label, show, premium }: { label: string; show: boolean; premium?: boolean }) {
   if (!show) return null;
   return (
-    <div className="absolute top-1/2 -translate-y-1/2 left-[calc(100%+16px)] flex items-center pointer-events-none z-[100]">
+    <div className="absolute top-1/2 -translate-y-1/2 left-[calc(100%+16px)] hidden md:flex items-center pointer-events-none z-[100]">
       <div className="w-0 h-0 border-y-[6px] border-y-transparent border-r-[8px] border-r-[#E5E5E5]" />
       <div className="bg-[#E5E5E5] text-[#0A0A0A] text-[13px] font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-md flex items-center gap-1.5">
         {label}

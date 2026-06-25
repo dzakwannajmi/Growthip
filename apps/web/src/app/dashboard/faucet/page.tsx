@@ -185,7 +185,7 @@ export default function FaucetPage() {
             <p style={{ fontSize: "12px", fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.05em" }}>Choose asset to fund</p>
             {loadingBal && <Icon icon="ph:spinner-bold" style={{ fontSize: "14px", color: "#A3A3A3", animation: "spin 1s linear infinite" }} />}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "12px" }}>
             {tokens.map((token) => (
               <div key={token.name} style={{ borderRadius: "14px", border: `1px solid ${token.funded ? "#BBF7D0" : "#E5E5E5"}`, padding: "16px", display: "flex", flexDirection: "column", gap: "10px", background: token.name === "EURC" ? "#FAFAFA" : "white", opacity: token.name === "EURC" && !token.funded ? 0.5 : 1 }}>
                 {/* Token icon + amount */}

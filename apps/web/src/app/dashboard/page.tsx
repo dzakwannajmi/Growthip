@@ -580,7 +580,7 @@ export default function DashboardPage() {
           </div>
           <div style={{ marginBottom: "24px" }}>
             <div style={{ display: "flex", alignItems: "flex-end", gap: "8px" }}>
-              <span style={{ fontSize: "48px", fontWeight: 800, color: "#0A0A0A", lineHeight: 1 }}>
+              <span style={{ fontSize: "clamp(28px, 8vw, 48px)", fontWeight: 800, color: "#0A0A0A", lineHeight: 1 }}>
                 ${address ? (balances.xlm * prices.xlm.usd + balances.usdc * prices.usdc.usd).toFixed(2) : "0.00"}
               </span>
               <span style={{ fontSize: "14px", fontWeight: 600, color: "#737373", marginBottom: "6px" }}>USD</span>

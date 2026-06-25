@@ -199,10 +199,6 @@ export default function DashboardTopbar() {
   return (
     <>
       <div className="w-full flex items-center justify-between p-4 md:px-8 lg:px-10 border-b border-[#E5E5E5] bg-white sticky top-0 z-10">
-        {/* Mobile hamburger */}
-        <button className="md:hidden w-10 h-10 rounded-lg flex items-center justify-center text-light-600 dark:text-dark-400 hover:bg-light-200 dark:hover:bg-dark-100 transition-colors">
-          <Icon icon="ph:list-bold" className="text-xl" />
-        </button>
 
         <div className="flex items-center gap-3 ml-auto">
           {/* Network selector */}

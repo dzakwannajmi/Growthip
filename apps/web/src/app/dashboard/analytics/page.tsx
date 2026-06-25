@@ -242,7 +242,7 @@ export default function AnalyticsPage() {
 
 
         {/* Summary cards */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "16px" }}>
           {summaryCards.map((card) => (
             <div key={card.label} style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "20px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
@@ -258,7 +258,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Pool breakdown + Average Tip */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px" }}>
 
           {/* Received by Token */}
           <div style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "20px" }}>
@@ -406,7 +406,7 @@ export default function AnalyticsPage() {
               {loading ? "Loading..." : "Refresh"}
             </button>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
             {availableTokens.map((token) => {
               const s = stats[token.symbol];
               const tipHuman = s ? (s.tipAmount / Math.pow(10, 7)).toFixed(token.symbol === "XLM" ? 0 : 1) : "0";
