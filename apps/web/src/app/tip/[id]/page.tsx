@@ -1,4 +1,5 @@
 "use client";
+import WalletModal from "@/components/WalletModal";
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
@@ -64,6 +65,7 @@ export default function PublicTipPage() {
   const [address, setAddress]     = useState("");
   const [network, setNetwork]     = useState("");
   const [walletBusy, setWalletBusy] = useState(false);
+  const [showWalletModal, setShowWalletModal] = useState(false);
   const [walletStatus, setWalletStatus] = useState("");
   const isTestnet = network.toUpperCase() === "TESTNET";
 
@@ -169,16 +171,8 @@ export default function PublicTipPage() {
     setWalletBusy(true);
     setWalletStatus("Connecting...");
     try {
-      const conn = await isConnected();
-      if (!conn.isConnected) { setWalletStatus("Freighter not installed."); return; }
-      await setAllowed();
-      const access = await requestAccess();
-      if (access.error) throw new Error(String(access.error));
-      setAddress(access.address);
-      const net = await getNetwork();
-      setNetwork(net.network ?? "");
-      void warmPoseidon();
-      setWalletStatus("Connected!");
+      setShowWalletModal(true);
+      return;
     } catch (err) {
       setWalletStatus(err instanceof Error ? err.message : "Failed.");
     } finally {
@@ -584,6 +578,26 @@ export default function PublicTipPage() {
         <p style={{ textAlign: "center", fontSize: "12px", color: "#A3A3A3" }}>
           Powered by <strong style={{ color: "#525252" }}>Growthip</strong> — privacy-preserving tipping on Stellar
         </p>
+      {showWalletModal && (
+        <WalletModal
+          onClose={() => setShowWalletModal(false)}
+          onSelectWallet={async (walletId) => {
+            try {
+              const { connectWithWallet } = await import("@/lib/wallet");
+              const addr = await connectWithWallet(walletId);
+              setAddress(addr);
+              setNetwork("TESTNET");
+              void warmPoseidon();
+              setWalletStatus("Connected!");
+              setShowWalletModal(false);
+            } catch (err) {
+              setWalletStatus(err instanceof Error ? err.message : "Failed.");
+            } finally {
+              setWalletBusy(false);
+            }
+          }}
+        />
+      )}
       </div>
     </div>
   );
