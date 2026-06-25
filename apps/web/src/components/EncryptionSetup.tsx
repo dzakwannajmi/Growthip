@@ -90,19 +90,23 @@ export default function EncryptionSetup({ address, onComplete }: EncryptionSetup
     if (!isReady) return;
     (async () => {
       const localIdentityExists = await hasIdentity();
-      if (localIdentityExists) {
-        setStep("done");
-        onComplete?.();
-        return;
-      }
 
       try {
         const client = buildRegistryClient(address);
         const premiumResult = await client.is_premium({ recipient: address });
-        if (premiumResult.result === true) {
-          // Premium already activated on-chain, but THIS browser has no
-          // local identity -- almost certainly a new device. Do NOT
-          // silently generate a fresh key; that would orphan old notes.
+        const isPremiumOnChain = premiumResult.result === true;
+
+        if (localIdentityExists && isPremiumOnChain) {
+          // Both local identity and on-chain premium exist — fully set up
+          setStep("done");
+          onComplete?.();
+          return;
+        } else if (localIdentityExists && !isPremiumOnChain) {
+          // Local identity exists but not premium on-chain — stale identity
+          // from a different wallet. Show intro so user can activate.
+          setStep("intro");
+        } else if (!localIdentityExists && isPremiumOnChain) {
+          // Premium on-chain but no local identity — new device or cleared storage
           setStep("existing-elsewhere");
         } else {
           setStep("intro");

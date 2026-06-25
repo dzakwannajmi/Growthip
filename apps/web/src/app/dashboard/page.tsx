@@ -1075,6 +1075,14 @@ export default function DashboardPage() {
                 >
                   <Icon icon="ph:share-network-bold" style={{ fontSize: "18px" }} />
                 </button>
+                <a
+                  href={tipLink ? `https://twitter.com/intent/tweet?text=${encodeURIComponent("Support me privately on Growthip - tip me without revealing your identity on-chain.")}&url=${encodeURIComponent(tipLink)}` : "#"}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ width: 48, height: 44, background: "#000000", border: "1px solid #000000", borderRadius: "12px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "white", textDecoration: "none" }}
+                >
+                  <Icon icon="ri:twitter-x-fill" style={{ fontSize: "16px" }}/>
+                </a>
                 <button
                   onClick={() => setShowLinkQR((prev) => !prev)}
                   style={{ width: 48, height: 44, background: showLinkQR ? "#0A0A0A" : "#FAFAFA", border: "1px solid #E5E5E5", borderRadius: "12px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: showLinkQR ? "white" : "#404040" }}
