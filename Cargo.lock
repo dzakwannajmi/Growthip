@@ -786,6 +786,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "growthip-merkle-verifier-v4"
+version = "0.1.0"
+dependencies = [
+ "ark-bn254",
+ "ark-ec",
+ "ark-ff",
+ "hex",
+ "serde",
+ "serde_json",
+ "soroban-sdk",
+]
+
+[[package]]
 name = "growthip-note-verifier"
 version = "0.1.0"
 dependencies = [

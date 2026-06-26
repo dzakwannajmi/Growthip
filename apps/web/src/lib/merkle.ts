@@ -20,11 +20,11 @@
 
 import { hash2 } from "./poseidon";
 
-/** Fixed tree depth for Growthip V3. */
-export const TREE_DEPTH = 3;
+/** Fixed tree depth for Growthip V4. */
+export const TREE_DEPTH = 20;
 
 /** Maximum number of leaves (2 ** TREE_DEPTH). */
-export const MAX_LEAVES = 1 << TREE_DEPTH; // 8
+export const MAX_LEAVES = 1 << TREE_DEPTH; // 1,048,576
 
 /** Empty-leaf value used as padding (string literal, matching the circuit). */
 export const EMPTY_LEAF = "0";

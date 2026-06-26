@@ -34,8 +34,8 @@ import type { PrivateNote } from "@/lib/note"; // adjust import to your project
 import type { MerklePath } from "./merkle";
 
 /** Public artifact paths (copied into apps/web/public/zkp/). */
-const WASM_PATH = "/zkp/growthip_merkle_note_v3_1.wasm";
-const ZKEY_PATH = "/zkp/growthip_merkle_note_v3_1_final.zkey";
+const WASM_PATH = "/growthip_merkle_note_v4.wasm";
+const ZKEY_PATH = "/growthip_merkle_note_v4_final.zkey";
 const WITNESS_CALCULATOR_PATH = "/zkp/witness_calculator_v3_1.js";
 
 /** Circuit input shape (decimal strings, except pathIndices bits). */
@@ -182,8 +182,8 @@ function buildCircuitInput(
   note: PrivateNote,
   merklePath: MerklePath,
 ): CircuitInput {
-  if (merklePath.pathElements.length !== 3 || merklePath.pathIndices.length !== 3) {
-    throw new Error("Merkle path must have exactly 3 elements (tree depth 3).");
+  if (merklePath.pathElements.length !== 20 || merklePath.pathIndices.length !== 20) {
+    throw new Error("Merkle path must have exactly 20 elements (tree depth 20).");
   }
   return {
     secret: note.secret,

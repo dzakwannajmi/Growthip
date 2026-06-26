@@ -1,30 +1,27 @@
-// On-chain Merkle tree reconstruction for Growthip V3 pool.
+// On-chain incremental Merkle tree for Growthip V4 pool.
 //
-// Mirrors apps/web/src/lib/merkle.ts EXACTLY:
-//   - Fixed depth-3 binary tree, MAX_LEAVES = 8
+// Upgraded from fixed depth-3 (rebuild from scratch) to incremental
+// depth-20 (frontier-based update). Only stores the frontier nodes —
+// the right-most node at each level — and updates just the path from
+// the new leaf to the root (20 Poseidon calls per deposit, regardless
+// of tree size).
+//
+// Matches apps/web/src/lib/merkle.ts EXACTLY:
+//   - depth-20 binary tree, MAX_LEAVES = 2^20 = 1,048,576
 //   - Internal node = Poseidon(left, right) via hash2 (t=3 arity)
-//   - Empty leaf padding = field element 0 (matching EMPTY_LEAF = "0")
-//   - Tree rebuilt FROM SCRATCH on every deposit (not incremental) —
-//     cheap because MAX_LEAVES is small (7 total hash2 calls: 4+2+1)
-//
-// Depends on poseidon_constants_generated.rs (T3_* — arity for hash2,
-// 2-input Poseidon used for Merkle level hashing) being in scope.
+//   - Empty leaf padding = field element 0 (EMPTY_LEAF = "0")
+//   - Empty subtree roots precomputed bottom-up from EMPTY_LEAF
 
 use soroban_sdk::BytesN;
-
 include!("poseidon_constants_generated.rs");
 
-pub const TREE_DEPTH: u32 = 3;
-pub const MAX_LEAVES: u32 = 8; // 2^TREE_DEPTH
+pub const TREE_DEPTH: u32 = 20;
+pub const MAX_LEAVES: u32 = 1 << TREE_DEPTH; // 1,048,576
 
-/// Poseidon hash2(left, right) using the verified t=3 arity constants.
-/// Sponge setup matches circomlibjs exactly: state = [0, left, right],
-/// output = state[0] after permutation (see poseidon_verify_test.rs,
-/// which proves this matches the browser's hash2() byte-for-byte).
+/// Poseidon hash2(left, right) — identical to V3 implementation.
 fn hash2_onchain(env: &Env, left: &U256, right: &U256) -> U256 {
     let zero = U256::from_u32(env, 0);
     let input: SVec<U256> = vec![env, zero, left.clone(), right.clone()];
-
     let hazmat = env.crypto_hazmat();
     let result = hazmat.poseidon_permutation(
         &input,
@@ -36,67 +33,95 @@ fn hash2_onchain(env: &Env, left: &U256, right: &U256) -> U256 {
         &t3_mds(env),
         &t3_round_constants(env),
     );
-
     result.get(0).expect("poseidon_permutation returned empty result")
 }
 
-/// Converts a BytesN<32> commitment (as stored on-chain) into a U256
-/// field element for hashing.
 fn commitment_to_u256(env: &Env, commitment: &BytesN<32>) -> U256 {
     let bytes: Bytes = commitment.clone().into();
     U256::from_be_bytes(env, &bytes)
 }
 
-/// Converts a U256 field element back into BytesN<32> for storage.
 fn u256_to_bytes32(_env: &Env, value: &U256) -> BytesN<32> {
     let bytes: Bytes = value.to_be_bytes();
-    bytes
-        .try_into()
-        .unwrap_or_else(|_| panic!("U256 did not fit into 32 bytes"))
+    bytes.try_into().unwrap_or_else(|_| panic!("U256 did not fit into 32 bytes"))
 }
 
-/// Rebuilds the full depth-3 Merkle tree from `commitments` (in deposit
-/// order, oldest first), padding with the empty-leaf value (field 0) up
-/// to MAX_LEAVES, and returns only the final root.
-///
-/// Mirrors `buildMerkleTree()` in merkle.ts: pads leaves, then hashes
-/// pairs level by level (layers[0] = leaves, ..., layers[3] = [root]).
-///
-/// Panics if `commitments.len() > MAX_LEAVES` — callers (deposit_internal)
-/// must enforce the pool size limit before reaching this point.
-pub fn rebuild_merkle_root(env: &Env, commitments: &SVec<BytesN<32>>) -> BytesN<32> {
-    let len = commitments.len();
-    assert!(
-        len <= MAX_LEAVES,
-        "pool exceeds MAX_LEAVES; cannot rebuild fixed-depth tree"
-    );
-
-    let zero_field = U256::from_u32(env, 0);
-
-    // Build the padded leaf layer as U256 field elements.
-    let mut current: SVec<U256> = SVec::new(env);
-    for i in 0..len {
-        let c = commitments.get(i).expect("commitment index out of range");
-        current.push_back(commitment_to_u256(env, &c));
+/// Compute the empty subtree root at each level.
+/// empty_nodes[0] = EMPTY_LEAF = 0
+/// empty_nodes[i] = hash2(empty_nodes[i-1], empty_nodes[i-1])
+fn empty_nodes(env: &Env) -> SVec<U256> {
+    let mut nodes: SVec<U256> = SVec::new(env);
+    let mut current = U256::from_u32(env, 0);
+    nodes.push_back(current.clone());
+    for _ in 0..TREE_DEPTH {
+        current = hash2_onchain(env, &current.clone(), &current.clone());
+        nodes.push_back(current.clone());
     }
-    while current.len() < MAX_LEAVES {
-        current.push_back(zero_field.clone());
-    }
+    nodes
+}
 
-    // Hash pairs level by level until a single root remains.
-    // MAX_LEAVES=8 -> 4 -> 2 -> 1 (3 levels, matching TREE_DEPTH).
-    while current.len() > 1 {
-        let mut next: SVec<U256> = SVec::new(env);
-        let mut i = 0u32;
-        while i < current.len() {
-            let left = current.get(i).expect("left node missing");
-            let right = current.get(i + 1).expect("right node missing");
-            next.push_back(hash2_onchain(env, &left, &right));
-            i += 2;
+/// Insert a new commitment into the incremental Merkle tree.
+///
+/// `frontier` holds the right-most filled node at each level (depth-20
+/// entries). On first deposit all entries are the empty subtree roots.
+/// Returns the new root and the updated frontier.
+///
+/// Algorithm (standard incremental Merkle tree):
+///   - Start with the new leaf at level 0
+///   - At each level: if the current leaf_index is odd (right child),
+///     hash with the frontier node at that level (left sibling);
+///     otherwise, hash with the empty subtree root at that level.
+///   - Update frontier at the level where the node is a right child.
+pub fn insert_leaf(
+    env: &Env,
+    leaf: &BytesN<32>,
+    leaf_index: u32,
+    frontier: &SVec<BytesN<32>>,
+) -> (BytesN<32>, SVec<BytesN<32>>) {
+    let empties = empty_nodes(env);
+    let mut current = commitment_to_u256(env, leaf);
+    let mut new_frontier: SVec<BytesN<32>> = frontier.clone();
+    let mut idx = leaf_index;
+
+    for level in 0..TREE_DEPTH {
+        if idx % 2 == 1 {
+            // right child: left sibling is frontier[level]
+            let left = commitment_to_u256(
+                env,
+                &frontier.get(level).expect("frontier missing level"),
+            );
+            current = hash2_onchain(env, &left, &current);
+            // update frontier at this level with the left sibling
+            // (frontier tracks the last filled left node at each level)
+        } else {
+            // left child: right sibling is empty subtree root
+            let right = empties.get(level).expect("empty node missing");
+            // update frontier at this level with current node
+            new_frontier.set(level, u256_to_bytes32(env, &current));
+            current = hash2_onchain(env, &current, &right);
         }
-        current = next;
+        idx >>= 1;
     }
 
-    let root_u256 = current.get(0).expect("tree produced no root");
-    u256_to_bytes32(env, &root_u256)
+    let root = u256_to_bytes32(env, &current);
+    (root, new_frontier)
+}
+
+/// Initialize an empty frontier (all entries = empty subtree roots).
+pub fn empty_frontier(env: &Env) -> SVec<BytesN<32>> {
+    let empties = empty_nodes(env);
+    let mut frontier: SVec<BytesN<32>> = SVec::new(env);
+    for level in 0..TREE_DEPTH {
+        frontier.push_back(u256_to_bytes32(
+            env,
+            &empties.get(level).expect("empty node missing"),
+        ));
+    }
+    frontier
+}
+
+/// Compute the empty tree root (all leaves = 0).
+pub fn empty_root(env: &Env) -> BytesN<32> {
+    let empties = empty_nodes(env);
+    u256_to_bytes32(env, &empties.get(TREE_DEPTH).expect("root missing"))
 }
