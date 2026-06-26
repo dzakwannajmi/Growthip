@@ -11,8 +11,7 @@ import {
   getNetwork,
 } from "@stellar/freighter-api";
 import {
-  buildMerkleTree,
-  getMerklePathByIndex,
+  getMerklePath,
   hexToDecimal,
   bytesToDecimal,
   MAX_LEAVES,
@@ -160,19 +159,10 @@ function ClaimContent() {
       }
 
       const noteCommitment = hexToDecimal(note.commitment);
-      const leafIndex      = commitments.indexOf(noteCommitment);
-      if (leafIndex === -1) {
-        throw new Error(
-          "Commitment not found in pool. " +
-          "Make sure the deposit is confirmed and the note matches this pool."
-        );
-      }
-
       // 2. Build Merkle tree
       setStage("building-tree");
-      const tree: ReturnType<typeof buildMerkleTree> extends Promise<infer T> ? T : never =
-        await buildMerkleTree(commitments);
-      const merklePath: MerklePath = getMerklePathByIndex(tree, leafIndex);
+      const { pathElements, pathIndices, leafIndex } = await getMerklePath(hexToDecimal(note.commitment), commitments);
+      const merklePath: MerklePath = { pathElements, pathIndices };
 
       // 3. Generate ZK proof (5-15s)
       setStage("proving");

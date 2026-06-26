@@ -10,8 +10,7 @@ import {
   getNetwork,
 } from "@stellar/freighter-api";
 import {
-  buildMerkleTree,
-  getMerklePathByIndex,
+  getMerklePath,
   hexToDecimal,
   bytesToDecimal,
   MAX_LEAVES,
@@ -245,12 +244,9 @@ export default function ActivityPage() {
         commitments.push(commitmentToDecimal(cTx.result as Buffer));
       }
 
-      const leafIndex = commitments.indexOf(hexToDecimal(note.commitment));
-      if (leafIndex === -1) throw new Error("Commitment not found in pool.");
-
-      setClaimStatus("Building Merkle tree...");
-      const tree: Awaited<ReturnType<typeof buildMerkleTree>> = await buildMerkleTree(commitments);
-      const merklePath: MerklePath = getMerklePathByIndex(tree, leafIndex);
+      setClaimStatus("Building Merkle path...");
+      const { pathElements, pathIndices, leafIndex } = await getMerklePath(hexToDecimal(note.commitment), commitments);
+      const merklePath: MerklePath = { pathElements, pathIndices };
 
       setClaimStage("proving");
       setClaimStatus("Generating ZK proof...");

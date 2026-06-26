@@ -21,8 +21,7 @@ import {
 } from "@/lib/poseidon";
 import { hexToBuffer, generateProof, toClaimArgs, type ProofProgress } from "@/lib/zkp";
 import {
-  buildMerkleTree,
-  getMerklePathByIndex,
+  getMerklePath,
   hexToDecimal,
   bytesToDecimal,
   MAX_LEAVES,
@@ -483,13 +482,9 @@ export default function DashboardPage() {
         commitments.push(commitmentToDecimal(cTx.result as Buffer));
       }
 
-      const leafIndex = commitments.indexOf(hexToDecimal(note.commitment));
-      if (leafIndex === -1) throw new Error("Commitment not found in pool.");
-
-      // Build Merkle tree
       setClaimStatus("Building Merkle tree...");
-      const tree: Awaited<ReturnType<typeof buildMerkleTree>> = await buildMerkleTree(commitments);
-      const merklePath: MerklePath = getMerklePathByIndex(tree, leafIndex);
+      const { pathElements, pathIndices, leafIndex } = await getMerklePath(hexToDecimal(note.commitment), commitments);
+      const merklePath: MerklePath = { pathElements, pathIndices };
 
       // Generate proof
       setClaimStage("proving");
