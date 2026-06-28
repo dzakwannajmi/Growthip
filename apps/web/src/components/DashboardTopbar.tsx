@@ -140,15 +140,6 @@ export default function DashboardTopbar() {
   }, []);
 
   // Close unlock popup on outside click
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (unlockRef.current && !unlockRef.current.contains(e.target as Node)) {
-        setShowUnlock(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
 
   async function handleUnlock() {
     setUnlockBusy(true);
@@ -164,13 +155,6 @@ export default function DashboardTopbar() {
     finally { setUnlockBusy(false); }
   }
 
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
 
   function showToast(message: string, type: "info" | "warning" = "info") {
     const id = Date.now();
@@ -178,7 +162,6 @@ export default function DashboardTopbar() {
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3000);
   }
 
-  function handleNetworkSelect(network: Network | "coming-soon", name: string) {
 
   return (
     <>
