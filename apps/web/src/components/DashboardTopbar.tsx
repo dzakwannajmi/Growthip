@@ -200,6 +200,7 @@ export default function DashboardTopbar() {
     <>
       <div className="w-full flex items-center justify-between p-4 md:px-8 lg:px-10 border-b border-[#E5E5E5] bg-white sticky top-0 z-10">
 
+        <div className="flex items-center gap-3 ml-auto">
           {/* Encryption status badge */}
           <div style={{ position: "relative" }} ref={unlockRef}>
             <button
