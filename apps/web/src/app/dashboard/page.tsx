@@ -185,25 +185,37 @@ export default function DashboardPage() {
           const { Client } = await import("@/lib/growthipPoolClient");
           const { computeRecipientHash } = await import("@/lib/poseidon");
           const { signTransaction } = await import("@/lib/wallet");
-          const poolId = process.env.NEXT_PUBLIC_POOL_ID ?? "";
           const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL ?? "";
           const passphrase = process.env.NEXT_PUBLIC_NETWORK_PASSPHRASE ?? "";
-          const autoClient = new Client({
-            contractId: poolId,
-            rpcUrl,
-            networkPassphrase: passphrase,
-            publicKey: addr,
-            signTransaction: async (xdr: string) => {
-              const signed = await signTransaction(xdr, { address: addr, networkPassphrase: passphrase });
-              return { signedTxXdr: signed.signedTxXdr, signerAddress: addr };
-            },
-          });
-          const existing = await autoClient.get_recipient_hash({ recipient: addr });
-          if (existing.result == null) {
-            const recipientHash = await computeRecipientHash(addr);
-            const recipientHashBuf = Buffer.from(decimalToHex32(recipientHash), "hex");
-            const regTx = await autoClient.register_recipient({ recipient: addr, recipient_hash: recipientHashBuf });
-            await regTx.signAndSend({ force: true });
+          const recipientHash = await computeRecipientHash(addr);
+          const recipientHashBuf = Buffer.from(decimalToHex32(recipientHash), "hex");
+
+          // Register in all pools
+          const poolIds = [
+            process.env.NEXT_PUBLIC_POOL_ID ?? "",
+            process.env.NEXT_PUBLIC_POOL_USDC_ID ?? "",
+          ].filter(Boolean);
+
+          for (const poolId of poolIds) {
+            try {
+              const autoClient = new Client({
+                contractId: poolId,
+                rpcUrl,
+                networkPassphrase: passphrase,
+                publicKey: addr,
+                signTransaction: async (xdr: string) => {
+                  const signed = await signTransaction(xdr, { address: addr, networkPassphrase: passphrase });
+                  return { signedTxXdr: signed.signedTxXdr, signerAddress: addr };
+                },
+              });
+              const existing = await autoClient.get_recipient_hash({ recipient: addr });
+              if (existing.result == null) {
+                const regTx = await autoClient.register_recipient({ recipient: addr, recipient_hash: recipientHashBuf });
+                await regTx.signAndSend({ force: true });
+              }
+            } catch {
+              // Silent fail per pool
+            }
           }
           localStorage.setItem("growthip:registered:" + addr, "1");
         } catch {
