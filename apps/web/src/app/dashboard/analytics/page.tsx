@@ -137,17 +137,16 @@ export default function AnalyticsPage() {
   }, [address]);
 
   const allStats      = Object.values(stats);
-  const totalDeposits = allStats.reduce((s, p) => s + p.totalDeposits, 0);
-  const totalClaims   = allStats.reduce((s, p) => s + p.totalClaims, 0);
-  const totalPending  = totalDeposits - totalClaims;
+  // Use per-wallet localStorage data instead of global pool stats
+  const myTotalReceived = claimed.length + pending.length;
+  const myTotalClaimed  = claimed.length;
+  const myTotalPending  = pending.length;
 
-
-
-  // Summary cards
+  // Summary cards — all per-wallet
   const summaryCards = [
     {
       label: "Total Received",
-      value: `${totalDeposits} tips`,
+      value: `${myTotalReceived} tips`,
       sub: "Across all tokens",
       icon: "ph:arrow-down-left-bold",
       iconColor: "#22c55e",
@@ -155,7 +154,7 @@ export default function AnalyticsPage() {
     },
     {
       label: "Total Withdrawn",
-      value: `${totalClaims} tips`,
+      value: `${myTotalClaimed} tips`,
       sub: "Transferred to wallet",
       icon: "ph:arrow-up-right-bold",
       iconColor: "#6366f1",
@@ -163,7 +162,7 @@ export default function AnalyticsPage() {
     },
     {
       label: "Total Tips",
-      value: String(totalDeposits),
+      value: String(myTotalReceived),
       sub: "All time contributions",
       icon: "ph:gift-bold",
       iconColor: "#f59e0b",
@@ -171,7 +170,7 @@ export default function AnalyticsPage() {
     },
     {
       label: "Pending Claims",
-      value: String(totalPending),
+      value: String(myTotalPending),
       sub: "Waiting to be claimed",
       icon: "ph:clock-bold",
       iconColor: "#ef4444",
@@ -391,51 +390,6 @@ export default function AnalyticsPage() {
           </div>
         )}
 
-        {/* Pool Stats detail */}
-        <div style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "20px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <Icon icon="ph:chart-bar-bold" style={{ fontSize: "18px", color: "#6366f1" }} />
-              <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>Pool Statistics</p>
-            </div>
-            <button
-              onClick={refresh}
-              disabled={loading}
-              style={{ fontSize: "12px", color: "#737373", background: "#F5F5F5", border: "1px solid #E5E5E5", borderRadius: "8px", padding: "4px 12px", cursor: "pointer" }}
-            >
-              {loading ? "Loading..." : "Refresh"}
-            </button>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
-            {availableTokens.map((token) => {
-              const s = stats[token.symbol];
-              const tipHuman = s ? (s.tipAmount / Math.pow(10, 7)).toFixed(token.symbol === "XLM" ? 0 : 1) : "0";
-              return (
-                <div key={token.symbol} style={{ borderRadius: "12px", border: "1px solid #E5E5E5", background: "#FAFAFA", padding: "16px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <Icon icon={TOKEN_ICONS[token.symbol]} style={{ fontSize: "20px" }} />
-                      <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>{token.symbol} Pool</p>
-                    </div>
-                    <span style={{ fontSize: "11px", fontWeight: 600, padding: "3px 10px", borderRadius: "999px", background: "#EEF2FF", color: "#6366f1" }}>
-                      {tipHuman} {token.symbol} base
-                    </span>
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", textAlign: "center", gap: "8px" }}>
-                    <div>
-                      <p style={{ fontSize: "20px", fontWeight: 800, color: "#0A0A0A" }}>{loading ? "—" : s?.totalDeposits ?? 0}</p>
-                      <p style={{ fontSize: "11px", color: "#A3A3A3" }}>deposits</p>
-                    </div>
-                    <div>
-                      <p style={{ fontSize: "20px", fontWeight: 800, color: "#22c55e" }}>{loading ? "—" : s?.totalClaims ?? 0}</p>
-                      <p style={{ fontSize: "11px", color: "#A3A3A3" }}>claims</p>
-                    </div>
-                    <div>
-                      <p style={{ fontSize: "20px", fontWeight: 800, color: "#0A0A0A" }}>
-                        {loading ? "—" : s ? Math.round((s.totalClaims / Math.max(s.totalDeposits, 1)) * 100) : 0}%
-                      </p>
-                      <p style={{ fontSize: "11px", color: "#A3A3A3" }}>claimed</p>
-                    </div>
                   </div>
                 </div>
               );
