@@ -90,14 +90,14 @@ src/lib/
 │                             # Must stay byte-for-byte consistent with the
 │                             # on-chain Poseidon host function — verified by
 │                             # contracts/growthip-pool/src/poseidon_verify_test.rs
-├── merkle.ts                  # buildMerkleTree(), getMerklePathByIndex().
-│                             # Fixed depth-3, MAX_LEAVES=8. Must stay
-│                             # consistent with the on-chain
-│                             # rebuild_merkle_root() — verified by
+├── merkle.ts                  # getMerklePath() — sparse O(N×DEPTH) tree,
+│                             # depth-20, MAX_LEAVES=1,048,576. Must stay
+│                             # consistent with the on-chain incremental
+│                             # insert_leaf() — verified by
 │                             # contracts/growthip-pool/src/merkle_verify_test.rs
 ├── zkp.ts                     # generateProof() — wraps snarkjs witness
 │                             # calculation + Groth16 proving (4 public
-│                             # inputs as of V3.1: root, nullifierHash,
+│                             # inputs: root, nullifierHash,
 │                             # recipientHash, index), toClaimArgs() —
 │                             # formats proof for claim_to(). Loads the
 │                             # circom-generated witness_calculator.js via
@@ -168,7 +168,7 @@ See `.env.local` (not committed) or `.env.example` for the template.
 
 ```bash
 NEXT_PUBLIC_POOL_ID=                  # XLM pool contract address
-NEXT_PUBLIC_VERIFIER_V3_ID=           # V3.1 verifier contract address
+NEXT_PUBLIC_VERIFIER_V3_ID=           # V4 verifier contract address
 NEXT_PUBLIC_TOKEN_ID=                 # Native XLM SAC address
 NEXT_PUBLIC_POOL_USDC_ID=             # USDC pool contract address
 NEXT_PUBLIC_TOKEN_USDC_ID=            # USDC SAC address
@@ -216,7 +216,7 @@ not auto-discover what the app legitimately needs.
 ```bash
 npm install
 cp .env.example .env.local
-# fill in addresses from ../../testnet.env or contracts/README.md
+# fill in addresses from contracts/README.md or root README Testnet Deployment section
 
 npm run dev
 # http://localhost:3000
@@ -248,7 +248,7 @@ src/app/
 │                                # instead
 └── dashboard/
     ├── page.tsx                   # Main dashboard: wallet balance,
-    │                            # Send Tip tab, Withdraw tab, Personal
+    │                            # Withdraw tab, Personal
     │                            # Link card (QR + copy)
     ├── deposit/page.tsx           # Standalone send-tip flow
     ├── claim/page.tsx             # Standalone claim flow — detects and
@@ -259,9 +259,9 @@ src/app/
     ├── activity/page.tsx          # Pending/claimed notes list, with an
     │                            # inline claim modal (same
     │                            # decrypt-or-fallback logic as above)
-    ├── analytics/page.tsx         # Pool statistics (real on-chain
-    │                            # reads), recent tips from local note
-    │                            # history — gated behind is_premium()
+    ├── analytics/page.tsx         # Per-wallet tip stats from localStorage
+    │                            # (received, withdrawn, pending), recent
+    │                            # tips — gated behind is_premium()
     ├── notes/page.tsx             # Renders the standalone <PendingNotes>
     │                            # component
     └── settings/page.tsx          # Profile (avatar, display name, bio),

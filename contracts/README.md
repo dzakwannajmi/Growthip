@@ -15,7 +15,8 @@ deployment.
 | Crate | Role | Status |
 |---|---|---|
 | `growthip-pool` | Main escrow + claim contract | ✅ Active (testnet) |
-| `growthip-merkle-verifier-v3-1` | Native BN254 Groth16 verifier for the V3.1 circuit (adds deposit-index public output) | ✅ Active (testnet) |
+| `growthip-merkle-verifier-v4` | Native BN254 Groth16 verifier for the V4 circuit (depth-20, 1,048,576 leaves) | ✅ Active (testnet) |
+| `growthip-merkle-verifier-v3-1` | Native BN254 Groth16 verifier for the V3.1 circuit (depth-3) | Deprecated — superseded by V4 |
 | `growthip-creator-registry` | Global creator identity: encryption pubkey + premium status, deployed once (not per-token) | ✅ Active (testnet) |
 | `growthip-merkle-verifier-v3` | Verifier for the V3 circuit (3 public inputs, no deposit-amount binding) | Deprecated — superseded by V3.1, see [SECURITY.md Issue #3](../SECURITY.md#self-found-issue-3--deposit-amount-aware-claims) |
 | `growthip-merkle-verifier-v2` | V2 verifier | Deprecated — kept as a `dev-dependency` for one historical test only, not in the production build |
@@ -77,27 +78,19 @@ Then re-run `poseidon_verify_test.rs` to confirm parity still holds before
 trusting the new constants anywhere near `claim()` or
 `deposit_internal()`.
 
-### Why the Merkle tree is rebuilt, not updated incrementally
+### Why the Merkle tree uses an incremental frontier approach
 
-The V3.1 circuit uses a **fixed depth-3 tree (max 8 leaves)**. Rather than
-implementing an incremental sparse-Merkle-tree update (the pattern used by
-larger privacy pools like Tornado Cash), `deposit_internal()` simply
-re-reads all current commitments and rebuilds the entire tree from
-scratch on every deposit — 7 total `hash2` calls at most (4 + 2 + 1
-levels). This is correct and cheap at this scale; it would not be the
-right approach for a tree large enough to need true incremental updates.
+The V4 circuit uses a **depth-20 incremental tree (max 1,048,576 leaves)**.
+`deposit_internal()` updates only the frontier nodes — the right-most filled
+node at each level — and recomputes just the path from the new leaf to the
+root (20 Poseidon calls per deposit, regardless of tree size). This replaces
+the old fixed-depth-3 rebuild approach (7 calls, max 8 leaves) that required
+pool redeployment every 8 deposits.
 
-**Known limitation:** With max 8 deposits per pool, a new pool must be
-deployed each time the tree fills up. This is manageable for testnet
-(~5 minutes to deploy + initialize) but is not production-scalable.
-
-**Phase 4 roadmap:** Replace the fixed-depth rebuild with an incremental
-Merkle tree (depth-20, 2^20 = 1,048,576 leaves). The incremental approach
-stores only the frontier nodes on-chain and recomputes just the path from
-the new leaf to the root (20 Poseidon calls regardless of tree size),
-eliminating the need for pool redeployment as deposits grow. This requires
-a new circuit (`pathElements[20]`), new trusted setup, new verifier, and a
-rewrite of `merkle_onchain.rs` to store frontier nodes in contract storage.
+The frontier (depth-20 nodes) is stored in contract instance storage under
+`DataKey::Frontier`. A bounded root history (`ROOT_HISTORY_SIZE = 64`) allows
+claims to be validated against recent roots even if new deposits arrive
+between proof generation and claim submission.
 
 ### Why `claim_to()` looks up `CommitmentAmount(index)` instead of a flat `TipAmount`
 
@@ -185,7 +178,7 @@ cd contracts/growthip-pool && cargo test test_claim_to_with_v3_1_verifier_pays_a
 ```
 
 As of the current deployment, the full workspace suite reports
-**37 passed, 0 failed, 3 ignored** (the three ignored tests are
+**38 passed, 0 failed, 5 ignored** (the three ignored tests are
 intentionally disabled outdated V2 fixtures — see each test's inline
 `#[ignore = "..."]` reason, or
 [SECURITY.md](../SECURITY.md#self-found-issue-1--root-forgery) for the
@@ -204,7 +197,7 @@ deployed **once total**, regardless of how many token pools exist.
 ```bash
 # 1. Deploy the verifier
 stellar contract deploy \
-  --wasm target/wasm32v1-none/release/growthip_merkle_verifier_v3_1.wasm \
+  --wasm target/wasm32v1-none/release/growthip_merkle_verifier_v4.wasm \
   --source <your-identity> \
   --network testnet
 

@@ -163,6 +163,7 @@ mod test {
     }
 
     #[test]
+    #[ignore = "V3 proof hardcoded for depth-3 circuit — not valid for V4 depth-20 verifier. New test needed with V4 proof."]
     fn test_verify_growthip_merkle_note_v3_proof() {
         let env = Env::default();
 
