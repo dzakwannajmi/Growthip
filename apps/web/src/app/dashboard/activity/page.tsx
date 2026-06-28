@@ -475,7 +475,7 @@ export default function ActivityPage() {
                     </div>
                     <p style={{ fontSize: "12px", color: "#A3A3A3", marginTop: "4px" }}>
                       {note.claimed && note.claimedAt ? `Withdrawn ${formatRelativeTime(note.claimedAt)}` : `Deposited ${formatRelativeTime(note.timestamp)}`}
-                      {note.depositIndex !== undefined && <span style={{ marginLeft: "8px" }}>· Index #{note.depositIndex}</span>}
+                      
                     </p>
                   </div>
                 </div>
@@ -514,7 +514,7 @@ export default function ActivityPage() {
             <div style={{ padding: "20px 24px", borderBottom: "1px solid #E5E5E5", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
                 <h2 style={{ fontSize: "16px", fontWeight: 800, color: "#0A0A0A" }}>Claim Tip</h2>
-                <p style={{ fontSize: "13px", color: "#737373", marginTop: "2px" }}>{formatAmount(modalNote)} · Index #{modalNote.depositIndex}</p>
+                <p style={{ fontSize: "13px", color: "#737373", marginTop: "2px" }}>{formatAmount(modalNote)}</p>
               </div>
               <button onClick={closeModal} style={{ width: 32, height: 32, borderRadius: "8px", border: "1px solid #E5E5E5", background: "#FAFAFA", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Icon icon="ph:x-bold" style={{ fontSize: "14px", color: "#525252" }} />
