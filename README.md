@@ -44,7 +44,7 @@ nullifier consumed → double-claim prevented forever
 ## Live Demo
 * **URL:** [https://growthip.vercel.app](https://growthip.vercel.app)
 * **Network:** Stellar Testnet
-* **Wallet:** Freighter
+* **Wallet:** Freighter / xBull (via Stellar Wallets Kit)
 
 ---
 
@@ -158,7 +158,7 @@ CAP-0075: Cryptographic Primitives for Poseidon/Poseidon2 Hash Functions defines
 | USDC Token (Circle) | `CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA` |
 | Admin / Treasury | `GDPAPDZWAKBXUPCNMI4YHAZ7DS7UOUTPGXAFDSWZG4URRMWHFSQTDQBM` |
 | Tip Amount — XLM pool | `100,000,000 stroops = 10 XLM` (base; 5x/10x/20x also accepted) |
-| Tip Amount — USDC pool | `1,000,000 stroops = 0.1 USDC` (base; 5x/10x/20x also accepted) |
+| Tip Amount — USDC pool | `2,000,000 stroops = 2 USDC` (base; 5x/10x/20x also accepted) |
 | Premium activation fee | `60,000,000 stroops = 6 XLM` (one-time, global per creator) |
 | Network | Stellar Testnet |
 
@@ -267,7 +267,7 @@ graph TD
         ZK1["Private inputs:\nsecret + nullifier + recipientHash\npathElements + pathIndices"]
         ZK2["commitment = Poseidon secret + nullifier + recipientHash"]
         ZK3["nullifierHash = Poseidon nullifier"]
-        ZK4["Merkle membership proof\ndepth-3 tree - 8 leaves (testnet)\nPhase 4: upgrade to depth-20"]
+        ZK4["Merkle membership proof\ndepth-20 incremental tree\n1,048,576 leaves max"]
         ZK5["Public outputs:\nroot + nullifierHash + recipientHash + index"]
         ZK1 --> ZK2 & ZK3
         ZK2 & ZK3 --> ZK4 --> ZK5
@@ -356,11 +356,7 @@ Growthip implements a **fixed-denomination privacy pool** model:
 
 ### Known Limitations
 * ⚠️ Deposit and withdrawal timestamps are public — timing correlation is possible
-* ⚠️ Small anonymity set on testnet (max 8 leaves per Merkle tree, depth-3) — privacy
-  improves with more participants and larger trees. The current fixed-depth design
-  rebuilds the full tree on every deposit (7 Poseidon calls), which is cheap at
-  depth-3 but does not scale. An incremental Merkle tree supporting 2^20 leaves
-  is planned for Phase 4 — see [Roadmap](#roadmap)
+* ✅ Large anonymity set — depth-20 incremental Merkle tree (2^20 = 1,048,576 leaves per pool). Only frontier nodes stored on-chain; 20 Poseidon calls per deposit regardless of tree size. No pool redeployment needed as deposits grow.
 * ⚠️ Private note encryption is opt-in and paid (6 XLM) — a creator who
   hasn't activated it cannot receive tips at all, rather than receiving
   them with weaker privacy. See [SECURITY.md](SECURITY.md) for the full
@@ -551,12 +547,9 @@ confirms any payment.
 
 ## ZK Circuit
 
-### V3.1 Circuit (Current) — `circuits/growthip_merkle_note_v3_1.circom`
+### V4 Circuit (Current) — `circuits/growthip_merkle_note_v4.circom`
 
-V3.1 builds on V3's recipient binding by adding a fourth public output,
-`index`, so the pool contract can pay out the actual deposited amount
-instead of a flat base unit (see
-[Security History, Issue #3](#security-history-honest-disclosure)).
+V4 builds on V3.1's recipient binding and deposit-amount-aware claims, upgrading the Merkle tree from depth-3 (8 leaves) to **depth-20 (1,048,576 leaves)** using an incremental frontier-based approach. No pool redeployment needed as deposits grow. See [Security History, Issue #3](#security-history-honest-disclosure) for the original deposit-amount fix.
 
 ```text
 commitment = Poseidon(secret, nullifier, recipientHash)  ← V3: bound here
@@ -570,14 +563,14 @@ Binary constraint: pathIndices[i] ∈ {0, 1}
 
 `index` is derived entirely from the `pathIndices[]` bits the circuit
 already computed to prove Merkle membership — no new private inputs. It
-reveals only the deposit's position in a small (max 8-leaf, depth-3 testnet) tree, no more
+reveals only the deposit's position in the Merkle tree (depth-20), no more
 sensitive than the commitment list itself, already fully public on-chain.
 
 **Public inputs** (visible on-chain): `root`, `nullifierHash`,
 `recipientHash`, `index`.
 
 **Private inputs** (never leave the browser): `secret`, `nullifier`,
-`recipientHash`, `pathElements[3]`, `pathIndices[3]`.
+`recipientHash`, `pathElements[20]`, `pathIndices[20]`.
 
 ### Trusted Setup
 
@@ -597,7 +590,8 @@ ceremony before handling real funds.
 | V1 (square) | N/A | N/A | N/A | Verifier pipeline test |
 | V2 (note) | `Poseidon(secret, nullifier)` | Contract-level only | No | Deprecated |
 | V3 | `Poseidon(secret, nullifier, recipientHash)` | Circuit-level | No | Deprecated |
-| V3.1 (current) | `Poseidon(secret, nullifier, recipientHash)` | Circuit-level | **Yes** | ✅ Active |
+| V3.1 | `Poseidon(secret, nullifier, recipientHash)` | Circuit-level | **Yes** | Deprecated |
+| V4 (current) | `Poseidon(secret, nullifier, recipientHash)` | Circuit-level | **Yes** | ✅ Active (depth-20) |
 
 ---
 
@@ -617,7 +611,7 @@ pairing check runs.
 
 ### GrowthipMerkleVerifierV4
 Native Soroban Groth16 verifier using Protocol 25/26 BN254 host
-functions (`verify(proof_bytes, public_inputs) -> bool`).
+functions (`verify(proof_bytes, public_inputs) -> bool`). Compatible with V4 circuit (depth-20, 5400 non-linear constraints, pot14 trusted setup).
 
 ### GrowthipCreatorRegistry
 Global, deployed-once creator identity: encryption public key and
@@ -651,9 +645,8 @@ growthip/
 │                                          # apps/web/README.md for the
 │                                          # full file-by-file breakdown
 ├── circuits/
-│   └── growthip_merkle_note_v3_1.circom  # Active circuit (+ deprecated
-│                                          # earlier versions, kept for
-│                                          # reference)
+│   ├── growthip_merkle_note_v4.circom     # Active circuit — depth-20
+│   └── growthip_merkle_note_v3_1.circom  # Deprecated (depth-3)
 ├── contracts/                            # 8-crate Cargo workspace — see
 │                                          # contracts/README.md
 │   ├── growthip-pool/
@@ -775,7 +768,7 @@ When you tip a street musician, nobody records your name. When you support a cre
 * Formal security audit
 * Public, multi-party trusted-setup ceremony for the V3.1 circuit
 * Nonce-based CSP (removing `'unsafe-inline'`)
-* **Incremental Merkle tree (depth-20, 2^20 = 1,048,576 leaves)** — the current fixed-depth-3 design rebuilds the full tree (7 Poseidon calls) on every deposit, which is cheap now but does not scale. An incremental tree stores only the frontier nodes, recomputing just the path from leaf to root (20 Poseidon calls regardless of tree size), enabling millions of deposits without pool redeployment
+* ~~**Incremental Merkle tree (depth-20)**~~ — **✅ Shipped in V4!** Frontier-based incremental tree deployed. 20 Poseidon calls per deposit, 1,048,576 leaves, no pool redeployment needed.
 * View key for compliance reporting
 * Allowlist / eligibility gate
 * Association Set Provider (ASP) integration
@@ -803,7 +796,7 @@ Growthip is a hackathon/testnet prototype.
   public multi-party one
 * Private note encryption is opt-in, paid, and has no server-side
   recovery path if both the password and recovery phrase are lost
-* Small anonymity set on testnet (max 8 leaves per tree, depth-3) — incremental Merkle tree with 2^20 capacity planned for Phase 4
+* Depth-20 incremental Merkle tree deployed (2^20 = 1,048,576 leaves per pool) — no pool redeployment needed
 * Merkle root is NOT admin-controlled — computed on-chain natively
 * Honest about all limitations, including three self-found vulnerabilities
   and their fixes (see [SECURITY.md](SECURITY.md))
