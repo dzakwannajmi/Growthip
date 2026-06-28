@@ -150,9 +150,9 @@ CAP-0075: Cryptographic Primitives for Poseidon/Poseidon2 Hash Functions defines
 
 | Contract | Address |
 |---|---|
-| Growthip Merkle Verifier V3.1 | `CA5IHK2NAUVQ6NLS7CWSGPZWEXY6CAFAQBLMM43GCKSFYC2BZXZQIA2L` |
-| Growthip Pool — XLM | `CAXQ3JMCPRQH5FGDVY36BHZEYHREMXE56SZSTJN3Y4VIK337EJC44DQW` |
-| Growthip Pool — USDC | `CBUPHDORLRNQWH2WWLZFN5TX2XM74EEFELAZJY3Z3YOPUMCCMZTMQSEG` |
+| Growthip Merkle Verifier V4 | `CB4HXIPKRSM4ULBWJMUVQWF5NIWG6OIBHVX3ES53QROMA2I3OUD3PY63` |
+| Growthip Pool — XLM V4 | `CB5LA7RIMHEGH73TWCLYTOJ5Y5EDXFM7J4VPL75KDRGNAFJPWFTXWAAQ` |
+| Growthip Pool — USDC V4 | `CBEQAUR4H63S7RQCB736OFVAZIPPHZXF5HWK6PXGBTVJTJDETKAU7SOO` |
 | Growthip Creator Registry | `CDX52ACO6MVXDBC4IS3AG6NIKQASJLY24BED3S5KJEA4PPPAXTWSRGNU` |
 | Native XLM Token (SAC) | `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` |
 | USDC Token (Circle) | `CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA` |
@@ -168,7 +168,7 @@ CAP-0075: Cryptographic Primitives for Poseidon/Poseidon2 Hash Functions defines
 > deposit-amount payout bug. The XLM pool has been redeployed multiple
 > times during testnet to expand `MAX_MESSAGE_LEN` (50 → 2048 bytes)
 > for encrypted bundle delivery, and to reset the 8-leaf Merkle tree
-> as it fills up during testing. Current active XLM pool: `CAXQ3JMC...`. See
+> as it fills up during testing. V4 pool (depth-20) no longer needs redeployment. See
 > [Security History](#security-history-honest-disclosure) below for all
 > three, each verified working on real testnet transactions, not just in
 > local tests.
@@ -243,7 +243,7 @@ graph TD
             V1 --> V2 --> V3 --> V4 --> V5 --> V6 --> V7
         end
 
-        subgraph Verifier ["GrowthipMerkleVerifierV3.1"]
+        subgraph Verifier ["GrowthipMerkleVerifierV4"]
             direction TB
             VR1["verify proof_bytes + public_inputs"]
             VR2["BN254 multi-scalar multiplication\n+ pairing check via Protocol 25/26 host fns"]
@@ -615,7 +615,7 @@ recipient hash, and the proof's `index` output (used to look up the
 actual deposited amount) — in that order, fail-fast before the expensive
 pairing check runs.
 
-### GrowthipMerkleVerifierV3.1
+### GrowthipMerkleVerifierV4
 Native Soroban Groth16 verifier using Protocol 25/26 BN254 host
 functions (`verify(proof_bytes, public_inputs) -> bool`).
 
