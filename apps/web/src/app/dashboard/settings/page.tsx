@@ -12,6 +12,21 @@ export default function SettingsPage() {
   const [address, setAddress] = useState("");
   const [showSecurity, setShowSecurity] = useState(false);
 
+  async function handleExportBackup() {
+    try {
+      const { exportBackupFile } = await import("@/lib/encryption/keyManagement");
+      const blob = await exportBackupFile();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `growthip-backup-${address.slice(0, 6)}-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("No encryption key found. Please set up encryption first in Security & Private Notes.");
+    }
+  }
+
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
   const [avatarVariant, setAvatarVariant] = useState<string>("");
@@ -237,14 +252,14 @@ export default function SettingsPage() {
             <div>
               <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "#737373" }}>Preferences</p>
               <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid #E5E5E5", background: "white" }}>
-                <button className="w-full p-4 flex items-center justify-between transition-colors hover:bg-[#FAFAFA]">
+                <button onClick={handleExportBackup} className="w-full p-4 flex items-center justify-between transition-colors hover:bg-[#FAFAFA]">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "#F5F5F5" }}>
-                      <Icon icon="ph:bell-bold" className="text-xl" style={{ color: "#0A0A0A" }} />
+                      <Icon icon="ph:download-simple-bold" className="text-xl" style={{ color: "#0A0A0A" }} />
                     </div>
                     <div className="text-left">
-                      <div className="font-bold text-sm" style={{ color: "#0A0A0A" }}>Notifications</div>
-                      <div className="text-xs" style={{ color: "#737373" }}>Manage your notification preferences</div>
+                      <div className="font-bold text-sm" style={{ color: "#0A0A0A" }}>Export Backup</div>
+                      <div className="text-xs" style={{ color: "#737373" }}>Download your encryption key backup · Required to recover on new device</div>
                     </div>
                   </div>
                   <Icon icon="ph:caret-right-bold" style={{ color: "#A3A3A3" }} />
@@ -270,6 +285,63 @@ export default function SettingsPage() {
                 <EncryptionSetup address={address} />
               </div>
             )}
+            {/* About section */}
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "#737373" }}>About</p>
+              <div className="rounded-2xl p-4" style={{ border: "1px solid #E5E5E5", background: "white" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: "13px", fontWeight: 700, color: "#0A0A0A" }}>Growthip</span>
+                    <span style={{ fontSize: "12px", color: "#737373" }}>V4 · Testnet</span>
+                  </div>
+                  <p style={{ fontSize: "12px", color: "#737373", lineHeight: 1.6 }}>
+                    Privacy-preserving creator tipping on Stellar Soroban. Zero-knowledge proofs via Groth16 BN254 — nobody knows who tipped who.
+                  </p>
+                  <div style={{ height: "1px", background: "#E5E5E5" }} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <p style={{ fontSize: "11px", fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.08em" }}>Protocol</p>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: "12px", color: "#737373" }}>ZK Circuit</span>
+                      <span style={{ fontSize: "12px", color: "#0A0A0A", fontWeight: 600 }}>Groth16 BN254 depth-20</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: "12px", color: "#737373" }}>Max deposits</span>
+                      <span style={{ fontSize: "12px", color: "#0A0A0A", fontWeight: 600 }}>1,048,576 per pool</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: "12px", color: "#737373" }}>Platform fee</span>
+                      <span style={{ fontSize: "12px", color: "#0A0A0A", fontWeight: 600 }}>1% per claim</span>
+                    </div>
+                  </div>
+                  <div style={{ height: "1px", background: "#E5E5E5" }} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <p style={{ fontSize: "11px", fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.08em" }}>Contracts (Testnet)</p>
+                    {[
+                      { label: "Verifier V4", value: "CB4HXIP...OUD3PY63" },
+                      { label: "Pool XLM", value: "CB5LA7R...FTXWAAQ" },
+                      { label: "Pool USDC", value: "CBEQAUR...KAU7SOO" },
+                      { label: "Registry", value: "CDX52AC...SRGNU" },
+                    ].map(({ label, value }) => (
+                      <div key={label} style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span style={{ fontSize: "12px", color: "#737373" }}>{label}</span>
+                        <span style={{ fontSize: "11px", color: "#0A0A0A", fontWeight: 600, fontFamily: "monospace" }}>{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ height: "1px", background: "#E5E5E5" }} />
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <a href="https://github.com/dzakwannajmi/Growthip" target="_blank" rel="noreferrer"
+                      style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "1px solid #E5E5E5", background: "#FAFAFA", fontSize: "12px", fontWeight: 600, color: "#0A0A0A", textAlign: "center", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                      <Icon icon="ph:github-logo-bold" style={{ fontSize: "14px" }} /> GitHub
+                    </a>
+                    <a href="https://growthip.vercel.app" target="_blank" rel="noreferrer"
+                      style={{ flex: 1, padding: "8px", borderRadius: "8px", border: "1px solid #E5E5E5", background: "#FAFAFA", fontSize: "12px", fontWeight: 600, color: "#0A0A0A", textAlign: "center", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                      <Icon icon="ph:globe-bold" style={{ fontSize: "14px" }} /> Live
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
           </>
         )}
       </div>
