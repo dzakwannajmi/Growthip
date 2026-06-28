@@ -64,9 +64,9 @@ Growthip is a privacy-preserving creator tipping protocol built on Stellar Sorob
 
 | Contract | Address |
 |---|---|
-| Verifier V3.1 | CA5IHK2NAUVQ6NLS7CWSGPZWEXY6CAFAQBLMM43GCKSFYC2BZXZQIA2L |
-| Pool XLM | CAXQ3JMCPRQH5FGDVY36BHZEYHREMXE56SZSTJN3Y4VIK337EJC44DQW |
-| Pool USDC (Circle) | CBUPHDORLRNQWH2WWLZFN5TX2XM74EEFELAZJY3Z3YOPUMCCMZTMQSEG |
+| Verifier V4 | CB4HXIPKRSM4ULBWJMUVQWF5NIWG6OIBHVX3ES53QROMA2I3OUD3PY63 |
+| Pool XLM | CB5LA7RIMHEGH73TWCLYTOJ5Y5EDXFM7J4VPL75KDRGNAFJPWFTXWAAQ |
+| Pool USDC (Circle) | CBEQAUR4H63S7RQCB736OFVAZIPPHZXF5HWK6PXGBTVJTJDETKAU7SOO |
 | Creator Registry | CDX52ACO6MVXDBC4IS3AG6NIKQASJLY24BED3S5KJEA4PPPAXTWSRGNU |
 | USDC Token (Circle) | CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA |
 
@@ -81,7 +81,7 @@ commitment    = Poseidon(secret, nullifier, recipientHash)
 nullifierHash = Poseidon(nullifier)
 index         = leaf position from pathIndices bits (deposit-amount-aware claims)
 
-Merkle membership: commitment in MerkleTree(root), depth-3, 8 leaves
+Merkle membership: commitment in MerkleTree(root), depth-20, 1,048,576 leaves
 
 index lets the pool pay out the actual deposited amount (1x/5x/10x/20x base) instead of always a flat base unit — fixing a real bug found during testnet testing.
 
