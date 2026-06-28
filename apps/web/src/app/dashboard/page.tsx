@@ -766,27 +766,13 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Tabs */}
-            <div style={{ display: "flex", borderBottom: "1px solid #E5E5E5" }}>
-              {(["send", "withdraw"] as const).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  style={{
-                    flex: 1, padding: "14px", fontSize: "14px", fontWeight: 700, border: "none",
-                    background: "transparent", cursor: "pointer",
-                    color: activeTab === tab ? "#0A0A0A" : "#A3A3A3",
-                    borderBottom: activeTab === tab ? "2px solid #0A0A0A" : "2px solid transparent",
-                    transition: "all 0.2s",
-                  }}
-                >
-                  {tab === "send" ? "Send Tip" : "Withdraw"}
-                </button>
-              ))}
+            {/* Withdraw header */}
+            <div style={{ padding: "14px 20px", borderBottom: "1px solid #E5E5E5" }}>
+              <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>Withdraw</p>
             </div>
 
-            {/* Send Tip tab */}
-            {activeTab === "send" && (
+            {/* Send Tip tab - removed from creator dashboard */}
+            {false && (
               <div style={{ padding: "24px" }}>
                 {sendStep === "select" && (
                   <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -797,7 +783,7 @@ export default function DashboardPage() {
                     <AmountSelector
                       key={sendToken.symbol}
                       token={{ ...sendToken, presets: poolTipAmount !== null
-                        ? [1, 5, 10, 20].map((m) => (poolTipAmount * m) / 1e7)
+                        ? [1, 5, 10, 20].map((m) => ((poolTipAmount ?? 0) * m) / 1e7)
                         : sendToken.presets }}
                       onAmountChange={(ca, da) => { setContractAmount(ca); setDisplayAmount(da); }}
                     />
@@ -950,8 +936,8 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Withdraw tab */}
-            {activeTab === "withdraw" && (
+            {/* Withdraw */}
+            {(
               <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
 
                 {claimStage === "done" ? (
