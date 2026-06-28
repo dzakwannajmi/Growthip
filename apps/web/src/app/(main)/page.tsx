@@ -95,8 +95,8 @@ export default function Home() {
             <a href="#faq" className="hover:text-[#0A0A0A] transition-colors">FAQ</a>
           </div>
           <div className="flex items-center gap-4">
-            <a href="https://github.com/dzakwannajmi/Growthip" target="_blank" rel="noreferrer" className="hidden md:flex items-center gap-2 px-5 py-2.5 rounded-full border border-[#E5E5E5] bg-white text-[#0A0A0A] font-semibold text-sm hover:bg-[#F5F5F5] transition-all shadow-sm">
-              <Icon icon="mdi:github" className="w-5 h-5" /> GitHub
+            <a href="https://github.com/dzakwannajmi/Growthip/blob/main/README.md" target="_blank" rel="noreferrer" className="hidden md:flex items-center gap-2 px-5 py-2.5 rounded-full border border-[#E5E5E5] bg-white text-[#0A0A0A] font-semibold text-sm hover:bg-[#F5F5F5] transition-all shadow-sm">
+              <Icon icon="ph:book-open-bold" className="w-5 h-5" /> Developer Docs
             </a>
             <Link href="/dashboard" className="flex items-center justify-center w-10 h-10 rounded-full bg-[#0A0A0A] text-white md:hidden">
               <Icon icon="ph:arrow-right-bold" className="w-5 h-5" />
@@ -125,8 +125,8 @@ export default function Home() {
             <Link href="/dashboard" className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-[#0A0A0A] px-8 py-4 text-base font-bold text-white transition-all hover:bg-[#262626] hover:scale-[1.02] shadow-lg shadow-black/10">
               Open Dashboard <Icon icon="ph:arrow-right-bold" className="w-5 h-5" />
             </Link>
-            <a href="https://github.com/dzakwannajmi/Growthip" target="_blank" rel="noreferrer" className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full border border-[#E5E5E5] bg-white px-8 py-4 text-base font-bold text-[#0A0A0A] transition-all hover:bg-[#F5F5F5] shadow-sm">
-              <Icon icon="mdi:github" className="w-6 h-6" /> View on GitHub
+            <a href="https://github.com/dzakwannajmi/Growthip/blob/main/README.md" target="_blank" rel="noreferrer" className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full border border-[#E5E5E5] bg-white px-8 py-4 text-base font-bold text-[#0A0A0A] transition-all hover:bg-[#F5F5F5] shadow-sm">
+              <Icon icon="ph:book-open-bold" className="w-6 h-6" /> Developer Docs
             </a>
           </div>
         </section>
@@ -338,9 +338,10 @@ export default function Home() {
                 <Link href="/dashboard/analytics" className="text-[14px] text-[#737373] hover:text-[#0A0A0A] transition-colors">Analytics</Link>
               </div>
               <div className="flex flex-col gap-3">
-                <p className="text-[13px] font-bold uppercase tracking-widest text-[#0A0A0A] mb-1">Resources</p>
+                <p className="text-[13px] font-bold uppercase tracking-widest text-[#0A0A0A] mb-1">Developer</p>
+                <a href="https://github.com/dzakwannajmi/Growthip/blob/main/README.md" target="_blank" rel="noreferrer" className="text-[14px] text-[#737373] hover:text-[#0A0A0A] transition-colors">Developer Docs</a>
                 <a href="https://github.com/dzakwannajmi/Growthip" target="_blank" rel="noreferrer" className="text-[14px] text-[#737373] hover:text-[#0A0A0A] transition-colors">GitHub</a>
-                <a href="https://stellar.org" target="_blank" rel="noreferrer" className="text-[14px] text-[#737373] hover:text-[#0A0A0A] transition-colors">Stellar</a>
+                <a href="https://stellar.org/developers" target="_blank" rel="noreferrer" className="text-[14px] text-[#737373] hover:text-[#0A0A0A] transition-colors">Stellar Docs</a>
               </div>
             </div>
           </div>
