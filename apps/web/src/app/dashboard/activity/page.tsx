@@ -120,13 +120,11 @@ export default function ActivityPage() {
     try {
       const { decryptIncomingNote, isUnlocked } = await import("@/lib/encryption/keyManagement");
       if (!isUnlocked()) {
-        console.log("[fetchOnChainNotes] encryption not unlocked, skipping");
         setEncLocked(true);
         return;
       } else {
         setEncLocked(false);
       }
-      console.log("[fetchOnChainNotes] starting fetch for", address);
       for (const tokenSymbol of ["XLM", "USDC"] as const) {
         try {
           const client = buildClient(address, tokenSymbol);
