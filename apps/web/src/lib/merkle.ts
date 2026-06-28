@@ -131,6 +131,8 @@ export async function getMerklePath(
   }
 
   const root = currentLayer.get(0) ?? emptyNodes[TREE_DEPTH];
+  console.log("[merkle] computed root:", BigInt(root).toString(16).padStart(64, "0"));
+  console.log("[merkle] leafIndex:", leafIndex, "commitments:", allCommitments.length);
   return { pathElements, pathIndices, leafIndex, root };
 }
 
