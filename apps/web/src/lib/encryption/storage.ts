@@ -7,15 +7,22 @@
  * surface for code that touches key material storage.
  *
  * Schema: a single object store, "identity", holding exactly one record
- * (keyPath "id", always the literal string "primary") -- one browser
- * profile holds one creator's encryption identity. There is no need for
- * a multi-record schema here.
+ * (keyPath "id", always the literal string "primary") per wallet address.
+ * Each wallet address gets its own IndexedDB database, namespaced by address,
+ * so multiple wallets can coexist in the same browser without conflict.
  */
 
-const DB_NAME = "growthip-encryption";
 const DB_VERSION = 1;
 const STORE_NAME = "identity";
 const RECORD_ID = "primary";
+
+/** Get database name namespaced by wallet address from localStorage. */
+function getDbName(): string {
+  const addr = typeof window !== "undefined"
+    ? (localStorage.getItem("growthip:wallet") ?? "default")
+    : "default";
+  return `growthip-encryption-${addr}`;
+}
 
 export interface StoredIdentity {
   id: "primary";
@@ -43,7 +50,7 @@ export interface KdfParams {
 
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    const request = indexedDB.open(getDbName(), DB_VERSION);
 
     request.onupgradeneeded = () => {
       const db = request.result;
@@ -56,24 +63,13 @@ function openDatabase(): Promise<IDBDatabase> {
     request.onerror = () => {
       reject(
         new Error(
-          `Failed to open IndexedDB '${DB_NAME}': ${request.error?.message ?? "unknown error"}`,
+          `Failed to open IndexedDB: ${request.error?.message ?? "unknown error"}`,
         ),
       );
     };
   });
 }
 
-/**
- * Persists the identity record. Overwrites any existing record (there is
- * only ever one). Note: this stores plain Uint8Array fields, NOT
- * CryptoKey objects -- the private key itself is never stored directly;
- * only its AES-GCM-wrapped (encrypted) bytes are. There is therefore no
- * dependency on browsers' CryptoKey structured-clone support for this
- * store specifically (that question only applies if we were storing
- * CryptoKey objects directly, which this design deliberately avoids for
- * the persisted record -- see keyManagement.ts for the session-only,
- * in-memory non-extractable CryptoKey, which never touches IndexedDB).
- */
 export async function saveIdentity(identity: StoredIdentity): Promise<void> {
   const db = await openDatabase();
   try {
@@ -89,7 +85,6 @@ export async function saveIdentity(identity: StoredIdentity): Promise<void> {
   }
 }
 
-/** Returns null if no identity has been set up yet in this browser. */
 export async function loadIdentity(): Promise<StoredIdentity | null> {
   const db = await openDatabase();
   try {
@@ -105,13 +100,6 @@ export async function loadIdentity(): Promise<StoredIdentity | null> {
   }
 }
 
-/**
- * Deletes the stored identity entirely. Used only for explicit
- * "deactivate / start over" flows -- callers must warn the user this is
- * irreversible without a backup file or recovery phrase already saved
- * elsewhere, since this removes the only locally-stored copy of the
- * wrapped private key.
- */
 export async function deleteIdentity(): Promise<void> {
   const db = await openDatabase();
   try {

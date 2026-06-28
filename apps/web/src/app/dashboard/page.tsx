@@ -1151,6 +1151,9 @@ export default function DashboardPage() {
               setWalletStatus("Connecting...");
               try {
                 const { connectWithWallet } = await import("@/lib/wallet");
+                // Clear session key from previous wallet before switching
+                const { lockSession } = await import("@/lib/encryption/keyManagement");
+                lockSession();
                 const addr = await connectWithWallet(walletId);
                 setAddress(addr);
                 localStorage.setItem("growthip:wallet", addr);
