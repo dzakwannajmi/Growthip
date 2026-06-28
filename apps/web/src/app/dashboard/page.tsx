@@ -1147,35 +1147,6 @@ export default function DashboardPage() {
                   <p style={{ fontSize: "12px", color: "#737373", textAlign: "center" }}>Scan to open your tip page</p>
                 </div>
               )}
-              {/* Pool Privacy Indicator */}
-              {poolDeposits !== null && (
-                <div style={{ marginTop: "12px", padding: "12px 14px", borderRadius: "12px", border: "1px solid #E5E5E5", background: "#FAFAFA", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <Icon icon="ph:shield-check-bold" style={{ fontSize: "16px", color: poolDeposits >= 6 ? "#22c55e" : poolDeposits >= 3 ? "#f59e0b" : "#ef4444" }} />
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                        <p style={{ fontSize: "12px", fontWeight: 700, color: "#0A0A0A" }}>Pool Privacy</p>
-                        <div style={{ position: "relative", display: "inline-flex" }}
-                          onMouseEnter={(e) => { const t = e.currentTarget.querySelector("[data-tooltip]") as HTMLElement; if (t) t.style.display = "block"; }}
-                          onMouseLeave={(e) => { const t = e.currentTarget.querySelector("[data-tooltip]") as HTMLElement; if (t) t.style.display = "none"; }}
-                        >
-                          <Icon icon="ph:info-bold" style={{ fontSize: "13px", color: "#A3A3A3", cursor: "pointer" }} />
-                          <div data-tooltip style={{ display: "none", position: "absolute", bottom: "calc(100% + 10px)", left: "50%", transform: "translateX(-50%)", background: "white", color: "#171717", fontSize: "12px", borderRadius: "12px", padding: "10px 12px", width: "220px", zIndex: 50, lineHeight: 1.6, pointerEvents: "none", whiteSpace: "normal", boxShadow: "0 4px 20px rgba(0,0,0,0.12)", border: "1px solid #E5E5E5" }}>
-                            The more tips in the pool, the harder it is for anyone to trace which tip belongs to you. A full pool of {MAX_POOL_LEAVES} means maximum anonymity for your supporters.
-                            <div style={{ position: "absolute", bottom: "-5px", left: "50%", transform: "translateX(-50%) rotate(45deg)", width: "8px", height: "8px", background: "white", border: "1px solid #E5E5E5", borderTop: "none", borderLeft: "none" }} />
-                          </div>
-                        </div>
-                      </div>
-                      <p style={{ fontSize: "11px", color: "#737373" }}>{poolDeposits}/{MAX_POOL_LEAVES} deposits · {poolDeposits >= 6 ? "Strong" : poolDeposits >= 3 ? "Moderate" : "Weak"}</p>
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", gap: "3px" }}>
-                    {Array.from({ length: MAX_POOL_LEAVES }).map((_, i) => (
-                      <div key={i} style={{ width: "6px", height: "20px", borderRadius: "3px", background: i < poolDeposits ? (poolDeposits >= 6 ? "#22c55e" : poolDeposits >= 3 ? "#f59e0b" : "#ef4444") : "#E5E5E5" }} />
-                    ))}
-                  </div>
-                </div>
-              )}
             </>
           ) : (
             <div style={{ padding: "20px", borderRadius: "12px", border: "1px dashed #E5E5E5", background: "#FAFAFA", textAlign: "center" }}>
