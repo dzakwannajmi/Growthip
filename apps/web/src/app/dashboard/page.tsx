@@ -181,6 +181,8 @@ export default function DashboardPage() {
       // Only on first load (not on polling interval)
       const isFirstLoad = !localStorage.getItem("growthip:registered:" + addr);
       if (addr && isFirstLoad) {
+        // Set flag BEFORE async operations to prevent re-entry from polling
+        localStorage.setItem("growthip:registered:" + addr, "1");
         try {
           const { Client } = await import("@/lib/growthipPoolClient");
           const { computeRecipientHash } = await import("@/lib/poseidon");
@@ -217,7 +219,6 @@ export default function DashboardPage() {
               // Silent fail per pool
             }
           }
-          localStorage.setItem("growthip:registered:" + addr, "1");
         } catch {
           // Silent fail — non-critical, user can still use app
         }
