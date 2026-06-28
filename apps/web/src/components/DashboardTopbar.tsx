@@ -118,8 +118,6 @@ function WalletAvatar() {
 }
 
 export default function DashboardTopbar() {
-  const [networkOpen, setNetworkOpen]     = useState(false);
-  const [activeNetwork, setActiveNetwork] = useState<Network>("testnet");
   const [toasts, setToasts]               = useState<Toast[]>([]);
   const [encLocked, setEncLocked]         = useState(true);
   const [showUnlock, setShowUnlock]       = useState(false);
@@ -165,12 +163,9 @@ export default function DashboardTopbar() {
     } catch { setUnlockErr("Wrong password."); }
     finally { setUnlockBusy(false); }
   }
-  const dropdownRef                       = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setNetworkOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClick);
@@ -184,17 +179,6 @@ export default function DashboardTopbar() {
   }
 
   function handleNetworkSelect(network: Network | "coming-soon", name: string) {
-    if (network === "coming-soon") {
-      showToast(`${name} is not yet available. Coming soon!`, "warning");
-      setNetworkOpen(false);
-      return;
-    }
-    setActiveNetwork(network);
-    showToast(`Successfully switched to ${name}`);
-    setNetworkOpen(false);
-  }
-
-  const dotColor = activeNetwork === "futurenet" ? "bg-green-500" : "bg-pink-500";
 
   return (
     <>
