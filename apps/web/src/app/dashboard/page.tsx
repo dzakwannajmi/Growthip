@@ -178,7 +178,9 @@ export default function DashboardPage() {
       setAddress(addr);
       setRecipient(addr);
       // Auto-register recipient hash in pool if not yet registered
-      if (addr) {
+      // Only on first load (not on polling interval)
+      const isFirstLoad = !localStorage.getItem("growthip:registered:" + addr);
+      if (addr && isFirstLoad) {
         try {
           const { Client } = await import("@/lib/growthipPoolClient");
           const { computeRecipientHash } = await import("@/lib/poseidon");
@@ -203,6 +205,7 @@ export default function DashboardPage() {
             const regTx = await autoClient.register_recipient({ recipient: addr, recipient_hash: recipientHashBuf });
             await regTx.signAndSend({ force: true });
           }
+          localStorage.setItem("growthip:registered:" + addr, "1");
         } catch {
           // Silent fail — non-critical, user can still use app
         }
