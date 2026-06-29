@@ -247,7 +247,7 @@ export default function AnalyticsPage() {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
                 <p style={{ fontSize: "13px", color: "#737373", fontWeight: 500 }}>{card.label}</p>
                 <div style={{ width: 32, height: 32, borderRadius: "8px", background: card.iconBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Icon icon={card.icon} style={{ fontSize: "16px", color: card.iconColor }} />
+                  <Icon icon={card.icon} style={{ fontSize: "16px", color: card.iconColor, WebkitTextFillColor: card.iconColor }} />
                 </div>
               </div>
               <p style={{ fontSize: "24px", fontWeight: 800, color: "#0A0A0A" }}>{loading ? "—" : card.value}</p>
@@ -372,7 +372,8 @@ export default function AnalyticsPage() {
                       <span style={{
                         fontSize: "11px", fontWeight: 700, padding: "3px 10px", borderRadius: "999px",
                         background: note.claimed ? "#F0FDF4" : "#FAFAFA",
-                        color: note.claimed ? "#22c55e" : "#A3A3A3",
+                        color: note.claimed ? "#16a34a" : "#A3A3A3",
+                        WebkitTextFillColor: note.claimed ? "#16a34a" : "#A3A3A3",
                         border: `1px solid ${note.claimed ? "#BBF7D0" : "#E5E5E5"}`,
                         display: "inline-block", marginBottom: "4px",
                       }}>

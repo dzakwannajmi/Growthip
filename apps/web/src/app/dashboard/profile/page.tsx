@@ -150,7 +150,7 @@ export default function ProfilePage() {
                 <span style={{ fontSize: "12px", color: "#0A0A0A", fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tipLink.replace("https://", "")}</span>
               </div>
               <div style={{ display: "flex", gap: "8px" }}>
-                <button onClick={copyTipLink} className={`flex-1 flex items-center justify-center gap-1.5 text-[13px] font-bold text-white rounded-[10px] border-none cursor-pointer transition-colors ${copiedLink ? "bg-[#16a34a]" : "bg-[#0A0A0A] dark:bg-[#2A2A2A]"}`} style={{ padding: "10px" }}>
+                <button onClick={copyTipLink} data-copied={copiedLink ? "true" : "false"} className="flex-1 flex items-center justify-center gap-1.5 text-[13px] font-bold text-white rounded-[10px] border-none cursor-pointer transition-colors" style={{ padding: "10px", background: copiedLink ? "#16a34a" : "#0A0A0A", WebkitTextFillColor: "white" }}>
                   <Icon icon={copiedLink ? "ph:check-bold" : "ph:copy-simple-bold"} />
                   {copiedLink ? "Copied!" : "Copy Link"}
                 </button>
@@ -176,7 +176,7 @@ export default function ProfilePage() {
                 <button onClick={() => setShowWalletModal(true)} style={{ padding: "10px", borderRadius: "10px", border: "1px solid #E5E5E5", background: "#F9FAFB", fontSize: "13px", fontWeight: 600, color: "#0A0A0A", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
                   <Icon icon="ph:arrows-left-right-bold" style={{ fontSize: "15px" }} /> Switch wallet
                 </button>
-                <button onClick={handleDisconnect} className="dark:border-red-900 dark:bg-red-950" style={{ padding: "10px", borderRadius: "10px", border: "1px solid #FEE2E2", background: "#FEF2F2", fontSize: "13px", fontWeight: 600, color: "#ef4444", WebkitTextFillColor: "#ef4444", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                <button onClick={handleDisconnect} data-disconnect className="dark:border-red-900 dark:bg-red-950" style={{ padding: "10px", borderRadius: "10px", border: "1px solid #FEE2E2", background: "#FEF2F2", fontSize: "13px", fontWeight: 600, color: "#ef4444", WebkitTextFillColor: "#ef4444", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
                   <Icon icon="ph:sign-out-bold" style={{ fontSize: "15px" }} /> Disconnect
                 </button>
               </div>

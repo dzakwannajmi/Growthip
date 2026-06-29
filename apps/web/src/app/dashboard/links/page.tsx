@@ -82,7 +82,7 @@ export default function LinksPage() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
               <div style={{ width: "38px", height: "38px", borderRadius: "50%", background: "#F0FDF4", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Icon icon="ph:currency-dollar-bold" style={{ fontSize: "18px", color: "#22c55e" }} />
+                <Icon icon="ph:currency-dollar-bold" style={{ fontSize: "18px", color: "#16a34a", WebkitTextFillColor: "#16a34a" }} />
               </div>
               <div>
                 <p className="text-[#0A0A0A] dark:text-[#FAFAFA] font-bold text-[14px]" style={{ margin: "0 0 1px" }}>Simple Payment</p>

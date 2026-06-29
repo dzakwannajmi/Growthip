@@ -16,7 +16,15 @@ const BG_MAP: Record<string, string> = {
   "rgb(249, 250, 251)": "#141414",
   "rgb(245, 245, 245)": "#1e1e1e",
   "rgb(238, 238, 238)": "#1e1e1e",
-  "rgb(240, 253, 244)": "#0d2b1a",
+  "rgb(240, 253, 244)": "#1a2e1a",
+  "#f0fdf4": "#1a2e1a",
+  "#eef2ff": "#1a1f2e",
+  "#fffbeb": "#2b220d",
+  "#fef2f2": "#2d1515",
+  "#f5f3ff": "#1a1030",
+  "#eff6ff": "#0d1f2b",
+  "#fff7ed": "#2b1a0d",
+  "#fce7f3": "#2b0d1a",
   "rgb(239, 246, 255)": "#0d1f2b",
   "rgb(254, 242, 242)": "#2b0d0d",
   "rgb(255, 251, 235)": "#2b220d",
@@ -57,16 +65,15 @@ function colorElement(el: HTMLElement) {
   if (!isDark) return;
   // Skip aside — bg/border handled by Tailwind dark: variants
   if (el.tagName === "ASIDE" || el.closest("aside")) return;
+  if (el.hasAttribute("data-no-dark") || el.closest("[data-no-dark]")) return;
   // Skip elements with green/red bg (copied button, disconnect, price badges)
   const inlineBg = el.style.background || el.style.backgroundColor;
   if (inlineBg) {
     const bg = inlineBg.toLowerCase();
-    if (bg.includes("22, 197") || bg.includes("22, 163") ||
-        bg.includes("16, 163") || bg.includes("16a34a") ||
-        bg.includes("#16a34a") || bg.includes("22c55e") ||
-        bg.includes("#22c55e") || bg.includes("239, 68") ||
+    if (bg.includes("16a34a") || bg.includes("#16a34a") ||
+        bg.includes("22, 163") || bg.includes("22c55e") ||
+        bg.includes("239, 68") ||
         bg.includes("ef4444") || bg.includes("#ef4444") ||
-        bg.includes("254, 242") || bg.includes("240, 253") ||
         bg.includes("34, 197")) return;
   }
 
@@ -103,6 +110,9 @@ function applyDark() {
   styleEl.textContent = `
     html.dark [style*="height: 1px"] { background: #2a2a2a !important; }
     html.dark hr { border-color: #2a2a2a !important; }
+    /* Dynamic state buttons */
+    html.dark [data-copied="true"] { background: #16a34a !important; }
+    html.dark [data-disconnect] { background: #2d1515 !important; border-color: #4a1a1a !important; }
 
     /* Sidebar: bg/border handled by Tailwind dark: variants on the element */
     html.dark aside a, html.dark aside button { color: #D4D4D4 !important; }
