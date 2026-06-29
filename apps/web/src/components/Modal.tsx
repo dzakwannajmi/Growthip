@@ -16,23 +16,26 @@ export default function Modal({ show, onClose, children, maxWidth = "480px" }: M
     if (show) {
       setMounted(true);
       setClosing(false);
+    } else if (mounted && !closing) {
+      // show changed to false (e.g. X button called onClose) — play close animation
+      setClosing(true);
+      setTimeout(() => {
+        setMounted(false);
+        setClosing(false);
+      }, 280);
     }
   }, [show]);
 
-  function handleClose() {
-    setClosing(true);
-    setTimeout(() => {
-      setMounted(false);
-      setClosing(false);
-      onClose();
-    }, 280);
+  function handleBackdropClick() {
+    // Backdrop click: tell parent first, animation triggered by useEffect above
+    onClose();
   }
 
   if (!mounted) return null;
 
   return (
     <div
-      onClick={handleClose}
+      onClick={handleBackdropClick}
       style={{
         position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
         zIndex: 1000, display: "flex", alignItems: "center",
