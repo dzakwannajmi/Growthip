@@ -6,6 +6,7 @@ import { Icon } from "@iconify/react";
 import Image from "next/image";
 
 interface WalletModalProps {
+  show: boolean;
   onClose: () => void;
   onSelectWallet: (walletId: string) => Promise<void>;
   connecting?: boolean;
@@ -28,7 +29,7 @@ const WALLETS = [
   },
 ];
 
-export default function WalletModal({ onClose, onSelectWallet, connecting }: WalletModalProps) {
+export default function WalletModal({ show, onClose, onSelectWallet, connecting }: WalletModalProps) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
@@ -46,7 +47,7 @@ export default function WalletModal({ onClose, onSelectWallet, connecting }: Wal
   }
 
   return (
-    <Modal show={true} onClose={onClose} maxWidth="460px">
+    <Modal show={show} onClose={onClose} maxWidth="460px">
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>

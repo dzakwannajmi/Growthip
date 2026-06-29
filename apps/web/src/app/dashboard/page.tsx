@@ -1176,12 +1176,13 @@ export default function DashboardPage() {
                 <p style={{ fontSize: "12px", fontWeight: 600, color: "#525252", margin: "0 0 8px" }}>Custom message</p>
                 <textarea
                   value={dashShareMsg}
-                  onChange={(e) => setDashShareMsg(e.target.value)}
+                  onChange={(e) => setDashShareMsg(e.target.value.slice(0, 280))}
                   rows={3}
+                  maxLength={280}
                   placeholder="Write a message to share with your link..."
                   style={{ width: "100%", padding: "10px 12px", borderRadius: "10px", border: "1px solid #E5E5E5", fontSize: "13px", resize: "none", outline: "none", fontFamily: "inherit", boxSizing: "border-box", lineHeight: 1.5, color: "#0A0A0A" }}
                 />
-                <p style={{ fontSize: "11px", color: "#A3A3A3", margin: "4px 0 0" }}>{dashShareMsg.length}/280</p>
+                <p style={{ fontSize: "11px", color: dashShareMsg.length >= 260 ? "#ef4444" : "#A3A3A3", margin: "4px 0 0" }}>{dashShareMsg.length}/280</p>
               </div>
               {/* Platforms */}
               <p style={{ fontSize: "12px", fontWeight: 600, color: "#525252", margin: "0 0 10px" }}>Share to</p>
@@ -1217,8 +1218,8 @@ export default function DashboardPage() {
 
 
 
-        {showWalletModal && (
-          <WalletModal
+        <WalletModal
+            show={showWalletModal}
             onClose={() => setShowWalletModal(false)}
             onSelectWallet={async (walletId) => {
               setWalletBusy(true);
@@ -1247,7 +1248,6 @@ export default function DashboardPage() {
             }}
             connecting={walletBusy}
           />
-        )}
       </div>;
     </div>
   )

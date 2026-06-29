@@ -182,12 +182,13 @@ export default function LinksPage() {
           <p style={{ fontSize: "12px", fontWeight: 600, color: "#525252", margin: "0 0 8px" }}>Custom message</p>
           <textarea
             value={shareMsg}
-            onChange={(e) => setShareMsg(e.target.value)}
+            onChange={(e) => setShareMsg(e.target.value.slice(0, 280))}
             rows={3}
+            maxLength={280}
             placeholder="Write a message to share with your link..."
             style={{ width: "100%", padding: "10px 12px", borderRadius: "10px", border: "1px solid #E5E5E5", fontSize: "13px", resize: "none", outline: "none", fontFamily: "inherit", boxSizing: "border-box", lineHeight: 1.5, color: "#0A0A0A" }}
           />
-          <p style={{ fontSize: "11px", color: "#A3A3A3", margin: "4px 0 0" }}>{shareMsg.length}/280 characters</p>
+          <p style={{ fontSize: "11px", color: shareMsg.length >= 260 ? "#ef4444" : "#A3A3A3", margin: "4px 0 0" }}>{shareMsg.length}/280 characters</p>
         </div>
 
         {/* Platforms */}
