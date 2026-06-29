@@ -1135,7 +1135,7 @@ export default function DashboardPage() {
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "14px" }}>
                 <div style={{ padding: "12px", background: "#22c55e", borderRadius: "18px" }}>
                   <div style={{ padding: "10px", background: "white", borderRadius: "10px" }}>
-                    <QRCodeSVG value={tipLink} size={160} level="M" />
+                    <QRCodeSVG value={tipLink ?? ""} size={160} level="M" />
                   </div>
                 </div>
                 <div style={{ width: "100%", padding: "10px 14px", background: "#F9FAFB", borderRadius: "10px", border: "1px solid #E5E5E5" }}>
