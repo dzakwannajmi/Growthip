@@ -56,13 +56,13 @@ function NavLink({ item, collapsed, hovered, setHovered }: {
           "flex items-center gap-3 rounded-xl transition-all duration-200 text-sm relative overflow-hidden",
           collapsed ? "" : "px-4 py-3 w-full",
           active
-            ? "bg-[#1A1A1A] text-white font-bold"
-            : "text-[#525252] hover:bg-[#F0F0F0] hover:text-[#0A0A0A] font-medium",
+            ? "bg-[#EBEBEB] text-[#0A0A0A] font-bold dark:bg-[#252525] dark:text-[#F0F0F0]"
+            : "text-[#525252] hover:bg-[#F0F0F0] hover:text-[#0A0A0A] font-medium dark:text-[#8A8A8A] dark:hover:bg-[#1E1E1E] dark:hover:text-[#D4D4D4]",
         ].join(" ")}
       >
         {/* Crescent blade — overflow-hidden on parent clips left corners perfectly */}
         {active && (
-          <span className="absolute left-0 top-0 bottom-0 w-[6px] rounded-r-full bg-[#22c55e]" />
+          <span className="absolute left-0 top-0 bottom-0 w-[6px] rounded-r-full bg-[#0A0A0A] dark:bg-[#AFAFAF]" />
         )}
         <Icon
           icon={item.icon}
@@ -74,7 +74,7 @@ function NavLink({ item, collapsed, hovered, setHovered }: {
             {item.premium && (
               <Icon
                 icon="ph:crown-simple-fill"
-                className={["text-sm", active ? "text-yellow-400" : "text-[#0A0A0A]"].join(" ")}
+                className={["text-sm", active ? "text-[#0A0A0A] dark:text-yellow-400" : "text-[#A3A3A3]"].join(" ")}
               />
             )}
           </div>
