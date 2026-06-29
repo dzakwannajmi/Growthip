@@ -611,8 +611,8 @@ export default function DashboardPage() {
 
         {/* Header */}
         <div>
-          <h1 style={{ fontSize: "24px", fontWeight: 800, color: "#0A0A0A" }}>Dashboard</h1>
-          <p style={{ fontSize: "14px", fontWeight: 400, color: "#737373" }}>
+          <h1 className="text-2xl font-extrabold text-[#0A0A0A] dark:text-[#FAFAFA]">Dashboard</h1>
+          <p className="text-sm text-[#737373] dark:text-[#8A8A8A]">
             Welcome back{address ? `, ${displayName || address.slice(0, 4) + "..." + address.slice(-4)}` : ""}!
           </p>
         </div>
@@ -625,10 +625,10 @@ export default function DashboardPage() {
           </div>
           <div style={{ marginBottom: "24px" }}>
             <div style={{ display: "flex", alignItems: "flex-end", gap: "8px" }}>
-              <span style={{ fontSize: "clamp(28px, 8vw, 48px)", fontWeight: 800, color: "#0A0A0A", lineHeight: 1 }}>
+              <span className="text-light-950 dark:text-[#FAFAFA] font-extrabold leading-none" style={{ fontSize: "clamp(28px, 8vw, 48px)" }}>
                 ${address ? (balances.xlm * prices.xlm.usd + balances.usdc * prices.usdc.usd).toFixed(2) : "0.00"}
               </span>
-              <span style={{ fontSize: "14px", fontWeight: 600, color: "#737373", marginBottom: "6px" }}>USD</span>
+              <span className="text-sm font-semibold text-[#737373] dark:text-[#8A8A8A]" style={{ marginBottom: "6px" }}>USD</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "6px" }}>
               {(() => {
@@ -638,11 +638,11 @@ export default function DashboardPage() {
                 const dollarChange = Math.abs(totalUsd * change24h / 100);
                 return address && totalUsd > 0 ? (
                   <>
-                    <span style={{ display: "flex", alignItems: "center", fontSize: "13px", fontWeight: 700, color: isUp ? "#22c55e" : "#ef4444" }}>
+                    <span style={{ display: "flex", alignItems: "center", fontSize: "13px", fontWeight: 700, color: isUp ? "#16a34a" : "#dc2626" }}>
                       <Icon icon={isUp ? "ph:trend-up-bold" : "ph:trend-down-bold"} style={{ marginRight: "4px" }} />
                       {(isUp ? "+" : "") + change24h.toFixed(2)}%
                     </span>
-                    <span style={{ fontSize: "13px", fontWeight: 500, color: isUp ? "rgba(34,197,94,0.8)" : "rgba(239,68,68,0.8)" }}>
+                    <span style={{ fontSize: "13px", fontWeight: 500, color: isUp ? "rgba(22,163,74,0.8)" : "rgba(220,38,38,0.8)" }}>
                       ({isUp ? "+" : "-"}${dollarChange.toFixed(2)})
                     </span>
                   </>
@@ -651,7 +651,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <p style={{ fontSize: "11px", fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "16px" }}>Tokens</p>
+          <p className="text-[11px] font-bold text-[#A3A3A3] dark:text-[#6A6A6A] uppercase tracking-widest" style={{ marginBottom: "16px" }}>Tokens</p>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             {[
@@ -668,24 +668,24 @@ export default function DashboardPage() {
             ].map(({ icon, name, sub, balance, usdValue, change, price }) => (
               <div key={name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#F5F5F5", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div className="w-8 h-8 rounded-full bg-[#F5F5F5] dark:bg-[#2A2A2A] flex items-center justify-center">
                     <Icon icon={icon} style={{ fontSize: "20px" }} />
                   </div>
                   <div>
                     <div className="text-sm font-bold text-[#0A0A0A] dark:text-[#F0F0F0]">{name}</div>
-                    <div style={{ fontSize: "11px", color: "#737373" }}>
-                      {sub}{price > 0 && <span style={{ marginLeft: "6px", color: "#A3A3A3" }}>${price.toFixed(4)}</span>}
+                    <div className="text-[11px] text-[#737373] dark:text-[#8A8A8A]">
+                      {sub}{price > 0 && <span className="ml-1.5 text-[#A3A3A3] dark:text-[#6A6A6A]">${price.toFixed(4)}</span>}
                     </div>
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div className="text-sm font-bold text-[#0A0A0A] dark:text-[#F0F0F0]">{balance > 0 ? balance.toFixed(2) : "0"}</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "6px", justifyContent: "flex-end" }}>
-                    <span style={{ display: "flex", alignItems: "center", fontSize: "10px", fontWeight: 700, color: change >= 0 ? "#22c55e" : "#ef4444" }}>
+                    <span style={{ display: "flex", alignItems: "center", fontSize: "10px", fontWeight: 700, color: change >= 0 ? "#16a34a" : "#dc2626" }}>
                       <Icon icon={change >= 0 ? "ph:trend-up-bold" : "ph:trend-down-bold"} style={{ marginRight: "2px" }} />
                       {(change >= 0 ? "+" : "") + change.toFixed(2)}%
                     </span>
-                    <span style={{ fontSize: "11px", color: "#737373" }}>${usdValue.toFixed(2)}</span>
+                    <span className="text-[11px] text-[#737373] dark:text-[#8A8A8A]">${usdValue.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -694,18 +694,18 @@ export default function DashboardPage() {
             {/* EURC */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", opacity: 0.6 }}>
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#F5F5F5", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "12px", color: "#0A0A0A" }}>€</div>
+                <div className="w-8 h-8 rounded-full bg-[#F5F5F5] dark:bg-[#2A2A2A] flex items-center justify-center font-bold text-xs text-[#0A0A0A] dark:text-[#F0F0F0]">€</div>
                 <div>
-                  <div style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div className="text-sm font-bold text-[#0A0A0A] dark:text-[#F0F0F0] flex items-center gap-2">
                     EURC
                     <span style={{ fontSize: "9px", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", background: "#E5E5E5", color: "#525252", textTransform: "uppercase", letterSpacing: "0.05em" }}>Soon</span>
                   </div>
-                  <div style={{ fontSize: "11px", color: "#737373" }}>Euro Coin</div>
+                  <div className="text-[11px] text-[#737373] dark:text-[#8A8A8A]">Euro Coin</div>
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
                 <div className="text-sm font-bold text-[#0A0A0A] dark:text-[#F0F0F0]">-</div>
-                <div style={{ fontSize: "11px", color: "#737373" }}>€0.00</div>
+                <div className="text-[11px] text-[#737373] dark:text-[#8A8A8A]">€0.00</div>
               </div>
             </div>
           </div>
