@@ -578,8 +578,8 @@ export default function PublicTipPage() {
         <p style={{ textAlign: "center", fontSize: "12px", color: "#A3A3A3" }}>
           Powered by <strong style={{ color: "#525252" }}>Growthip</strong> — privacy-preserving tipping on Stellar
         </p>
-      {showWalletModal && (
-        <WalletModal
+      <WalletModal
+          show={showWalletModal}
           onClose={() => setShowWalletModal(false)}
           onSelectWallet={async (walletId) => {
             try {
@@ -597,7 +597,6 @@ export default function PublicTipPage() {
             }
           }}
         />
-      )}
       </div>
     </div>
   );
