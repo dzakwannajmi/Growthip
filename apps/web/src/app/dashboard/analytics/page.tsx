@@ -243,7 +243,7 @@ export default function AnalyticsPage() {
         {/* Summary cards */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "16px" }}>
           {summaryCards.map((card) => (
-            <div key={card.label} style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "20px" }}>
+            <div key={card.label} className="dark:bg-[#1A1A1A] dark:border-[#2A2A2A]" style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "20px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
                 <p style={{ fontSize: "13px", color: "#737373", fontWeight: 500 }}>{card.label}</p>
                 <div style={{ width: 32, height: 32, borderRadius: "8px", background: card.iconBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -260,7 +260,7 @@ export default function AnalyticsPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px" }}>
 
           {/* Received by Token */}
-          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "20px" }}>
+          <div className="dark:bg-[#1A1A1A] dark:border-[#2A2A2A]" style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "20px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
               <Icon icon="ph:coins-bold" style={{ fontSize: "18px", color: "#f59e0b" }} />
               <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>Received by Token</p>
@@ -298,7 +298,7 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Average Tip Amount */}
-          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "20px" }}>
+          <div className="dark:bg-[#1A1A1A] dark:border-[#2A2A2A]" style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "20px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
               <Icon icon="ph:trend-up-bold" style={{ fontSize: "18px", color: "#f59e0b" }} />
               <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>Average Tip Amount</p>
@@ -340,7 +340,7 @@ export default function AnalyticsPage() {
 
         {/* Recent Tips from localStorage */}
         {(pending.length > 0 || claimed.length > 0) && (
-          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "20px" }}>
+          <div className="dark:bg-[#1A1A1A] dark:border-[#2A2A2A]" style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "20px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
               <Icon icon="ph:clock-counter-clockwise-bold" style={{ fontSize: "18px", color: "#f59e0b" }} />
               <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>Recent Tips</p>
