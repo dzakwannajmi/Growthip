@@ -60,18 +60,9 @@ function NavLink({ item, collapsed, hovered, setHovered }: {
             : "text-[#525252] hover:bg-[#F0F0F0] hover:text-[#0A0A0A] font-medium",
         ].join(" ")}
       >
-        {/* Crescent blade indicator */}
+        {/* Crescent blade — overflow-hidden on parent clips left corners perfectly */}
         {active && (
-          <svg
-            style={{ position: "absolute", left: 0, top: 0, width: "16px", height: "100%", overflow: "hidden" }}
-            viewBox="0 0 16 48"
-            preserveAspectRatio="none"
-          >
-            <path
-              d="M14,0 Q6,6 6,24 Q6,42 14,48 Q0,40 0,24 Q0,8 14,0Z"
-              fill="#22c55e"
-            />
-          </svg>
+          <span className="absolute left-0 top-0 bottom-0 w-[6px] rounded-r-full bg-[#22c55e]" />
         )}
         <Icon
           icon={item.icon}
