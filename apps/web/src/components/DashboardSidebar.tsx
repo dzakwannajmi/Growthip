@@ -60,9 +60,18 @@ function NavLink({ item, collapsed, hovered, setHovered }: {
             : "text-[#525252] hover:bg-[#F0F0F0] hover:text-[#0A0A0A] font-medium",
         ].join(" ")}
       >
-        {/* Orange left indicator — clips perfectly via overflow-hidden on parent */}
+        {/* Crescent blade indicator — thin ochre, clips via overflow-hidden */}
         {active && (
-          <span className="absolute left-0 top-0 bottom-0 w-[6px] h-full bg-[#F59E0B]" />
+          <svg
+            style={{ position: "absolute", left: 0, top: 0, height: "100%", width: "18px", overflow: "visible" }}
+            viewBox="0 0 18 44"
+            preserveAspectRatio="none"
+          >
+            <path
+              d="M0,0 Q8,4 8,22 Q8,40 0,44 Q14,38 14,22 Q14,6 0,0Z"
+              fill="#F59E0B"
+            />
+          </svg>
         )}
         <Icon
           icon={item.icon}
