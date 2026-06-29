@@ -68,7 +68,7 @@ function NavLink({ item, collapsed, hovered, setHovered }: {
             preserveAspectRatio="none"
           >
             <path
-              d="M0,0 Q8,4 8,22 Q8,40 0,44 Q14,38 14,22 Q14,6 0,0Z"
+              d="M16,0 Q8,4 8,22 Q8,40 16,44 Q0,38 0,22 Q0,6 16,0Z"
               fill="#F59E0B"
             />
           </svg>
