@@ -49,6 +49,8 @@ let isDark = false;
 
 function colorElement(el: HTMLElement) {
   if (!isDark) return;
+  // Skip aside — bg/border handled by Tailwind dark: variants
+  if (el.tagName === "ASIDE" || el.closest("aside")) return;
 
   const mapProp = (prop: string, map: Record<string, string>) => {
     const val = el.style[prop as any];
@@ -72,15 +74,7 @@ function applyDark() {
   document.querySelectorAll<HTMLElement>("*").forEach(colorElement);
   document.body.style.background = "#0A0A0A";
   document.body.style.color = "#F5F5F5";
-  // Force sidebar
-  const aside = document.querySelector("aside");
-  if (aside) {
-    const el = aside as HTMLElement;
-    el.setAttribute("data-orig-background", el.style.background || "");
-    el.setAttribute("data-orig-borderColor", el.style.borderColor || "");
-    el.style.background = "#111111";
-    el.style.borderColor = "#1E1E1E";
-  }
+  // Sidebar handled by Tailwind dark: variants — no inline override needed
 
   // Inject hover + divider styles
   let styleEl = document.getElementById("growthip-dark-hover");
@@ -93,10 +87,8 @@ function applyDark() {
     html.dark [style*="height: 1px"] { background: #2a2a2a !important; }
     html.dark hr { border-color: #2a2a2a !important; }
 
-    /* Sidebar dark */
-    html.dark aside { background: #111111 !important; border-color: #1E1E1E !important; }
-    html.dark aside a, html.dark aside button, html.dark aside div { color: #D4D4D4 !important; }
-    html.dark aside .nav-item.active { background: #1E1E1E !important; color: #FFFFFF !important; }
+    /* Sidebar: bg/border handled by Tailwind dark: variants on the element */
+    html.dark aside a, html.dark aside button { color: #D4D4D4 !important; }
 
     /* Override Tailwind hover classes in dark mode */
     html.dark .hover\:bg-\[\#F5F5F5\]:hover,
@@ -147,11 +139,27 @@ function applyDark() {
 }
 
 function restoreLight() {
+  // 1. Remove injected dark style FIRST so !important rules are gone
+  document.getElementById("growthip-dark-hover")?.remove();
+
+  // 2. Force-reset sidebar inline styles explicitly (before attr restore)
+  const aside = document.querySelector("aside");
+  if (aside) {
+    const el = aside as HTMLElement;
+    el.style.removeProperty("background");
+    el.style.removeProperty("background-color");
+    el.style.removeProperty("border-color");
+    // Clean up all data-orig attrs on sidebar
+    Array.from(el.attributes)
+      .filter(a => a.name.startsWith("data-orig-"))
+      .forEach(a => el.removeAttribute(a.name));
+  }
+
+  // 3. Restore all other elements
   document.querySelectorAll<HTMLElement>("*").forEach((el) => {
     STYLE_PROPS.forEach((prop) => {
       const orig = el.getAttribute(`data-orig-${prop}`);
       if (orig !== null) {
-        // Empty string means no inline style was set originally — remove it
         if (orig === "") {
           el.style.removeProperty(prop.replace(/([A-Z])/g, "-$1").toLowerCase());
         } else {
@@ -161,18 +169,10 @@ function restoreLight() {
       }
     });
   });
-  // Restore sidebar explicitly
-  const aside = document.querySelector("aside");
-  if (aside) {
-    const el = aside as HTMLElement;
-    const origBg = el.getAttribute("data-orig-background");
-    const origBorder = el.getAttribute("data-orig-borderColor");
-    if (origBg !== null) { el.style.background = origBg; el.removeAttribute("data-orig-background"); }
-    if (origBorder !== null) { el.style.borderColor = origBorder; el.removeAttribute("data-orig-borderColor"); }
-  }
-  document.body.style.background = "";
-  document.body.style.color = "";
-  document.getElementById("growthip-dark-hover")?.remove();
+
+  // 4. Reset body
+  document.body.style.removeProperty("background");
+  document.body.style.removeProperty("color");
 }
 
 function startObserver() {
@@ -233,10 +233,10 @@ export default function ThemeToggle() {
         startObserver();
       }, 50);
     } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("growthip:theme", "light");
       stopObserver();
       restoreLight();
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("growthip:theme", "light");
     }
   }
 
