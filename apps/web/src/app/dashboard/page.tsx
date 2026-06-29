@@ -745,7 +745,7 @@ export default function DashboardPage() {
                 </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-                <span style={{ fontSize: "11px", fontWeight: 700, padding: "4px 10px", borderRadius: "999px", background: isTestnet ? "#F0FDF4" : "#FEF2F2", color: isTestnet ? "#16a34a" : "#ef4444", WebkitTextFillColor: isTestnet ? "#16a34a" : "#ef4444", fontWeight: 700 }}>
+                <span style={{ fontSize: "11px", fontWeight: 700, padding: "4px 10px", borderRadius: "999px", background: isTestnet ? "#F0FDF4" : "#FEF2F2", color: isTestnet ? "#16a34a" : "#ef4444", WebkitTextFillColor: isTestnet ? "#16a34a" : "#ef4444" }}>
                   {network === "TESTNET" ? "Testnet" : network === "FUTURENET" ? "Futurenet" : network}
                 </span>
                 <button

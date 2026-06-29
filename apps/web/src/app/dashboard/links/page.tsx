@@ -111,11 +111,11 @@ export default function LinksPage() {
               { icon: "ph:share-network-bold", label: "Share", color: "#0A0A0A", bg: "#F9FAFB", onClick: () => setShowShare(true) },
               { icon: "ph:qr-code-bold", label: "QR", color: "#0A0A0A", bg: "#F9FAFB", onClick: () => setShowQR(true) },
             ].map((btn) => (
-              <button key={btn.label} onClick={btn.onClick} className="btn-hover" className="dark:border-[#2A2A2A] dark:!bg-[#1A1A1A] dark:[&>*]:text-[#D4D4D4]" style={{ padding: "9px 4px", borderRadius: "10px", border: "1px solid #E5E5E5", background: btn.bg, fontSize: "12px", fontWeight: 600, color: btn.color, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px", transition: "all 0.15s" }}>
+              <button key={btn.label} onClick={btn.onClick} className="btn-hover dark:border-[#2A2A2A] dark:!bg-[#1A1A1A] dark:[&>*]:text-[#D4D4D4]" style={{ padding: "9px 4px", borderRadius: "10px", border: "1px solid #E5E5E5", background: btn.bg, fontSize: "12px", fontWeight: 600, color: btn.color, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px", transition: "all 0.15s" }}>
                 <Icon icon={btn.icon} style={{ fontSize: "15px" }} /> {btn.label}
               </button>
             ))}
-            <a href={tipLink || "#"} target="_blank" rel="noreferrer" className="btn-hover" className="dark:border-[#2A2A2A] dark:!bg-[#1A1A1A] dark:!text-[#D4D4D4]" style={{ padding: "9px 4px", borderRadius: "10px", border: "1px solid #E5E5E5", background: "#F9FAFB", fontSize: "12px", fontWeight: 600, color: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px", textDecoration: "none" }}>
+            <a href={tipLink || "#"} target="_blank" rel="noreferrer" className="btn-hover dark:border-[#2A2A2A] dark:!bg-[#1A1A1A] dark:!text-[#D4D4D4]" style={{ padding: "9px 4px", borderRadius: "10px", border: "1px solid #E5E5E5", background: "#F9FAFB", fontSize: "12px", fontWeight: 600, color: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px", textDecoration: "none" }}>
               <Icon icon="ph:arrow-square-out-bold" style={{ fontSize: "15px" }} /> View
             </a>
           </div>

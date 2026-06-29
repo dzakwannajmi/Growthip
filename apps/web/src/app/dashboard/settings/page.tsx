@@ -81,7 +81,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-4 md:p-8 lg:p-10 w-full min-h-full" className="dark:bg-[#0A0A0A]" style={{ background: "#FAFAFA" }}>
+    <div className="p-4 md:p-8 lg:p-10 w-full min-h-full dark:bg-[#0A0A0A]" style={{ background: "#FAFAFA" }}>
       <div className="max-w-[700px] mx-auto pb-20 flex flex-col gap-6">
         <div className="mb-2">
           <h1 className="text-2xl font-extrabold text-[#0A0A0A] dark:text-[#FAFAFA]">Settings</h1>
@@ -102,7 +102,7 @@ export default function SettingsPage() {
                       <Icon icon="ph:download-simple-bold" className="text-xl" style={{ color: "#0A0A0A" }} />
                     </div>
                     <div className="text-left">
-                      <div className="font-bold text-sm" className="text-[#0A0A0A] dark:text-[#FAFAFA]">Export Backup</div>
+                      <div className="font-bold text-sm text-[#0A0A0A] dark:text-[#FAFAFA]">Export Backup</div>
                       <div className="text-xs" style={{ color: "#737373" }}>Download your encryption key backup · Required to recover on new device</div>
                     </div>
                   </div>
@@ -115,7 +115,7 @@ export default function SettingsPage() {
                       <Icon icon="ph:shield-check-bold" className="text-xl" style={{ color: "#0A0A0A" }} />
                     </div>
                     <div className="text-left">
-                      <div className="font-bold text-sm" className="text-[#0A0A0A] dark:text-[#FAFAFA]">Security & Private Notes</div>
+                      <div className="font-bold text-sm text-[#0A0A0A] dark:text-[#FAFAFA]">Security & Private Notes</div>
                       <div className="text-xs" style={{ color: "#737373" }}>Enable encrypted notes from supporters · Est. fee ~0.016 XLM</div>
                     </div>
                   </div>
