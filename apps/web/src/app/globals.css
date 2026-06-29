@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Safelist: force-generate dark mode utility classes used in dynamic contexts */
+@source inline("dark:bg-[#2A2A2A] dark:text-[#6A6A6A] dark:bg-[#1A1A1A] dark:text-[#FAFAFA] dark:border-[#2A2A2A]");
+
 /* Use class-based dark mode so ThemeToggle controls dark: variants */
 @custom-variant dark (&:where(.dark, .dark *));
 

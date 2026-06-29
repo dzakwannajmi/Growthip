@@ -5,6 +5,12 @@ import { Icon } from "@iconify/react";
 // Background: light → dark
 const BG_MAP: Record<string, string> = {
   "white": "#1a1a1a",
+  "#ffffff": "#1a1a1a",
+  "#fafafa": "#111111",
+  "#f5f5f5": "#1e1e1e",
+  "#ebebeb": "#1e1e1e",
+  "#e5e5e5": "#2a2a2a",
+  "#f0f0f0": "#1e1e1e",
   "rgb(255, 255, 255)": "#1a1a1a",
   "rgb(250, 250, 250)": "#111111",
   "rgb(249, 250, 251)": "#141414",
@@ -51,15 +57,26 @@ function colorElement(el: HTMLElement) {
   if (!isDark) return;
   // Skip aside — bg/border handled by Tailwind dark: variants
   if (el.tagName === "ASIDE" || el.closest("aside")) return;
+  // Skip elements with green/red bg (copied button, disconnect, price badges)
+  const inlineBg = el.style.background || el.style.backgroundColor;
+  if (inlineBg) {
+    const bg = inlineBg.toLowerCase();
+    if (bg.includes("22, 197") || bg.includes("22, 163") ||
+        bg.includes("16, 163") || bg.includes("16a34a") ||
+        bg.includes("#16a34a") || bg.includes("22c55e") ||
+        bg.includes("#22c55e") || bg.includes("239, 68") ||
+        bg.includes("ef4444") || bg.includes("#ef4444") ||
+        bg.includes("254, 242") || bg.includes("240, 253") ||
+        bg.includes("34, 197")) return;
+  }
 
   const mapProp = (prop: string, map: Record<string, string>) => {
     const val = el.style[prop as any];
     if (!val) return;
     const computed = window.getComputedStyle(el)[prop as any];
-    // Check both inline val and computed value
+    // Check inline val, computed value (rgb format)
     const mapped = map[val?.toLowerCase()] || map[computed?.toLowerCase()];
     if (mapped && !el.hasAttribute(`data-orig-${prop}`)) {
-      // Save original value (or empty string if not set)
       el.setAttribute(`data-orig-${prop}`, el.style[prop as any] || "");
       el.style[prop as any] = mapped;
     }
@@ -142,37 +159,41 @@ function restoreLight() {
   // 1. Remove injected dark style FIRST so !important rules are gone
   document.getElementById("growthip-dark-hover")?.remove();
 
-  // 2. Force-reset sidebar inline styles explicitly (before attr restore)
-  const aside = document.querySelector("aside");
-  if (aside) {
-    const el = aside as HTMLElement;
-    el.style.removeProperty("background");
-    el.style.removeProperty("background-color");
-    el.style.removeProperty("border-color");
-    // Clean up all data-orig attrs on sidebar
-    Array.from(el.attributes)
-      .filter(a => a.name.startsWith("data-orig-"))
-      .forEach(a => el.removeAttribute(a.name));
-  }
-
-  // 3. Restore all other elements
+  // 2. Force remove ALL inline styles set by applyDark on every element
   document.querySelectorAll<HTMLElement>("*").forEach((el) => {
-    STYLE_PROPS.forEach((prop) => {
-      const orig = el.getAttribute(`data-orig-${prop}`);
-      if (orig !== null) {
-        if (orig === "") {
-          el.style.removeProperty(prop.replace(/([A-Z])/g, "-$1").toLowerCase());
-        } else {
-          el.style[prop as any] = orig;
+    // Remove data-orig attrs and restore/clear inline styles
+    const hasOrigAttrs = Array.from(el.attributes).some(a => a.name.startsWith("data-orig-"));
+    if (hasOrigAttrs) {
+      STYLE_PROPS.forEach((prop) => {
+        const orig = el.getAttribute(`data-orig-${prop}`);
+        if (orig !== null) {
+          if (orig === "") {
+            el.style.removeProperty(prop.replace(/([A-Z])/g, "-$1").toLowerCase());
+          } else {
+            el.style[prop as any] = orig;
+          }
+          el.removeAttribute(`data-orig-${prop}`);
         }
-        el.removeAttribute(`data-orig-${prop}`);
-      }
-    });
+      });
+    } else {
+      // Force remove inline styles even without data-orig (set by reapply)
+      STYLE_PROPS.forEach((prop) => {
+        const val = el.style[prop as any];
+        if (!val) return;
+        const cssKey = prop.replace(/([A-Z])/g, "-$1").toLowerCase();
+        el.style.removeProperty(cssKey);
+      });
+    }
   });
 
-  // 4. Reset body
+  // 3. Reset body and sidebar explicitly
   document.body.style.removeProperty("background");
   document.body.style.removeProperty("color");
+  const aside = document.querySelector("aside");
+  if (aside) {
+    (aside as HTMLElement).style.removeProperty("background");
+    (aside as HTMLElement).style.removeProperty("border-color");
+  }
 }
 
 function startObserver() {
@@ -187,7 +208,12 @@ function startObserver() {
         }
       });
       if (m.type === "attributes" && m.attributeName === "style") {
-        colorElement(m.target as HTMLElement);
+        const el = m.target as HTMLElement;
+        // Clear stale data-orig so colorElement re-evaluates new style
+        Array.from(el.attributes)
+          .filter(a => a.name.startsWith("data-orig-"))
+          .forEach(a => el.removeAttribute(a.name));
+        colorElement(el);
       }
     });
   });
@@ -221,9 +247,15 @@ export default function ThemeToggle() {
 
     // Re-apply dark on client-side navigation
     const handleReapply = () => {
-      if (isDark) {
-        applyDark();
-      }
+      if (!isDark) return;
+      // Reset all data-orig attrs so colorElement can re-map new elements
+      document.querySelectorAll<HTMLElement>("[data-orig-background],[data-orig-backgroundColor],[data-orig-color]").forEach((el) => {
+        Array.from(el.attributes)
+          .filter(a => a.name.startsWith("data-orig-"))
+          .forEach(a => el.removeAttribute(a.name));
+      });
+      applyDark();
+      startObserver();
     };
     window.addEventListener("growthip:reapply-dark", handleReapply);
     return () => {

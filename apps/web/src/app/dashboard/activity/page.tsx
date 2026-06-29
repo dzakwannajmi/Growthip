@@ -299,7 +299,7 @@ export default function ActivityPage() {
 
         {/* Unlock banner */}
         {encLocked && (
-          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "16px 20px", display: "flex", flexDirection: "column", gap: "10px" }}>
+          <div className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] rounded-2xl flex flex-col gap-2.5" style={{ padding: "16px 20px" }}>
             <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>🔐 Unlock encryption to see pending tips</p>
             <p style={{ fontSize: "12px", color: "#737373" }}>Enter your encryption password to auto-fetch incoming tips from the pool.</p>
             <div style={{ display: "flex", gap: "8px" }}>
@@ -342,7 +342,7 @@ export default function ActivityPage() {
           </div>
         )}
         {/* Filter */}
-        <div style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "12px 16px" }}>
+        <div className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] rounded-2xl" style={{ padding: "12px 16px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#A3A3A3" }}>
               <Icon icon="ph:funnel-bold" style={{ fontSize: "16px" }} />
@@ -360,7 +360,7 @@ export default function ActivityPage() {
                 <Icon icon="ph:caret-down-bold" style={{ fontSize: "11px", opacity: 0.6 }} />
               </button>
               {openDropdown === "status" && (
-                <div style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, background: "white", borderRadius: "14px", border: "1px solid #E5E5E5", boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 50, minWidth: "180px", padding: "6px", display: "flex", flexDirection: "column", gap: "2px" }}>
+                <div className="dark:bg-[#1A1A1A] dark:border-[#2A2A2A]" className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] rounded-[14px] flex flex-col gap-0.5" style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 50, minWidth: "180px", padding: "6px" }}>
                   {(["all", "pending", "withdrawn"] as Filter[]).map((f) => (
                     <button key={f} onClick={() => { setFilter(f); setOpenDropdown(null); }}
                       style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: filter === f ? 700 : 500, color: "#171717", background: filter === f ? "#F5F5F5" : "transparent", border: "none", cursor: "pointer", textAlign: "left", width: "100%" }}
@@ -383,7 +383,7 @@ export default function ActivityPage() {
                 <Icon icon="ph:caret-down-bold" style={{ fontSize: "11px", opacity: 0.6 }} />
               </button>
               {openDropdown === "token" && (
-                <div style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, background: "white", borderRadius: "14px", border: "1px solid #E5E5E5", boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 50, minWidth: "180px", padding: "6px", display: "flex", flexDirection: "column", gap: "2px" }}>
+                <div className="dark:bg-[#1A1A1A] dark:border-[#2A2A2A]" className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] rounded-[14px] flex flex-col gap-0.5" style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 50, minWidth: "180px", padding: "6px" }}>
                   {(["all", "XLM", "USDC"] as TokenFilter[]).map((t) => (
                     <button key={t} onClick={() => { setTokenFilter(t); setOpenDropdown(null); }}
                       style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: tokenFilter === t ? 700 : 500, color: "#171717", background: tokenFilter === t ? "#F5F5F5" : "transparent", border: "none", cursor: "pointer", textAlign: "left", width: "100%" }}
@@ -411,7 +411,7 @@ export default function ActivityPage() {
                 <Icon icon="ph:caret-down-bold" style={{ fontSize: "11px", opacity: 0.6 }} />
               </button>
               {openDropdown === "sort" && (
-                <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, background: "white", borderRadius: "14px", border: "1px solid #E5E5E5", boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 50, minWidth: "160px", padding: "6px", display: "flex", flexDirection: "column", gap: "2px" }}>
+                <div className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] rounded-[14px] flex flex-col gap-0.5" style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 50, minWidth: "160px", padding: "6px" }}>
                   {(["newest", "oldest"] as SortOrder[]).map((s) => (
                     <button key={s} onClick={() => { setSortOrder(s); setOpenDropdown(null); }}
                       style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: sortOrder === s ? 700 : 500, color: "#171717", background: sortOrder === s ? "#F5F5F5" : "transparent", border: "none", cursor: "pointer", textAlign: "left", width: "100%" }}
@@ -453,7 +453,7 @@ export default function ActivityPage() {
         {/* Notes list */}
         {/* Notes list */}
         {notes.length === 0 ? (
-          <div style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "64px 24px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+          <div className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] rounded-2xl flex flex-col items-center text-center" style={{ padding: "64px 24px" }}>
             <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#F5F5F5", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
               <Icon icon="ph:gift-bold" style={{ fontSize: "28px", color: "#A3A3A3" }} />
             </div>
@@ -463,7 +463,7 @@ export default function ActivityPage() {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {notes.map((note) => (
-              <div key={note.nullifierHash || note.commitment} style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
+              <div key={note.nullifierHash || note.commitment} className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] rounded-2xl flex items-center justify-between gap-4" style={{ padding: "16px 20px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, minWidth: 0 }}>
                   <div style={{ width: 40, height: 40, borderRadius: "50%", background: note.claimed ? "#F0FDF4" : "#FAFAFA", border: `1px solid ${note.claimed ? "#BBF7D0" : "#E5E5E5"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <Icon icon={note.claimed ? "ph:check-circle-bold" : "ph:clock-bold"} style={{ fontSize: "20px", color: note.claimed ? "#22c55e" : "#A3A3A3" }} />
@@ -509,7 +509,7 @@ export default function ActivityPage() {
           onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}
         >
-          <div style={{ background: "white", borderRadius: "20px", width: "100%", maxWidth: "480px", overflow: "hidden", boxShadow: "0 24px 64px rgba(0,0,0,0.15)" }}>
+          <div className="dark:bg-[#1A1A1A]" style={{ background: "white", borderRadius: "20px", width: "100%", maxWidth: "480px", overflow: "hidden", boxShadow: "0 24px 64px rgba(0,0,0,0.15)" }}>
             {/* Modal header */}
             <div style={{ padding: "20px 24px", borderBottom: "1px solid #E5E5E5", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>

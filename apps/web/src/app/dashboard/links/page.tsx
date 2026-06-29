@@ -205,14 +205,14 @@ export default function LinksPage() {
                 if (!p.available || !p.buildUrl) return;
                 window.open(p.buildUrl(tipLink, shareMsg), "_blank");
               }}
-              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderRadius: "12px", border: "1px solid #E5E5E5", background: "white", cursor: p.available ? "pointer" : "default", opacity: p.available ? 1 : 0.5, transition: "border-color 0.15s" }}
+              className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A]" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderRadius: "12px", cursor: p.available ? "pointer" : "default", opacity: p.available ? 1 : 0.5, transition: "border-color 0.15s" }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <Icon icon={p.icon} style={{ fontSize: "20px", color: p.available ? p.color : "#A3A3A3" }} />
+                <Icon icon={p.icon} style={{ fontSize: "20px", color: p.available ? (p.id === "x" ? "currentColor" : p.color) : "#A3A3A3" }} className={p.id === "x" ? "dark:text-white text-black" : ""} />
                 <span style={{ fontSize: "13px", fontWeight: 600, color: "#0A0A0A" }}>{p.label}</span>
               </div>
               {p.available
-                ? <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "999px", background: "#F0FDF4", color: "#22c55e" }}>Available</span>
+                ? <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "999px", background: "#F0FDF4", color: "#16a34a", WebkitTextFillColor: "#16a34a" }}>Available</span>
                 : <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "999px", background: "#F5F5F5", color: "#A3A3A3" }}>Coming soon</span>
               }
             </button>

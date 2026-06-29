@@ -668,9 +668,7 @@ export default function DashboardPage() {
             ].map(({ icon, name, sub, balance, usdValue, change, price }) => (
               <div key={name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <div className="w-8 h-8 rounded-full bg-[#F5F5F5] dark:bg-[#2A2A2A] flex items-center justify-center">
-                    <Icon icon={icon} style={{ fontSize: "20px" }} />
-                  </div>
+                  <Icon icon={icon} style={{ fontSize: "36px" }} />
                   <div>
                     <div className="text-sm font-bold text-[#0A0A0A] dark:text-[#F0F0F0]">{name}</div>
                     <div className="text-[11px] text-[#737373] dark:text-[#8A8A8A]">
@@ -694,11 +692,11 @@ export default function DashboardPage() {
             {/* EURC */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", opacity: 0.6 }}>
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div className="w-8 h-8 rounded-full bg-[#F5F5F5] dark:bg-[#2A2A2A] flex items-center justify-center font-bold text-xs text-[#0A0A0A] dark:text-[#F0F0F0]">€</div>
+                <Icon icon="cryptocurrency-color:eur" style={{ fontSize: "36px" }} />
                 <div>
                   <div className="text-sm font-bold text-[#0A0A0A] dark:text-[#F0F0F0] flex items-center gap-2">
                     EURC
-                    <span style={{ fontSize: "9px", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", background: "#E5E5E5", color: "#525252", textTransform: "uppercase", letterSpacing: "0.05em" }}>Soon</span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#E5E5E5] dark:bg-[#2A2A2A] text-[#525252] dark:text-[#6A6A6A] uppercase tracking-wide">Soon</span>
                   </div>
                   <div className="text-[11px] text-[#737373] dark:text-[#8A8A8A]">Euro Coin</div>
                 </div>
@@ -1203,7 +1201,7 @@ export default function DashboardPage() {
                       <Icon icon={p.icon} style={{ fontSize: "20px", color: p.color }} />
                       <span style={{ fontSize: "13px", fontWeight: 600, color: "#0A0A0A" }}>{p.label}</span>
                     </div>
-                    <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "999px", background: "#F5F5F5", color: "#A3A3A3" }}>Coming soon</span>
+                    <span className="dark:bg-[#2A2A2A] dark:text-[#6A6A6A]" style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "999px", background: "#F5F5F5", color: "#A3A3A3" }}>Coming soon</span>
                   </div>
                 ))}
               </div>
