@@ -33,6 +33,7 @@ import { getAvailableTokens, type Token, type TokenSymbol } from "@/lib/tokens";
 import { saveNote, getPendingNotes, getClaimedNotes, markNoteAsClaimed, migrateLegacyNotes, formatRelativeTime, type PrivateNote } from "@/lib/note";
 import { encodeTipId } from "@/lib/addressId";
 import Link from "next/link";
+import Modal from "@/components/Modal";
 import { getProfile, avatarUrlFor } from "@/lib/profile";
 import TokenSelector from "@/components/TokenSelector";
 import AmountSelector from "@/components/AmountSelector";
@@ -1121,9 +1122,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* QR Modal for dashboard */}
-        {showLinkQR && tipLink && (
-          <div onClick={() => setShowLinkQR(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", animation: "fadeIn 0.2s ease" }}>
-            <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "20px", width: "100%", maxWidth: "380px", padding: "24px", animation: "modalBounce 0.4s cubic-bezier(0.34,1.56,0.64,1)" }}>
+        <Modal show={showLinkQR && !!tipLink} onClose={() => setShowLinkQR(false)} maxWidth="380px">
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
                 <div style={{ flex: 1 }} />
                 <p style={{ fontSize: "16px", fontWeight: 800, color: "#0A0A0A", margin: 0, flex: 2, textAlign: "center" }}>Your QR Code</p>
@@ -1162,14 +1161,10 @@ export default function DashboardPage() {
                   <span style={{ fontSize: "13px", fontWeight: 700, color: "#0A0A0A" }}>Growthip</span>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
+        </Modal>
 
         {/* Share Modal for dashboard */}
-        {showDashShare && (
-          <div onClick={() => setShowDashShare(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", animation: "fadeIn 0.2s ease" }}>
-            <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "20px", width: "100%", maxWidth: "420px", padding: "24px", animation: "modalBounce 0.4s cubic-bezier(0.34,1.56,0.64,1)" }}>
+        <Modal show={showDashShare} onClose={() => setShowDashShare(false)} maxWidth="420px">
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
                 <p style={{ fontSize: "16px", fontWeight: 800, color: "#0A0A0A", margin: 0 }}>Share your link</p>
                 <button onClick={() => setShowDashShare(false)} style={{ width: "30px", height: "30px", borderRadius: "50%", border: "1px solid #E5E5E5", background: "#F5F5F5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -1218,9 +1213,7 @@ export default function DashboardPage() {
                 <Icon icon={copied ? "ph:check-bold" : "ph:copy-simple-bold"} style={{ fontSize: "15px", color: copied ? "#22c55e" : "#0A0A0A" }} />
                 {copied ? "Copied!" : "Copy message + link"}
               </button>
-            </div>
-          </div>
-        )}
+        </Modal>
 
 
 

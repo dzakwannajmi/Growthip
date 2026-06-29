@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Modal from "@/components/Modal";
 import { Icon } from "@iconify/react";
 import Image from "next/image";
 
@@ -45,11 +46,8 @@ export default function WalletModal({ onClose, onSelectWallet, connecting }: Wal
   }
 
   return (
-    <div
-      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div style={{ background: "white", borderRadius: "20px", width: "100%", maxWidth: "460px", padding: "24px", boxShadow: "0 24px 64px rgba(0,0,0,0.15)", display: "flex", flexDirection: "column", gap: "16px" }}>
+    <Modal show={true} onClose={onClose} maxWidth="460px">
+      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -85,7 +83,7 @@ export default function WalletModal({ onClose, onSelectWallet, connecting }: Wal
                 <p style={{ fontSize: "12px", color: "#737373" }}>{wallet.description}</p>
               </div>
               {loadingId === wallet.id ? (
-                <Icon icon="ph:spinner-bold" style={{ fontSize: "18px", color: "#A3A3A3", animation: "spin 1s linear infinite" }} />
+                <Icon icon="svg-spinners:ring-resize" style={{ fontSize: "18px", color: "#A3A3A3" }} />
               ) : (
                 <Icon icon="ph:arrow-right-bold" style={{ fontSize: "16px", color: "#A3A3A3" }} />
               )}
@@ -115,6 +113,6 @@ export default function WalletModal({ onClose, onSelectWallet, connecting }: Wal
           </p>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

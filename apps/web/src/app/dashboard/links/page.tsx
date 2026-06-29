@@ -2,6 +2,7 @@
 import { Icon } from "@iconify/react";
 import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
+import Modal from "@/components/Modal";
 import { encodeTipId } from "@/lib/addressId";
 import { getProfile, avatarUrlFor } from "@/lib/profile";
 
@@ -18,22 +19,6 @@ const SHARE_PLATFORMS = [
   { id: "discord", label: "Discord", icon: "ri:discord-fill", available: false, color: "#5865F2" },
   { id: "twitch", label: "Twitch", icon: "ri:twitch-fill", available: false, color: "#9146FF" },
 ];
-
-function Modal({ show, onClose, children }: { show: boolean; onClose: () => void; children: React.ReactNode }) {
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    if (show) setTimeout(() => setVisible(true), 10);
-    else setVisible(false);
-  }, [show]);
-  if (!show) return null;
-  return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", animation: "fadeIn 0.2s ease" }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "20px", width: "100%", maxWidth: "480px", padding: "24px", maxHeight: "85vh", overflowY: "auto", transform: visible ? "scale(1) translateY(0)" : "scale(0.85) translateY(20px)", opacity: visible ? 1 : 0, transition: "all 0.4s cubic-bezier(0.34,1.56,0.64,1)" }}>
-        {children}
-      </div>
-    </div>
-  );
-}
 
 export default function LinksPage() {
   const [address, setAddress] = useState("");
@@ -73,7 +58,6 @@ export default function LinksPage() {
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 20px" }}>
       <style>{`
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .btn-hover:hover { background: #F5F5F5 !important; }
         .platform-btn:hover { border-color: #0A0A0A !important; }
       `}</style>

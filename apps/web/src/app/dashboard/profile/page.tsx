@@ -2,25 +2,10 @@
 import { Icon } from "@iconify/react";
 import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
+import Modal from "@/components/Modal";
 import { encodeTipId } from "@/lib/addressId";
 import { getProfile, saveProfile, avatarUrlFor, AVATAR_VARIANTS } from "@/lib/profile";
 import { lockSession } from "@/lib/encryption/keyManagement";
-
-function Modal({ show, onClose, children }: { show: boolean; onClose: () => void; children: React.ReactNode }) {
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    if (show) setTimeout(() => setVisible(true), 10);
-    else setVisible(false);
-  }, [show]);
-  if (!show) return null;
-  return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", animation: "fadeIn 0.2s ease" }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "20px", width: "100%", maxWidth: "420px", padding: "24px", transform: visible ? "scale(1) translateY(0)" : "scale(0.85) translateY(20px)", opacity: visible ? 1 : 0, transition: "all 0.4s cubic-bezier(0.34,1.56,0.64,1)" }}>
-        {children}
-      </div>
-    </div>
-  );
-}
 
 export default function ProfilePage() {
   const [address, setAddress] = useState("");
@@ -86,7 +71,6 @@ export default function ProfilePage() {
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 20px" }}>
-      <style>{`@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }`}</style>
       <div style={{ width: "100%", maxWidth: "480px", display: "flex", flexDirection: "column", gap: "16px" }}>
         <div>
           <h1 style={{ fontSize: "24px", fontWeight: 800, color: "#0A0A0A", margin: "0 0 4px" }}>Profile</h1>
@@ -197,7 +181,7 @@ export default function ProfilePage() {
       </div>
 
       {/* QR Modal */}
-      <Modal show={showQR} onClose={() => setShowQR(false)}>
+      <Modal show={showQR} onClose={() => setShowQR(false)} maxWidth="380px">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
           <div style={{ flex: 1 }} />
           <p style={{ fontSize: "17px", fontWeight: 800, color: "#0A0A0A", margin: 0, textAlign: "center", flex: 2 }}>Your QR Code</p>
@@ -225,7 +209,7 @@ export default function ProfilePage() {
       </Modal>
 
       {/* Switch wallet modal */}
-      <Modal show={showWalletModal} onClose={() => setShowWalletModal(false)}>
+      <Modal show={showWalletModal} onClose={() => setShowWalletModal(false)} maxWidth="380px">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
           <p style={{ fontSize: "16px", fontWeight: 800, color: "#0A0A0A", margin: 0 }}>Switch Wallet</p>
           <button onClick={() => setShowWalletModal(false)} style={{ width: "30px", height: "30px", borderRadius: "50%", border: "1px solid #E5E5E5", background: "#F5F5F5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
