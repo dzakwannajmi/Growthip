@@ -199,13 +199,12 @@ export default function LinksPage() {
           {SHARE_PLATFORMS.map((p) => (
             <button
               key={p.id}
-              className="platform-btn"
+              className="platform-btn bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A]"
               disabled={!p.available}
               onClick={() => {
                 if (!p.available || !p.buildUrl) return;
                 window.open(p.buildUrl(tipLink, shareMsg), "_blank");
-              }}
-              className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A]" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderRadius: "12px", cursor: p.available ? "pointer" : "default", opacity: p.available ? 1 : 0.5, transition: "border-color 0.15s" }}
+              }} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderRadius: "12px", cursor: p.available ? "pointer" : "default", opacity: p.available ? 1 : 0.5, transition: "border-color 0.15s" }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <Icon icon={p.icon} style={{ fontSize: "20px", color: p.available ? (p.id === "x" ? "currentColor" : p.color) : "#A3A3A3" }} className={p.id === "x" ? "dark:text-white text-black" : ""} />

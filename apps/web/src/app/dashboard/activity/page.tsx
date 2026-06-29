@@ -360,7 +360,7 @@ export default function ActivityPage() {
                 <Icon icon="ph:caret-down-bold" style={{ fontSize: "11px", opacity: 0.6 }} />
               </button>
               {openDropdown === "status" && (
-                <div className="dark:bg-[#1A1A1A] dark:border-[#2A2A2A]" className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] rounded-[14px] flex flex-col gap-0.5" style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 50, minWidth: "180px", padding: "6px" }}>
+                <div className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] rounded-[14px] flex flex-col gap-0.5" style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 50, minWidth: "180px", padding: "6px" }}>
                   {(["all", "pending", "withdrawn"] as Filter[]).map((f) => (
                     <button key={f} onClick={() => { setFilter(f); setOpenDropdown(null); }}
                       style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: filter === f ? 700 : 500, color: "#171717", background: filter === f ? "#F5F5F5" : "transparent", border: "none", cursor: "pointer", textAlign: "left", width: "100%" }}
@@ -383,7 +383,7 @@ export default function ActivityPage() {
                 <Icon icon="ph:caret-down-bold" style={{ fontSize: "11px", opacity: 0.6 }} />
               </button>
               {openDropdown === "token" && (
-                <div className="dark:bg-[#1A1A1A] dark:border-[#2A2A2A]" className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] rounded-[14px] flex flex-col gap-0.5" style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 50, minWidth: "180px", padding: "6px" }}>
+                <div className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] rounded-[14px] flex flex-col gap-0.5" style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 50, minWidth: "180px", padding: "6px" }}>
                   {(["all", "XLM", "USDC"] as TokenFilter[]).map((t) => (
                     <button key={t} onClick={() => { setTokenFilter(t); setOpenDropdown(null); }}
                       style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: tokenFilter === t ? 700 : 500, color: "#171717", background: tokenFilter === t ? "#F5F5F5" : "transparent", border: "none", cursor: "pointer", textAlign: "left", width: "100%" }}
