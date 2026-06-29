@@ -81,11 +81,11 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-4 md:p-8 lg:p-10 w-full min-h-full" style={{ background: "#FAFAFA" }}>
+    <div className="p-4 md:p-8 lg:p-10 w-full min-h-full" className="dark:bg-[#0A0A0A]" style={{ background: "#FAFAFA" }}>
       <div className="max-w-[700px] mx-auto pb-20 flex flex-col gap-6">
         <div className="mb-2">
-          <h1 className="text-2xl font-extrabold" style={{ color: "#0A0A0A" }}>Settings</h1>
-          <p className="text-sm" style={{ color: "#525252" }}>Manage your account preferences</p>
+          <h1 className="text-2xl font-extrabold text-[#0A0A0A] dark:text-[#FAFAFA]">Settings</h1>
+          <p className="text-sm text-[#525252] dark:text-[#8A8A8A]">Manage your account preferences</p>
         </div>
 
         {!address ? (
@@ -94,28 +94,28 @@ export default function SettingsPage() {
           </div>
         ) : (<>
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "#737373" }}>Preferences</p>
-              <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid #E5E5E5", background: "white" }}>
-                <button onClick={handleExportBackup} className="w-full p-4 flex items-center justify-between transition-colors hover:bg-[#FAFAFA]">
+              <p className="text-xs font-bold uppercase tracking-widest mb-3 text-[#737373] dark:text-[#6A6A6A]">Preferences</p>
+              <div className="rounded-2xl overflow-hidden dark:bg-[#1A1A1A] dark:border-[#2A2A2A]" style={{ border: "1px solid #E5E5E5", background: "white" }}>
+                <button onClick={handleExportBackup} className="w-full p-4 flex items-center justify-between transition-colors hover:bg-[#F5F5F5] dark:hover:bg-[#2A2A2A]">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "#F5F5F5" }}>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center dark:bg-[#2A2A2A]" style={{ background: "#F5F5F5" }}>
                       <Icon icon="ph:download-simple-bold" className="text-xl" style={{ color: "#0A0A0A" }} />
                     </div>
                     <div className="text-left">
-                      <div className="font-bold text-sm" style={{ color: "#0A0A0A" }}>Export Backup</div>
+                      <div className="font-bold text-sm" className="text-[#0A0A0A] dark:text-[#FAFAFA]">Export Backup</div>
                       <div className="text-xs" style={{ color: "#737373" }}>Download your encryption key backup · Required to recover on new device</div>
                     </div>
                   </div>
                   <Icon icon="ph:caret-right-bold" style={{ color: "#A3A3A3" }} />
                 </button>
-                <div style={{ height: "1px", background: "#E5E5E5" }} />
-                <button onClick={() => setShowSecurity((p) => !p)} className="w-full p-4 flex items-center justify-between transition-colors hover:bg-[#FAFAFA]">
+                <div className="dark:bg-[#2A2A2A]" style={{ height: "1px", background: "#E5E5E5" }} />
+                <button onClick={() => setShowSecurity((p) => !p)} className="w-full p-4 flex items-center justify-between transition-colors hover:bg-[#F5F5F5] dark:hover:bg-[#2A2A2A] rounded-xl">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "#F5F5F5" }}>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center dark:bg-[#2A2A2A]" style={{ background: "#F5F5F5" }}>
                       <Icon icon="ph:shield-check-bold" className="text-xl" style={{ color: "#0A0A0A" }} />
                     </div>
                     <div className="text-left">
-                      <div className="font-bold text-sm" style={{ color: "#0A0A0A" }}>Security & Private Notes</div>
+                      <div className="font-bold text-sm" className="text-[#0A0A0A] dark:text-[#FAFAFA]">Security & Private Notes</div>
                       <div className="text-xs" style={{ color: "#737373" }}>Enable encrypted notes from supporters · Est. fee ~0.016 XLM</div>
                     </div>
                   </div>
@@ -125,14 +125,14 @@ export default function SettingsPage() {
             </div>
 
             {showSecurity && (
-              <div className="rounded-2xl p-4" style={{ border: "1px solid #E5E5E5", background: "white" }}>
+              <div className="rounded-2xl p-4 dark:bg-[#1A1A1A] dark:border-[#2A2A2A]" style={{ border: "1px solid #E5E5E5", background: "white" }}>
                 <EncryptionSetup address={address} />
               </div>
             )}
             {/* Supported Tokens section */}
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "#737373" }}>Supported Tokens</p>
-              <div className="rounded-2xl" style={{ border: "1px solid #E5E5E5", background: "white", overflow: "hidden" }}>
+              <p className="text-xs font-bold uppercase tracking-widest mb-3 text-[#737373] dark:text-[#6A6A6A]">Supported Tokens</p>
+              <div className="rounded-2xl dark:bg-[#1A1A1A] dark:border-[#2A2A2A]" style={{ border: "1px solid #E5E5E5", background: "white", overflow: "hidden" }}>
                 {/* Header */}
                 <div style={{ padding: "14px 16px", borderBottom: "1px solid #E5E5E5", display: "flex", alignItems: "center", gap: "10px" }}>
                   <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#FFF7ED", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -155,8 +155,8 @@ export default function SettingsPage() {
                       <Icon icon={token.icon} style={{ fontSize: "36px" }} />
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "3px" }}>
-                          <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A", margin: 0 }}>{token.name}</p>
-                          <span style={{ fontSize: "10px", fontWeight: 700, padding: "1px 6px", borderRadius: "4px", background: "#F5F5F5", color: "#737373" }}>{token.standard}</span>
+                          <p className="text-[#0A0A0A] dark:text-[#FAFAFA] text-sm font-bold" style={{ margin: 0 }}>{token.name}</p>
+                          <span className="dark:bg-[#2A2A2A] dark:text-[#8A8A8A]" style={{ fontSize: "10px", fontWeight: 700, padding: "1px 6px", borderRadius: "4px", background: "#F5F5F5", color: "#737373" }}>{token.standard}</span>
                         </div>
                         <p style={{ fontSize: "11px", color: "#A3A3A3", margin: 0 }}>{token.fullName}</p>
                       </div>

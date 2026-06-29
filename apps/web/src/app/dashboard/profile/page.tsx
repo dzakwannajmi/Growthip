@@ -6,6 +6,7 @@ import Modal from "@/components/Modal";
 import { encodeTipId } from "@/lib/addressId";
 import { getProfile, saveProfile, avatarUrlFor, AVATAR_VARIANTS } from "@/lib/profile";
 import { lockSession } from "@/lib/encryption/keyManagement";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export default function ProfilePage() {
   const [address, setAddress] = useState("");
@@ -72,9 +73,13 @@ export default function ProfilePage() {
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 20px" }}>
       <div style={{ width: "100%", maxWidth: "480px", display: "flex", flexDirection: "column", gap: "16px" }}>
-        <div>
-          <h1 style={{ fontSize: "24px", fontWeight: 800, color: "#0A0A0A", margin: "0 0 4px" }}>Profile</h1>
-          <p style={{ fontSize: "13px", color: "#737373", margin: 0 }}>Manage your public creator profile</p>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <h1 style={{ fontSize: "24px", fontWeight: 800, color: "#0A0A0A", margin: "0 0 4px" }}>Profile</h1>
+            <p style={{ fontSize: "13px", color: "#737373", margin: 0 }}>Manage your public creator profile</p>
+          </div>
+          <ThemeToggle />
         </div>
 
         {!address ? (

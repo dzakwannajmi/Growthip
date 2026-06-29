@@ -23,6 +23,17 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={plusJakartaSans.variable + " font-sans"} suppressHydrationWarning>
+        {/* Init theme before React hydration to prevent flash */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            try {
+              var theme = localStorage.getItem('growthip:theme');
+              if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+              }
+            } catch(e) {}
+          })();
+        ` }} />
         {children}
       </body>
     </html>

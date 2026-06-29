@@ -60,14 +60,16 @@ export default function LinksPage() {
       <style>{`
         .btn-hover:hover { background: #F5F5F5 !important; }
         .platform-btn:hover { border-color: #0A0A0A !important; }
+        html.dark .btn-hover:hover { background: #2A2A2A !important; }
+        html.dark .platform-btn:hover { border-color: #6A6A6A !important; }
       `}</style>
 
       <div style={{ width: "100%", maxWidth: "560px" }}>
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "28px" }}>
           <div>
-            <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#0A0A0A", margin: "0 0 2px" }}>Your Links</h1>
-            <p style={{ fontSize: "13px", color: "#737373", margin: 0 }}>Manage your payment links</p>
+            <h1 className="text-[26px] font-extrabold text-[#0A0A0A] dark:text-[#FAFAFA]" style={{ margin: "0 0 2px" }}>Your Links</h1>
+            <p className="text-[13px] text-[#737373] dark:text-[#8A8A8A]" style={{ margin: 0 }}>Manage your payment links</p>
           </div>
           <button onClick={() => setShowTemplates(true)} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "10px 18px", borderRadius: "12px", background: "#0A0A0A", color: "white", border: "none", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
             <Icon icon="ph:plus-bold" style={{ fontSize: "15px" }} /> Create New Link
@@ -75,7 +77,7 @@ export default function LinksPage() {
         </div>
 
         {/* Active card */}
-        <div style={{ background: "white", border: "1px solid #E5E5E5", borderRadius: "20px", padding: "20px" }}>
+        <div className="dark:bg-[#1A1A1A] dark:border-[#2A2A2A]" style={{ background: "white", border: "1px solid #E5E5E5", borderRadius: "20px", padding: "20px" }}>
           {/* Card header */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -83,11 +85,11 @@ export default function LinksPage() {
                 <Icon icon="ph:currency-dollar-bold" style={{ fontSize: "18px", color: "#22c55e" }} />
               </div>
               <div>
-                <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A", margin: "0 0 1px" }}>Simple Payment</p>
-                <p style={{ fontSize: "11px", color: "#A3A3A3", margin: 0 }}>Your active tip link</p>
+                <p className="text-[#0A0A0A] dark:text-[#FAFAFA] font-bold text-[14px]" style={{ margin: "0 0 1px" }}>Simple Payment</p>
+                <p className="text-[11px] text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ margin: 0 }}>Your active tip link</p>
               </div>
             </div>
-            <span style={{ fontSize: "11px", fontWeight: 700, padding: "3px 10px", borderRadius: "999px", background: "#F0FDF4", color: "#22c55e" }}>Active</span>
+            <span style={{ fontSize: "11px", fontWeight: 700, padding: "3px 10px", borderRadius: "999px", background: "#F0FDF4", color: "#16a34a", WebkitTextFillColor: "#16a34a" }}>Active</span>
           </div>
 
           {/* Profile preview */}
@@ -109,11 +111,11 @@ export default function LinksPage() {
               { icon: "ph:share-network-bold", label: "Share", color: "#0A0A0A", bg: "#F9FAFB", onClick: () => setShowShare(true) },
               { icon: "ph:qr-code-bold", label: "QR", color: "#0A0A0A", bg: "#F9FAFB", onClick: () => setShowQR(true) },
             ].map((btn) => (
-              <button key={btn.label} onClick={btn.onClick} className="btn-hover" style={{ padding: "9px 4px", borderRadius: "10px", border: "1px solid #E5E5E5", background: btn.bg, fontSize: "12px", fontWeight: 600, color: btn.color, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px", transition: "all 0.15s" }}>
+              <button key={btn.label} onClick={btn.onClick} className="btn-hover" className="dark:border-[#2A2A2A] dark:!bg-[#1A1A1A] dark:[&>*]:text-[#D4D4D4]" style={{ padding: "9px 4px", borderRadius: "10px", border: "1px solid #E5E5E5", background: btn.bg, fontSize: "12px", fontWeight: 600, color: btn.color, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px", transition: "all 0.15s" }}>
                 <Icon icon={btn.icon} style={{ fontSize: "15px" }} /> {btn.label}
               </button>
             ))}
-            <a href={tipLink || "#"} target="_blank" rel="noreferrer" className="btn-hover" style={{ padding: "9px 4px", borderRadius: "10px", border: "1px solid #E5E5E5", background: "#F9FAFB", fontSize: "12px", fontWeight: 600, color: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px", textDecoration: "none" }}>
+            <a href={tipLink || "#"} target="_blank" rel="noreferrer" className="btn-hover" className="dark:border-[#2A2A2A] dark:!bg-[#1A1A1A] dark:!text-[#D4D4D4]" style={{ padding: "9px 4px", borderRadius: "10px", border: "1px solid #E5E5E5", background: "#F9FAFB", fontSize: "12px", fontWeight: 600, color: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px", textDecoration: "none" }}>
               <Icon icon="ph:arrow-square-out-bold" style={{ fontSize: "15px" }} /> View
             </a>
           </div>

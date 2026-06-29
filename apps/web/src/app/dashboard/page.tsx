@@ -638,11 +638,11 @@ export default function DashboardPage() {
                 const dollarChange = Math.abs(totalUsd * change24h / 100);
                 return address && totalUsd > 0 ? (
                   <>
-                    <span style={{ display: "flex", alignItems: "center", fontSize: "13px", fontWeight: 700, color: isUp ? "#16a34a" : "#dc2626" }}>
-                      <Icon icon={isUp ? "ph:trend-up-bold" : "ph:trend-down-bold"} style={{ marginRight: "4px" }} />
+                    <span style={{ display: "flex", alignItems: "center", fontSize: "13px", fontWeight: 700, color: isUp ? "#16a34a" : "#dc2626", WebkitTextFillColor: isUp ? "#16a34a" : "#dc2626" }}>
+                      <Icon icon={isUp ? "ph:trend-up-bold" : "ph:trend-down-bold"} style={{ marginRight: "4px", color: isUp ? "#16a34a" : "#dc2626" }} />
                       {(isUp ? "+" : "") + change24h.toFixed(2)}%
                     </span>
-                    <span style={{ fontSize: "13px", fontWeight: 500, color: isUp ? "rgba(22,163,74,0.8)" : "rgba(220,38,38,0.8)" }}>
+                    <span style={{ fontSize: "13px", fontWeight: 500, color: isUp ? "rgba(22,163,74,0.8)" : "rgba(220,38,38,0.8)", WebkitTextFillColor: isUp ? "rgba(22,163,74,0.8)" : "rgba(220,38,38,0.8)" }}>
                       ({isUp ? "+" : "-"}${dollarChange.toFixed(2)})
                     </span>
                   </>
@@ -681,8 +681,8 @@ export default function DashboardPage() {
                 <div style={{ textAlign: "right" }}>
                   <div className="text-sm font-bold text-[#0A0A0A] dark:text-[#F0F0F0]">{balance > 0 ? balance.toFixed(2) : "0"}</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "6px", justifyContent: "flex-end" }}>
-                    <span style={{ display: "flex", alignItems: "center", fontSize: "10px", fontWeight: 700, color: change >= 0 ? "#16a34a" : "#dc2626" }}>
-                      <Icon icon={change >= 0 ? "ph:trend-up-bold" : "ph:trend-down-bold"} style={{ marginRight: "2px" }} />
+                    <span style={{ display: "flex", alignItems: "center", fontSize: "10px", fontWeight: 700, color: change >= 0 ? "#16a34a" : "#dc2626", WebkitTextFillColor: change >= 0 ? "#16a34a" : "#dc2626" }}>
+                      <Icon icon={change >= 0 ? "ph:trend-up-bold" : "ph:trend-down-bold"} style={{ marginRight: "2px", color: change >= 0 ? "#16a34a" : "#dc2626" }} />
                       {(change >= 0 ? "+" : "") + change.toFixed(2)}%
                     </span>
                     <span className="text-[11px] text-[#737373] dark:text-[#8A8A8A]">${usdValue.toFixed(2)}</span>
@@ -745,7 +745,7 @@ export default function DashboardPage() {
                 </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-                <span style={{ fontSize: "11px", fontWeight: 700, padding: "4px 10px", borderRadius: "999px", background: isTestnet ? "#F0FDF4" : "#FEF2F2", color: isTestnet ? "#22c55e" : "#ef4444" }}>
+                <span style={{ fontSize: "11px", fontWeight: 700, padding: "4px 10px", borderRadius: "999px", background: isTestnet ? "#F0FDF4" : "#FEF2F2", color: isTestnet ? "#16a34a" : "#ef4444", WebkitTextFillColor: isTestnet ? "#16a34a" : "#ef4444", fontWeight: 700 }}>
                   {network === "TESTNET" ? "Testnet" : network === "FUTURENET" ? "Futurenet" : network}
                 </span>
                 <button
@@ -1082,7 +1082,7 @@ export default function DashboardPage() {
               <p style={{ fontSize: "12px", color: "#A3A3A3", margin: 0 }}>Your active tip link</p>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ fontSize: "11px", fontWeight: 700, padding: "3px 10px", borderRadius: "999px", background: "#F0FDF4", color: "#22c55e" }}>Active</span>
+              <span style={{ fontSize: "11px", fontWeight: 700, padding: "3px 10px", borderRadius: "999px", background: "#F0FDF4", color: "#16a34a", WebkitTextFillColor: "#16a34a" }}>Active</span>
               <Link href="/dashboard/profile" style={{ padding: "6px 12px", border: "1px solid #E5E5E5", borderRadius: "8px", fontSize: "12px", fontWeight: 600, color: "#404040", background: "white", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", textDecoration: "none" }}>
                 <Icon icon="ph:pencil-simple-bold" style={{ fontSize: "13px" }} /> Edit Profile
               </Link>

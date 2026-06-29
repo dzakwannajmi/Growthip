@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import ThemeToggle from "@/components/ThemeToggle";
 import { usePathname } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { useRegistryClient } from "@/lib/registryClient";
@@ -56,7 +55,7 @@ function NavLink({ item, collapsed, hovered, setHovered }: {
           "flex items-center gap-3 rounded-xl transition-all duration-200 text-sm relative overflow-hidden",
           collapsed ? "" : "px-4 py-3 w-full",
           active
-            ? "bg-[#EBEBEB] text-[#1A1A1A] font-bold dark:bg-[#252525] dark:text-[#F0F0F0]"
+            ? "bg-[#EBEBEB] text-[#1A1A1A] font-bold dark:bg-[#252525] dark:text-[#FAFAFA]"
             : "text-[#525252] hover:bg-[#F0F0F0] hover:text-[#0A0A0A] font-medium dark:text-[#8A8A8A] dark:hover:bg-[#1E1E1E] dark:hover:text-[#D4D4D4]",
         ].join(" ")}
       >
@@ -238,7 +237,6 @@ export default function DashboardSidebar() {
         <div className="px-3 mt-3 space-y-1">
           {/* Theme Toggle */}
           <div style={{ display: "flex", justifyContent: collapsed ? "center" : "flex-start", padding: collapsed ? "0" : "0 8px", marginBottom: "4px" }}>
-            <ThemeToggle />
           </div>
           {/* Settings */}
           <div
