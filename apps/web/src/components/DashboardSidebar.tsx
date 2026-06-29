@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: "/dashboard",           icon: "ph:house-line-bold",       label: "Dashboard" },
   { href: "/dashboard/activity",  icon: "ph:activity-bold",         label: "Activities" },
   { href: "/dashboard/analytics", icon: "ph:chart-bar-bold",        label: "Analytics", premium: true },
+  { href: "/dashboard/links",     icon: "ph:link-bold",            label: "Links" },
 
 ];
 
