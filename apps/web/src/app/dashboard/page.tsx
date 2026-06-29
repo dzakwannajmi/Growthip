@@ -1248,7 +1248,7 @@ export default function DashboardPage() {
             }}
             connecting={walletBusy}
           />
-      </div>;
+      </div>
     </div>
   )
 };
