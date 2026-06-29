@@ -22,8 +22,8 @@ function SpeechBubble({ label, show, premium }: { label: string; show: boolean; 
   if (!show) return null;
   return (
     <div className="absolute top-1/2 -translate-y-1/2 left-[calc(100%+16px)] hidden md:flex items-center pointer-events-none z-[100]">
-      <div className="w-0 h-0 border-y-[6px] border-y-transparent border-r-[8px] border-r-[#E5E5E5]" />
-      <div className="bg-[#E5E5E5] text-[#0A0A0A] text-[13px] font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-md flex items-center gap-1.5">
+      <div className="w-0 h-0 border-y-[6px] border-y-transparent border-r-[8px] border-r-[#E5E5E5] dark:border-r-[#2A2A2A]" />
+      <div className="bg-[#E5E5E5] dark:bg-[#2A2A2A] text-[#0A0A0A] dark:text-[#F0F0F0] text-[13px] font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-md flex items-center gap-1.5">
         {label}
         {premium && <Icon icon="ph:crown-simple-fill" />}
       </div>
@@ -66,7 +66,7 @@ function NavLink({ item, collapsed, hovered, setHovered }: {
         )}
         <Icon
           icon={item.icon}
-          className={["text-xl flex-shrink-0", active ? "text-white" : ""].join(" ")}
+          className={["text-xl flex-shrink-0", active ? "text-[#1A1A1A] dark:text-[#F0F0F0]" : ""].join(" ")}
         />
         {!collapsed && (
           <div className="flex items-center justify-between w-full">
@@ -154,7 +154,7 @@ export default function DashboardSidebar() {
           </button>
           {collapsed && (
             <div className="absolute top-1/2 -translate-y-1/2 left-[calc(100%+16px)] flex items-center pointer-events-none z-[100]" style={{ display: logoHover ? "flex" : "none" }}>
-              <div className="w-0 h-0 border-y-[6px] border-y-transparent border-r-[8px] border-r-[#E5E5E5]" />
+              <div className="w-0 h-0 border-y-[6px] border-y-transparent border-r-[8px] border-r-[#E5E5E5] dark:border-r-[#2A2A2A]" />
               <div className="bg-[#E5E5E5] text-[#0A0A0A] text-[13px] font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap shadow-md">
                 Open sidebar
               </div>

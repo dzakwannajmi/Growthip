@@ -620,7 +620,7 @@ export default function DashboardPage() {
         {/* Stealth Balances */}
         <Card>
           <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
-            <span style={{ fontSize: "14px", fontWeight: 700, color: "#171717" }}>Your Wallet Balance</span>
+            <span className="text-sm font-bold text-[#171717] dark:text-[#E5E5E5]">Your Wallet Balance</span>
             <InfoTooltip text="Prices via CoinGecko free API (may be rate-limited). If balance seems incorrect, check your wallet directly." />
           </div>
           <div style={{ marginBottom: "24px" }}>
@@ -672,14 +672,14 @@ export default function DashboardPage() {
                     <Icon icon={icon} style={{ fontSize: "20px" }} />
                   </div>
                   <div>
-                    <div style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>{name}</div>
+                    <div className="text-sm font-bold text-[#0A0A0A] dark:text-[#F0F0F0]">{name}</div>
                     <div style={{ fontSize: "11px", color: "#737373" }}>
                       {sub}{price > 0 && <span style={{ marginLeft: "6px", color: "#A3A3A3" }}>${price.toFixed(4)}</span>}
                     </div>
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>{balance > 0 ? balance.toFixed(2) : "0"}</div>
+                  <div className="text-sm font-bold text-[#0A0A0A] dark:text-[#F0F0F0]">{balance > 0 ? balance.toFixed(2) : "0"}</div>
                   <div style={{ display: "flex", alignItems: "center", gap: "6px", justifyContent: "flex-end" }}>
                     <span style={{ display: "flex", alignItems: "center", fontSize: "10px", fontWeight: 700, color: change >= 0 ? "#22c55e" : "#ef4444" }}>
                       <Icon icon={change >= 0 ? "ph:trend-up-bold" : "ph:trend-down-bold"} style={{ marginRight: "2px" }} />
@@ -704,7 +704,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>-</div>
+                <div className="text-sm font-bold text-[#0A0A0A] dark:text-[#F0F0F0]">-</div>
                 <div style={{ fontSize: "11px", color: "#737373" }}>€0.00</div>
               </div>
             </div>
@@ -772,7 +772,7 @@ export default function DashboardPage() {
 
             {/* Withdraw header */}
             <div style={{ padding: "14px 20px", borderBottom: "1px solid #E5E5E5" }}>
-              <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>Withdraw</p>
+              <p className="text-sm font-bold text-[#0A0A0A] dark:text-[#F0F0F0]">Withdraw</p>
             </div>
 
             {/* Send Tip tab - removed from creator dashboard */}
