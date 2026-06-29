@@ -92,7 +92,7 @@ export default function SettingsPage() {
           <div className="rounded-2xl p-6 text-center" style={{ border: "1px solid #E5E5E5", background: "white" }}>
             <p style={{ fontSize: "13px", color: "#737373" }}>Connect your wallet to see your profile.</p>
           </div>
-        ) : (
+        ) : (<>
             <div>
               <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "#737373" }}>Preferences</p>
               <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid #E5E5E5", background: "white" }}>
@@ -172,7 +172,7 @@ export default function SettingsPage() {
                 ))}
               </div>
             </div>
-          </>
+        </>
         )}
       </div>
     </div>
