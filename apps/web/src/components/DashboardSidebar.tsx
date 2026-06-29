@@ -53,18 +53,40 @@ function NavLink({ item, collapsed, hovered, setHovered }: {
           : {}
         }
         className={[
-          "flex items-center gap-3 rounded-xl transition-colors text-sm",
+          "flex items-center gap-3 rounded-xl transition-all duration-200 text-sm relative",
           collapsed ? "" : "px-4 py-3 w-full",
           active
-            ? "bg-[#E5E5E5] text-[#0A0A0A] font-bold"
-            : "text-[#525252] hover:bg-[#F5F5F5] font-medium",
+            ? "bg-[#0A0A0A] text-white font-bold shadow-sm"
+            : "text-[#525252] hover:bg-[#F0F0F0] hover:text-[#0A0A0A] font-medium",
         ].join(" ")}
       >
-        <Icon icon={item.icon} className="text-xl flex-shrink-0" />
+        {/* Active indicator line */}
+        {active && !collapsed && (
+          <span style={{
+            position: "absolute",
+            left: "-8px",
+            top: "50%",
+            transform: "translateY(-50%)",
+            width: "4px",
+            height: "70%",
+            borderRadius: "0 4px 4px 0",
+            background: "white",
+            boxShadow: "0 0 8px rgba(255,255,255,0.6)",
+          }} />
+        )}
+        <Icon
+          icon={item.icon}
+          className={["text-xl flex-shrink-0", active ? "text-white" : ""].join(" ")}
+        />
         {!collapsed && (
           <div className="flex items-center justify-between w-full">
             <span className="whitespace-nowrap">{item.label}</span>
-            {item.premium && <Icon icon="ph:crown-simple-fill" className="text-[#0A0A0A] text-sm" />}
+            {item.premium && (
+              <Icon
+                icon="ph:crown-simple-fill"
+                className={["text-sm", active ? "text-white" : "text-[#0A0A0A]"].join(" ")}
+              />
+            )}
           </div>
         )}
       </Link>
