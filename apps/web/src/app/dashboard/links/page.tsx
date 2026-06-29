@@ -52,7 +52,6 @@ export default function LinksPage() {
     if (addr) {
       const p = getProfile(addr);
       setDisplayName(p.displayName || "Creator");
-      setAvatarVariant(p.avatarVariant || "A");
       try {
         const link = `https://growthip.vercel.app/tip/${encodeTipId(addr)}`;
         setTipLink(link);
@@ -68,7 +67,7 @@ export default function LinksPage() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  const avatarUrl = address ? avatarUrlFor(address, avatarVariant) : "";
+  const avatarUrl = address ? avatarUrlFor(address) : "";
   const username = displayName || address.slice(0, 6) + "..." + address.slice(-4);
 
   return (
@@ -86,7 +85,7 @@ export default function LinksPage() {
             <h1 style={{ fontSize: "26px", fontWeight: 800, color: "#0A0A0A", margin: "0 0 2px" }}>Your Links</h1>
             <p style={{ fontSize: "13px", color: "#737373", margin: 0 }}>Manage your payment links</p>
           </div>
-          <button onClick={() => setShowTemplates(true)} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "10px 18px", borderRadius: "12px", background: "#F59E0B", color: "white", border: "none", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
+          <button onClick={() => setShowTemplates(true)} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "10px 18px", borderRadius: "12px", background: "#0A0A0A", color: "white", border: "none", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
             <Icon icon="ph:plus-bold" style={{ fontSize: "15px" }} /> Create New Link
           </button>
         </div>
@@ -139,18 +138,49 @@ export default function LinksPage() {
 
       {/* QR Modal */}
       <Modal show={showQR} onClose={() => setShowQR(false)}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
-          <p style={{ fontSize: "16px", fontWeight: 800, color: "#0A0A0A", margin: 0 }}>QR Code</p>
-          <button onClick={() => setShowQR(false)} style={{ width: "30px", height: "30px", borderRadius: "8px", border: "1px solid #E5E5E5", background: "#F5F5F5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Icon icon="ph:x-bold" style={{ fontSize: "14px", color: "#737373" }} />
-          </button>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
-          <div style={{ padding: "20px", background: "white", borderRadius: "16px", border: "1px solid #E5E5E5" }}>
-            {tipLink && <QRCodeSVG value={tipLink} size={200} />}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+          <div style={{ flex: 1 }} />
+          <p style={{ fontSize: "17px", fontWeight: 800, color: "#0A0A0A", margin: 0, textAlign: "center", flex: 2 }}>Personal</p>
+          <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
+            <button onClick={() => setShowQR(false)} style={{ width: "32px", height: "32px", borderRadius: "50%", border: "1px solid #E5E5E5", background: "#F5F5F5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Icon icon="ph:x-bold" style={{ fontSize: "14px", color: "#737373" }} />
+            </button>
           </div>
-          <p style={{ fontSize: "12px", color: "#A3A3A3", margin: 0, textAlign: "center" }}>Scan to open your tip link</p>
-          <p style={{ fontSize: "11px", color: "#A3A3A3", margin: 0, fontFamily: "monospace", wordBreak: "break-all", textAlign: "center" }}>{tipLink}</p>
+        </div>
+        <p style={{ fontSize: "13px", color: "#A3A3A3", margin: "0 0 20px", textAlign: "center" }}>Scan to open payment link</p>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
+          {/* QR with green border */}
+          <div style={{ padding: "14px", background: "#22c55e", borderRadius: "20px", display: "inline-flex" }}>
+            <div style={{ padding: "12px", background: "white", borderRadius: "12px" }}>
+              {tipLink && <QRCodeSVG value={tipLink} size={200} />}
+            </div>
+          </div>
+          {/* URL box */}
+          <div style={{ width: "100%", padding: "12px 14px", background: "#F9FAFB", borderRadius: "12px", border: "1px solid #E5E5E5" }}>
+            <p style={{ fontSize: "12px", color: "#525252", margin: 0, textAlign: "center", fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tipLink}</p>
+          </div>
+          {/* Download button */}
+          <button
+            onClick={() => {
+              if (!tipLink) return;
+              const canvas = document.querySelector("canvas");
+              if (canvas) {
+                const url = canvas.toDataURL("image/png");
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "growthip-qr.png";
+                a.click();
+              }
+            }}
+            style={{ width: "100%", padding: "12px", borderRadius: "12px", background: "#0A0A0A", color: "white", border: "none", fontSize: "14px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+          >
+            <Icon icon="ph:download-simple-bold" style={{ fontSize: "16px" }} /> Download QR Code
+          </button>
+          {/* Growthip branding */}
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <img src="/growthip-logo.png" alt="Growthip" style={{ width: "24px", height: "24px", objectFit: "contain" }} />
+            <span style={{ fontSize: "13px", fontWeight: 700, color: "#0A0A0A" }}>Growthip</span>
+          </div>
         </div>
       </Modal>
 

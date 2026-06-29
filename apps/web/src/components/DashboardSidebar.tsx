@@ -252,10 +252,11 @@ export default function DashboardSidebar() {
             onMouseEnter={() => setHovered("profile")}
             onMouseLeave={() => setHovered(null)}
           >
-            <button
+            <Link
+              href="/dashboard/profile"
               style={collapsed
-                ? { width: 48, height: 48, justifyContent: "center", padding: 0, margin: "0 auto", display: "flex", alignItems: "center", borderRadius: 12 }
-                : {}
+                ? { width: 48, height: 48, justifyContent: "center", padding: 0, margin: "0 auto", display: "flex", alignItems: "center", borderRadius: 12, textDecoration: "none" }
+                : { textDecoration: "none" }
               }
               className={[
                 "flex items-center gap-3 rounded-xl hover:bg-[#F5F5F5] transition-colors",
@@ -284,7 +285,7 @@ export default function DashboardSidebar() {
                   </span>
                 </div>
               )}
-            </button>
+            </Link>
             {collapsed && <SpeechBubble label="Profile" show={hovered === "profile"} />}
           </div>
         </div>
