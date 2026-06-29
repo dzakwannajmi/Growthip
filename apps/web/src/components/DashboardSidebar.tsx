@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import ThemeToggle from "@/components/ThemeToggle";
 import { usePathname } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { useRegistryClient } from "@/lib/registryClient";
@@ -223,6 +224,10 @@ export default function DashboardSidebar() {
 
         {/* Settings + Profile - bottom of sidebar */}
         <div className="px-3 mt-3 space-y-1">
+          {/* Theme Toggle */}
+          <div style={{ display: "flex", justifyContent: collapsed ? "center" : "flex-start", padding: collapsed ? "0" : "0 8px", marginBottom: "4px" }}>
+            <ThemeToggle />
+          </div>
           {/* Settings */}
           <div
             className="relative group"
