@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import ThemeToggle from "@/components/ThemeToggle";
+import ThemeApplier from "@/components/ThemeApplier";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
@@ -15,6 +16,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </main>
         {/* Hidden ThemeToggle ensures applyDark() runs on all dashboard pages */}
         <div style={{ display: "none" }}><ThemeToggle /></div>
+        <ThemeApplier />
       </div>
     </div>
   );

@@ -218,7 +218,18 @@ export default function ThemeToggle() {
         startObserver();
       }, 100);
     }
-    return () => stopObserver();
+
+    // Re-apply dark on client-side navigation
+    const handleReapply = () => {
+      if (isDark) {
+        applyDark();
+      }
+    };
+    window.addEventListener("growthip:reapply-dark", handleReapply);
+    return () => {
+      stopObserver();
+      window.removeEventListener("growthip:reapply-dark", handleReapply);
+    };
   }, []);
 
   function toggle() {
