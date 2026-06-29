@@ -126,6 +126,23 @@ function applyDark() {
     /* Settings preferences text */
     html.dark .hover\:bg-\[\#FAFAFA\] * { color: #D4D4D4 !important; }
     html.dark .hover\:bg-\[\#FAFAFA\] .font-bold { color: #F0F0F0 !important; }
+
+    /* Global: kill ALL white hover effects in dark mode */
+    html.dark *:hover { background-color: inherit; }
+    html.dark button:hover:not([style*="background: #0A0A0A"]):not([style*="background: #22c55e"]):not([style*="background: #ef4444"]):not([style*="background: #F59E0B"]) {
+      filter: brightness(1.3) !important;
+    }
+    html.dark a:hover { filter: brightness(1.2) !important; }
+
+    /* Specific white hover overrides */
+    html.dark .hover\:bg-\[\#F5F5F5\]:hover { background: #252525 !important; filter: none !important; }
+    html.dark .hover\:bg-\[\#FAFAFA\]:hover { background: #252525 !important; filter: none !important; }
+    html.dark [class*="hover:bg-light"]:hover { background: #252525 !important; filter: none !important; }
+
+    /* Wallet modal + swap wallet buttons hover */
+    html.dark [style*="background: #F9FAFB"]:hover,
+    html.dark [style*="background: #F5F5F5"]:hover,
+    html.dark [style*="background: #FAFAFA"]:hover { background: #252525 !important; }
   `;
 }
 
