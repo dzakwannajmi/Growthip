@@ -32,7 +32,7 @@ type Stage =
   | "done" | "error";
 
 const PROGRESS_LABELS: Record<ProofProgress, string> = {
-  "loading-wasm":      "Loading ZK circuit...",
+  "loading-wasm":      "Preparing privacy proof...",
   "computing-witness": "Computing witness...",
   "generating-proof":  "Generating zero-knowledge proof...",
   "serializing":       "Serializing proof...",
@@ -42,9 +42,9 @@ const PROGRESS_LABELS: Record<ProofProgress, string> = {
 const STAGE_LABELS: Partial<Record<Stage, string>> = {
   "connecting":    "Connecting...",
   "loading-pool":  "Loading pool commitments...",
-  "building-tree": "Building Merkle tree...",
+  "building-tree": "Verifying your tip note...",
   "proving":       "Generating ZK proof...",
-  "submitting":    "Submitting proof on-chain...",
+  "submitting":    "Sending claim to blockchain...",
 };
 
 function commitmentToDecimal(raw: Buffer | Uint8Array | string): string {
@@ -183,7 +183,7 @@ function ClaimContent() {
       const claimResult = sent.result;
       if (claimResult === false) {
         throw new Error(
-          "Claim rejected by contract. Possible causes: " +
+          "Could not claim this tip. Possible causes: " +
           "commitment not found in current pool, nullifier already used, " +
           "or proof does not match current Merkle root. " +
           "Try depositing again with a fresh note."
@@ -340,7 +340,7 @@ function ClaimContent() {
           </div>
           <p className="text-xs text-soft-gray/70">
             {progress ? PROGRESS_LABELS[progress] : "Processing..."}{" "}
-            <span className="" style={{ color: "#A3A3A3" }}>Do not close this tab.</span>
+            <span className="" style={{ color: "#A3A3A3" }}>Please keep this tab open.</span>
           </p>
         </div>
       )}

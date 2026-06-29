@@ -528,7 +528,7 @@ export default function DashboardPage() {
         commitments.push(commitmentToDecimal(cTx.result as Buffer));
       }
 
-      setClaimStatus("Building Merkle tree...");
+      setClaimStatus("Verifying your tip note...");
       const { pathElements, pathIndices, leafIndex } = await getMerklePath(hexToDecimal(note.commitment), commitments);
       const merklePath: MerklePath = { pathElements, pathIndices };
 
@@ -539,7 +539,7 @@ export default function DashboardPage() {
 
       // Submit
       setClaimStage("submitting");
-      setClaimStatus("Submitting proof...");
+      setClaimStatus("Sending claim to blockchain...");
       const { proof_bytes, public_inputs } = toClaimArgs(generated);
       const claimTx = await client.claim_to({
         recipient: recipient || address,
@@ -548,7 +548,7 @@ export default function DashboardPage() {
       });
       const sent = await claimTx.signAndSend({ force: true });
 
-      if (sent.result === false) throw new Error("Claim rejected by contract.");
+      if (sent.result === false) throw new Error("Could not claim this tip. It may already be claimed, or the note doesn't match the current pool. Try refreshing.");
 
       const hash = sent.sendTransactionResponse?.hash ?? "submitted";
       setClaimTxHash(hash);
@@ -1042,7 +1042,7 @@ export default function DashboardPage() {
                           <div style={{ height: "100%", width: "50%", borderRadius: "999px", background: "#6366f1", animation: "pulse 1.5s infinite" }} />
                         </div>
                         <p style={{ fontSize: "12px", color: "#737373" }}>
-                          {claimProgress ?? "Generating ZK proof..."} — Do not close this tab.
+                          {claimProgress ?? "Generating privacy proof..."} — Please keep this tab open.
                         </p>
                       </div>
                     )}

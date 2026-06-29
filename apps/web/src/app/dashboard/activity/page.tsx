@@ -49,9 +49,9 @@ function commitmentToDecimal(raw: Buffer | Uint8Array | string): string {
 }
 
 const PROGRESS_LABELS: Record<ProofProgress, string> = {
-  "loading-wasm":      "Loading ZK circuit...",
+  "loading-wasm":      "Preparing privacy proof...",
   "computing-witness": "Computing witness...",
-  "generating-proof":  "Generating Groth16 proof...",
+  "generating-proof":  "Generating zero-knowledge proof (5-15s)...",
   "serializing":       "Serializing proof...",
   "done":              "Proof ready",
 };
@@ -242,7 +242,7 @@ export default function ActivityPage() {
         commitments.push(commitmentToDecimal(cTx.result as Buffer));
       }
 
-      setClaimStatus("Building Merkle path...");
+      setClaimStatus("Verifying your tip note...");
       const { pathElements, pathIndices, leafIndex } = await getMerklePath(hexToDecimal(note.commitment), commitments);
       const merklePath: MerklePath = { pathElements, pathIndices };
 
@@ -251,12 +251,12 @@ export default function ActivityPage() {
       const generated = await generateProof(note, merklePath, (p) => setClaimProgress(p));
 
       setClaimStage("submitting");
-      setClaimStatus("Submitting proof...");
+      setClaimStatus("Sending claim to blockchain...");
       const { proof_bytes, public_inputs } = toClaimArgs(generated);
       const claimTx = await client.claim_to({ recipient: recipient || address, proof_bytes, public_inputs });
       const sent    = await claimTx.signAndSend({ force: true });
 
-      if (sent.result === false) throw new Error("Claim rejected by contract.");
+      if (sent.result === false) throw new Error("Could not claim this tip. It may already be claimed, or the note doesn't match the current pool. Try refreshing.");
 
       const hash = sent.sendTransactionResponse?.hash ?? "submitted";
       setClaimTxHash(hash);
@@ -582,7 +582,7 @@ export default function ActivityPage() {
                         <div style={{ height: "100%", width: "60%", borderRadius: "999px", background: "#6366f1", animation: "pulse 1.5s infinite" }} />
                       </div>
                       <p style={{ fontSize: "12px", color: "#6366f1", fontWeight: 600 }}>
-                        {claimProgress ? PROGRESS_LABELS[claimProgress] : "Generating ZK proof..."} — Do not close this tab.
+                        {claimProgress ? PROGRESS_LABELS[claimProgress] : "Generating privacy proof..."} — Please keep this tab open.
                       </p>
                     </div>
                   )}
@@ -632,7 +632,7 @@ export default function ActivityPage() {
                     {claimStage === "idle" || claimStage === "error" ? (
                       <><Icon icon="ph:lock-key-open-bold" style={{ fontSize: "18px" }} /> Generate Proof & Claim</>
                     ) : (
-                      <><Icon icon="ph:spinner-bold" style={{ fontSize: "18px", animation: "spin 1s linear infinite" }} /> {claimStatus || "Processing..."}</>
+                      <><Icon icon="svg-spinners:ring-resize" style={{ fontSize: "18px" }} /> {claimStatus || "Processing..."}</>
                     )}
                   </button>
                 </>
