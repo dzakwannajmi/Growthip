@@ -482,7 +482,7 @@ export default function ActivityPage() {
 
                 {note.claimed ? (
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-                    <span style={{ fontSize: "12px", fontWeight: 700, padding: "6px 12px", borderRadius: "999px", background: "#F0FDF4", color: "#22c55e" }}>✓ Withdrawn</span>
+                    <span style={{ fontSize: "12px", fontWeight: 700, padding: "6px 12px", borderRadius: "999px", background: "#F0FDF4", color: "#16a34a", WebkitTextFillColor: "#16a34a" }}>✓ Withdrawn</span>
                     {note.txHash && (
                       <a href={"https://stellar.expert/explorer/testnet/tx/" + note.txHash} target="_blank" rel="noreferrer noopener" style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "12px", fontWeight: 600, color: "#6366f1", textDecoration: "none" }}>
                         <Icon icon="ph:arrow-square-out-bold" style={{ fontSize: "14px" }} />

@@ -15,7 +15,7 @@ export default function ThemeApplier() {
     const timer = setTimeout(() => {
       const event = new CustomEvent("growthip:reapply-dark");
       window.dispatchEvent(event);
-    }, 50);
+    }, 150);
 
     return () => clearTimeout(timer);
   }, [pathname]);
