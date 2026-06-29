@@ -53,26 +53,16 @@ function NavLink({ item, collapsed, hovered, setHovered }: {
           : {}
         }
         className={[
-          "flex items-center gap-3 rounded-xl transition-all duration-200 text-sm relative",
+          "flex items-center gap-3 rounded-xl transition-all duration-200 text-sm relative overflow-hidden",
           collapsed ? "" : "px-4 py-3 w-full",
           active
-            ? "bg-[#0A0A0A] text-white font-bold shadow-sm"
+            ? "bg-[#1A1A1A] text-white font-bold"
             : "text-[#525252] hover:bg-[#F0F0F0] hover:text-[#0A0A0A] font-medium",
         ].join(" ")}
       >
-        {/* Active indicator line */}
-        {active && !collapsed && (
-          <span style={{
-            position: "absolute",
-            left: "-8px",
-            top: "50%",
-            transform: "translateY(-50%)",
-            width: "4px",
-            height: "70%",
-            borderRadius: "0 4px 4px 0",
-            background: "white",
-            boxShadow: "0 0 8px rgba(255,255,255,0.6)",
-          }} />
+        {/* Orange left indicator — clips perfectly via overflow-hidden on parent */}
+        {active && (
+          <span className="absolute left-0 top-0 bottom-0 w-[6px] h-full bg-[#F59E0B]" />
         )}
         <Icon
           icon={item.icon}
@@ -84,7 +74,7 @@ function NavLink({ item, collapsed, hovered, setHovered }: {
             {item.premium && (
               <Icon
                 icon="ph:crown-simple-fill"
-                className={["text-sm", active ? "text-white" : "text-[#0A0A0A]"].join(" ")}
+                className={["text-sm", active ? "text-yellow-400" : "text-[#0A0A0A]"].join(" ")}
               />
             )}
           </div>
