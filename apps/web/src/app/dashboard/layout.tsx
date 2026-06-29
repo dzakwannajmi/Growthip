@@ -13,6 +13,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         >
           {children}
         </main>
+        {/* Hidden ThemeToggle ensures applyDark() runs on all dashboard pages */}
+        <div style={{ display: "none" }}><ThemeToggle /></div>
       </div>
     </div>
   );
