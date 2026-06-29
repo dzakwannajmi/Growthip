@@ -32,6 +32,7 @@ import WalletModal from "@/components/WalletModal";
 import { getAvailableTokens, type Token, type TokenSymbol } from "@/lib/tokens";
 import { saveNote, getPendingNotes, getClaimedNotes, markNoteAsClaimed, migrateLegacyNotes, formatRelativeTime, type PrivateNote } from "@/lib/note";
 import { encodeTipId } from "@/lib/addressId";
+import Link from "next/link";
 import { getProfile, avatarUrlFor } from "@/lib/profile";
 import TokenSelector from "@/components/TokenSelector";
 import AmountSelector from "@/components/AmountSelector";
@@ -261,6 +262,8 @@ export default function DashboardPage() {
   const [copiedNote, setCopiedNote] = useState(false);
   const [showSendQR, setShowSendQR] = useState(false);
   const [showLinkQR, setShowLinkQR] = useState(false);
+  const [showDashShare, setShowDashShare] = useState(false);
+  const [dashShareMsg, setDashShareMsg] = useState("Support me privately on Growthip — zero-knowledge tips, nobody knows who paid 🌱");
   const [poolDeposits, setPoolDeposits] = useState<number | null>(null);
   const MAX_POOL_LEAVES = 8;
   const [linkCopied, setLinkCopied] = useState(false);
@@ -1070,76 +1073,154 @@ export default function DashboardPage() {
         )}
 
         {/* Personal Link */}
-        <Card>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
+        <Card style={{ padding: 0, overflow: "hidden" }}>
+          {/* Header */}
+          <div style={{ padding: "16px 20px", borderBottom: "1px solid #E5E5E5", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
-              <h2 style={{ fontSize: "14px", fontWeight: 700, color: "#171717", marginBottom: "2px" }}>Your Personal Link</h2>
-              <p style={{ fontSize: "13px", color: "#525252" }}>Share to get paid</p>
+              <h2 style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A", margin: "0 0 2px" }}>Simple Payment</h2>
+              <p style={{ fontSize: "12px", color: "#A3A3A3", margin: 0 }}>Your active tip link</p>
             </div>
-            <button style={{ padding: "6px 12px", border: "1px solid #E5E5E5", borderRadius: "8px", fontSize: "12px", fontWeight: 600, color: "#404040", background: "white", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
-              <Icon icon="ph:pencil-simple-bold" /> Edit Profile
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontSize: "11px", fontWeight: 700, padding: "3px 10px", borderRadius: "999px", background: "#F0FDF4", color: "#22c55e" }}>Active</span>
+              <Link href="/dashboard/profile" style={{ padding: "6px 12px", border: "1px solid #E5E5E5", borderRadius: "8px", fontSize: "12px", fontWeight: 600, color: "#404040", background: "white", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", textDecoration: "none" }}>
+                <Icon icon="ph:pencil-simple-bold" style={{ fontSize: "13px" }} /> Edit Profile
+              </Link>
+            </div>
           </div>
-          {address ? (
-            <>
-              <div style={{ background: "#FAFAFA", borderRadius: "12px", padding: "16px", border: "1px solid #E5E5E5", display: "flex", alignItems: "center", gap: "16px", marginBottom: "16px" }}>
-                <div style={{ width: 48, height: 48, borderRadius: "50%", overflow: "hidden", background: "#E5E5E5", flexShrink: 0 }}>
-                  <img src={avatarUrlFor(address)} alt="avatar" width={48} height={48} style={{ width: 48, height: 48 }} />
-                </div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A", fontFamily: "monospace" }}>{address.slice(0, 6)}...{address.slice(-4)}</div>
-                  <div style={{ fontSize: "13px", color: "#737373", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tipLink?.replace("https://", "")}</div>
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <button onClick={copyLink} style={{ flex: 1, background: "#FAFAFA", border: "1px solid #E5E5E5", borderRadius: "12px", padding: "10px", fontSize: "13px", fontWeight: 600, color: "#171717", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-                  <Icon icon="ph:copy-simple-bold" style={{ fontSize: "18px" }} />
-                  {copied ? "Copied!" : "Copy Link"}
-                </button>
-                <button
-                  onClick={() => { if (navigator.share && tipLink) { navigator.share({ url: tipLink, title: "Send me a private tip" }); } }}
-                  style={{ width: 48, height: 44, background: "#FAFAFA", border: "1px solid #E5E5E5", borderRadius: "12px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#404040" }}
-                >
-                  <Icon icon="ph:share-network-bold" style={{ fontSize: "18px" }} />
-                </button>
-                <a
-                  href={tipLink ? `https://twitter.com/intent/tweet?text=${encodeURIComponent("Support me privately on Growthip - tip me without revealing your identity on-chain.")}&url=${encodeURIComponent(tipLink)}` : "#"}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ width: 48, height: 44, background: "#000000", border: "1px solid #000000", borderRadius: "12px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "white", textDecoration: "none" }}
-                >
-                  <Icon icon="ri:twitter-x-fill" style={{ fontSize: "16px" }}/>
-                </a>
-                <button
-                  onClick={() => setShowLinkQR((prev) => !prev)}
-                  style={{ width: 48, height: 44, background: showLinkQR ? "#0A0A0A" : "#FAFAFA", border: "1px solid #E5E5E5", borderRadius: "12px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: showLinkQR ? "white" : "#404040" }}
-                >
-                  <Icon icon="ph:qr-code-bold" style={{ fontSize: "18px" }} />
-                </button>
-                <a
-                  href={tipLink ?? "#"}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  style={{ width: 48, height: 44, background: "#FAFAFA", border: "1px solid #E5E5E5", borderRadius: "12px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#404040", textDecoration: "none" }}
-                >
-                  <Icon icon="ph:arrow-square-out-bold" style={{ fontSize: "18px" }} />
-                </a>
-              </div>
-              {showLinkQR && tipLink && (
-                <div style={{ marginTop: "16px", display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", padding: "16px", borderRadius: "12px", border: "1px solid #E5E5E5", background: "#FAFAFA" }}>
-                  <div style={{ background: "white", padding: "12px", borderRadius: "10px", border: "1px solid #E5E5E5" }}>
-                    <QRCodeSVG value={tipLink} size={180} level="M" />
+          <div style={{ padding: "16px 20px" }}>
+            {address ? (
+              <>
+                <div style={{ background: "#F9FAFB", borderRadius: "12px", padding: "12px 14px", display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px" }}>
+                  <img src={avatarUrlFor(address)} alt="avatar" width={40} height={40} style={{ width: 40, height: 40, borderRadius: "50%", border: "1px solid #E5E5E5", flexShrink: 0 }} />
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontSize: "13px", fontWeight: 700, color: "#0A0A0A", margin: "0 0 2px" }}>@{getProfile(address).displayName || address.slice(0, 6) + "..." + address.slice(-4)}</p>
+                    <p style={{ fontSize: "11px", color: "#A3A3A3", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tipLink?.replace("https://", "")}</p>
                   </div>
-                  <p style={{ fontSize: "12px", color: "#737373", textAlign: "center" }}>Scan to open your tip page</p>
                 </div>
-              )}
-            </>
-          ) : (
-            <div style={{ padding: "20px", borderRadius: "12px", border: "1px dashed #E5E5E5", background: "#FAFAFA", textAlign: "center" }}>
-              <p style={{ fontSize: "13px", color: "#A3A3A3" }}>Connect your wallet to get your personal tip link</p>
-            </div>
-          )}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px" }}>
+                  <button onClick={copyLink} style={{ padding: "9px 4px", borderRadius: "10px", border: "1px solid #E5E5E5", background: copied ? "#F0FDF4" : "#F9FAFB", fontSize: "12px", fontWeight: 600, color: copied ? "#22c55e" : "#0A0A0A", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px" }}>
+                    <Icon icon={copied ? "ph:check-bold" : "ph:copy-simple-bold"} style={{ fontSize: "14px" }} /> {copied ? "Copied!" : "Copy"}
+                  </button>
+                  <button onClick={() => setShowDashShare(true)} style={{ padding: "9px 4px", borderRadius: "10px", border: "1px solid #E5E5E5", background: "#F9FAFB", fontSize: "12px", fontWeight: 600, color: "#0A0A0A", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px" }}>
+                    <Icon icon="ph:share-network-bold" style={{ fontSize: "14px" }} /> Share
+                  </button>
+                  <button onClick={() => setShowLinkQR(true)} style={{ padding: "9px 4px", borderRadius: "10px", border: "1px solid #E5E5E5", background: "#F9FAFB", fontSize: "12px", fontWeight: 600, color: "#0A0A0A", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px" }}>
+                    <Icon icon="ph:qr-code-bold" style={{ fontSize: "14px" }} /> QR
+                  </button>
+                  <a href={tipLink ?? "#"} target="_blank" rel="noreferrer" style={{ padding: "9px 4px", borderRadius: "10px", border: "1px solid #E5E5E5", background: "#F9FAFB", fontSize: "12px", fontWeight: 600, color: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px", textDecoration: "none" }}>
+                    <Icon icon="ph:arrow-square-out-bold" style={{ fontSize: "14px" }} /> View
+                  </a>
+                </div>
+              </>
+            ) : (
+              <div style={{ padding: "20px", borderRadius: "12px", border: "1px dashed #E5E5E5", background: "#FAFAFA", textAlign: "center" }}>
+                <p style={{ fontSize: "13px", color: "#A3A3A3" }}>Connect your wallet to get your personal tip link</p>
+              </div>
+            )}
+          </div>
         </Card>
+
+        {/* QR Modal for dashboard */}
+        {showLinkQR && tipLink && (
+          <div onClick={() => setShowLinkQR(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", animation: "fadeIn 0.2s ease" }}>
+            <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "20px", width: "100%", maxWidth: "380px", padding: "24px", animation: "modalBounce 0.4s cubic-bezier(0.34,1.56,0.64,1)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+                <div style={{ flex: 1 }} />
+                <p style={{ fontSize: "16px", fontWeight: 800, color: "#0A0A0A", margin: 0, flex: 2, textAlign: "center" }}>Your QR Code</p>
+                <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
+                  <button onClick={() => setShowLinkQR(false)} style={{ width: "30px", height: "30px", borderRadius: "50%", border: "1px solid #E5E5E5", background: "#F5F5F5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Icon icon="ph:x-bold" style={{ fontSize: "13px", color: "#737373" }} />
+                  </button>
+                </div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "14px" }}>
+                <div style={{ padding: "12px", background: "#22c55e", borderRadius: "18px" }}>
+                  <div style={{ padding: "10px", background: "white", borderRadius: "10px" }}>
+                    <QRCodeSVG value={tipLink} size={160} level="M" />
+                  </div>
+                </div>
+                <div style={{ width: "100%", padding: "10px 14px", background: "#F9FAFB", borderRadius: "10px", border: "1px solid #E5E5E5" }}>
+                  <p style={{ fontSize: "11px", color: "#525252", margin: 0, textAlign: "center", fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tipLink}</p>
+                </div>
+                <button
+                  onClick={() => {
+                    const canvas = document.querySelector("canvas");
+                    if (canvas) {
+                      const url = canvas.toDataURL("image/png");
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = "growthip-qr.png";
+                      a.click();
+                    }
+                  }}
+                  style={{ width: "100%", padding: "11px", borderRadius: "12px", background: "#0A0A0A", color: "white", border: "none", fontSize: "13px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+                >
+                  <Icon icon="ph:download-simple-bold" style={{ fontSize: "15px" }} /> Download QR Code
+                </button>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <img src="/growthip-logo.png" alt="Growthip" style={{ width: "20px", height: "20px", objectFit: "contain" }} />
+                  <span style={{ fontSize: "13px", fontWeight: 700, color: "#0A0A0A" }}>Growthip</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Share Modal for dashboard */}
+        {showDashShare && (
+          <div onClick={() => setShowDashShare(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", animation: "fadeIn 0.2s ease" }}>
+            <div onClick={(e) => e.stopPropagation()} style={{ background: "white", borderRadius: "20px", width: "100%", maxWidth: "420px", padding: "24px", animation: "modalBounce 0.4s cubic-bezier(0.34,1.56,0.64,1)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+                <p style={{ fontSize: "16px", fontWeight: 800, color: "#0A0A0A", margin: 0 }}>Share your link</p>
+                <button onClick={() => setShowDashShare(false)} style={{ width: "30px", height: "30px", borderRadius: "50%", border: "1px solid #E5E5E5", background: "#F5F5F5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Icon icon="ph:x-bold" style={{ fontSize: "13px", color: "#737373" }} />
+                </button>
+              </div>
+              {/* Custom message */}
+              <div style={{ marginBottom: "16px" }}>
+                <p style={{ fontSize: "12px", fontWeight: 600, color: "#525252", margin: "0 0 8px" }}>Custom message</p>
+                <textarea
+                  value={dashShareMsg}
+                  onChange={(e) => setDashShareMsg(e.target.value)}
+                  rows={3}
+                  placeholder="Write a message to share with your link..."
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: "10px", border: "1px solid #E5E5E5", fontSize: "13px", resize: "none", outline: "none", fontFamily: "inherit", boxSizing: "border-box", lineHeight: 1.5, color: "#0A0A0A" }}
+                />
+                <p style={{ fontSize: "11px", color: "#A3A3A3", margin: "4px 0 0" }}>{dashShareMsg.length}/280</p>
+              </div>
+              {/* Platforms */}
+              <p style={{ fontSize: "12px", fontWeight: 600, color: "#525252", margin: "0 0 10px" }}>Share to</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "12px" }}>
+                <button
+                  onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(dashShareMsg + "\n" + (tipLink ?? ""))}`, "_blank")}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderRadius: "12px", border: "1px solid #E5E5E5", background: "white", cursor: "pointer" }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <Icon icon="ri:twitter-x-fill" style={{ fontSize: "20px", color: "#000" }} />
+                    <span style={{ fontSize: "13px", fontWeight: 600, color: "#0A0A0A" }}>X (Twitter)</span>
+                  </div>
+                  <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "999px", background: "#F0FDF4", color: "#22c55e" }}>Available</span>
+                </button>
+                {[{ icon: "ri:discord-fill", label: "Discord", color: "#5865F2" }, { icon: "ri:twitch-fill", label: "Twitch", color: "#9146FF" }].map((p) => (
+                  <div key={p.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderRadius: "12px", border: "1px solid #E5E5E5", background: "white", opacity: 0.5 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <Icon icon={p.icon} style={{ fontSize: "20px", color: p.color }} />
+                      <span style={{ fontSize: "13px", fontWeight: 600, color: "#0A0A0A" }}>{p.label}</span>
+                    </div>
+                    <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "999px", background: "#F5F5F5", color: "#A3A3A3" }}>Coming soon</span>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => { navigator.clipboard.writeText(dashShareMsg + "\n" + (tipLink ?? "")); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                style={{ width: "100%", padding: "11px", borderRadius: "12px", border: "1px solid #E5E5E5", background: "#F9FAFB", fontSize: "13px", fontWeight: 600, color: "#0A0A0A", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+              >
+                <Icon icon={copied ? "ph:check-bold" : "ph:copy-simple-bold"} style={{ fontSize: "15px", color: copied ? "#22c55e" : "#0A0A0A" }} />
+                {copied ? "Copied!" : "Copy message + link"}
+              </button>
+            </div>
+          </div>
+        )}
 
 
 
