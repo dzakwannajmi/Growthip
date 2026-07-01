@@ -7,6 +7,7 @@ import { encodeTipId } from "@/lib/addressId";
 import { getProfile, saveProfile, avatarUrlFor, AVATAR_VARIANTS } from "@/lib/profile";
 import { lockSession } from "@/lib/encryption/keyManagement";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useRegistryClient } from "@/lib/registryClient";
 
 export default function ProfilePage() {
   const [address, setAddress] = useState("");
@@ -21,6 +22,8 @@ export default function ProfilePage() {
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [tipLink, setTipLink] = useState("");
   const [tipId, setTipId] = useState("");
+  const [isPremium, setIsPremium] = useState(false);
+  const { isReady: registryReady, buildRegistryClient } = useRegistryClient();
 
   useEffect(() => {
     const addr = localStorage.getItem("growthip:wallet") ?? "";
@@ -36,6 +39,19 @@ export default function ProfilePage() {
       setTipLink(`https://growthip.vercel.app/tip/${id}`);
     } catch {}
   }, []);
+
+  useEffect(() => {
+    if (!address || !registryReady) { setIsPremium(false); return; }
+    (async () => {
+      try {
+        const client = buildRegistryClient(address);
+        const result = await client.is_premium({ recipient: address });
+        setIsPremium(result.result === true);
+      } catch {
+        setIsPremium(false);
+      }
+    })();
+  }, [address, registryReady, buildRegistryClient]);
 
   function handleSaveProfile() {
     setSavedFlash(true);
@@ -127,6 +143,15 @@ export default function ProfilePage() {
                         <button onClick={() => setEditingProfile(true)} style={{ background: "none", border: "none", cursor: "pointer", color: "#A3A3A3", padding: 0 }}>
                           <Icon icon="ph:pencil-simple-bold" style={{ fontSize: "14px" }} />
                         </button>
+                        {isPremium ? (
+                          <span style={{ display: "flex", alignItems: "center", gap: "3px", fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "999px", background: "#FFFBEB", color: "#d97706" }}>
+                            <Icon icon="ph:star-four-fill" style={{ fontSize: "10px" }} /> Premium
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "999px", background: "#F5F5F5", color: "#737373" }}>
+                            Free Plan
+                          </span>
+                        )}
                       </div>
                       {bio && <p style={{ fontSize: "13px", color: "#525252", margin: "0 0 6px" }}>{bio}</p>}
                       {savedFlash && <p style={{ fontSize: "12px", color: "#22c55e", margin: "0 0 4px" }}>Saved ✓</p>}
