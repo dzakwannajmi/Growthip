@@ -55,17 +55,20 @@ function NavLink({ item, collapsed, hovered, setHovered }: {
           "flex items-center gap-3 rounded-xl transition-all duration-200 text-sm relative overflow-hidden",
           collapsed ? "" : "px-4 py-3 w-full",
           active
-            ? "bg-[#EBEBEB] text-[#1A1A1A] font-bold dark:bg-[#252525] dark:text-[#FAFAFA]"
+            ? collapsed
+              ? "text-[#0A0A0A] font-bold dark:text-[#FAFAFA]"
+              : "bg-[#EBEBEB] text-[#1A1A1A] font-bold dark:bg-[#252525] dark:text-[#FAFAFA]"
             : "text-[#525252] hover:bg-[#F0F0F0] hover:text-[#0A0A0A] font-medium dark:text-[#8A8A8A] dark:hover:bg-[#1E1E1E] dark:hover:text-[#D4D4D4]",
         ].join(" ")}
       >
         {/* Crescent blade — overflow-hidden on parent clips left corners perfectly */}
-        {active && (
+        {active && !collapsed && (
           <span className="absolute left-0 top-0 bottom-0 w-[6px] rounded-r-full bg-[#3A3A3A] dark:bg-[#AFAFAF]" />
         )}
         <Icon
           icon={item.icon}
-          className={["text-xl flex-shrink-0", active ? "text-[#1A1A1A] dark:text-[#F0F0F0]" : ""].join(" ")}
+          className={["text-xl flex-shrink-0", active ? "text-[#0A0A0A] dark:text-[#FAFAFA]" : ""].join(" ")}
+          style={active && collapsed ? { filter: "drop-shadow(0 0 0.5px currentColor)" } : undefined}
         />
         {!collapsed && (
           <div className="flex items-center justify-between w-full">
