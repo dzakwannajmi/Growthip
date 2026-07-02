@@ -397,7 +397,7 @@ local-only, never published on-chain), an address copy button, and a
 tip-link card with copy and QR code.
 
 The public tip page (`apps/web/src/app/tip/[id]/page.tsx`) lets a
-supporter, without ever creating an account: connect Freighter, pick a
+supporter, without ever creating an account: connect Freighter or xBull, pick a
 token and preset amount, optionally attach a public on-chain message (max
 50 characters), deposit, and receive/share their resulting encrypted
 private note — including as a QR code the creator can scan directly. If

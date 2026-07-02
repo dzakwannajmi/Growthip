@@ -229,7 +229,7 @@ export default function DashboardPage() {
       try {
         const { getNetwork } = await import("@stellar/freighter-api");
         const net = await getNetwork();
-        // Check networkPassphrase — Freighter keeps net.network as "TESTNET"
+        // Check networkPassphrase — wallet extensions keep net.network as "TESTNET"
         // but changes networkPassphrase when switching networks
         const passphrase = (net.networkPassphrase ?? "").toLowerCase();
         const isMainnetPassphrase = passphrase.includes("public global stellar");

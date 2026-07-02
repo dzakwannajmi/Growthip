@@ -5,7 +5,7 @@
  * Notes are stored in localStorage and must never be shared publicly.
  *
  * STORAGE IS NAMESPACED PER WALLET ADDRESS (growthip:notes:${address}) so
- * that switching the connected Freighter account in the same browser does
+ * that switching the connected wallet account in the same browser does
  * not show one address's private notes while a different address is
  * active. This was a real gap before this change: all addresses sharing
  * one browser saw the exact same note list, because storage was a single

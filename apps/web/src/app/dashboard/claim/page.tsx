@@ -122,7 +122,7 @@ function ClaimContent() {
 
   async function handleClaim() {
     if (!address) { setError("Please connect your wallet first."); return; }
-    if (!isTestnet) { setError("Please switch Freighter to Stellar Testnet."); return; }
+    if (!isTestnet) { setError("Please switch your wallet to Stellar Testnet."); return; }
     setError(null);
     setTxHash(null);
 

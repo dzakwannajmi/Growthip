@@ -7,6 +7,16 @@
  * purely cosmetic local UI state, not published anywhere on-chain, and
  * not visible to anyone else.
  *
+ * KNOWN LIMITATION: because this is localStorage-only, a creator's
+ * displayName/avatar only render on /tip/[id] if the supporter happens
+ * to be browsing from the same browser/device the creator used to set
+ * up their profile. In the general case (supporter on a different
+ * device), the tip page falls back to a generic dashed-avatar +
+ * truncated address -- this is expected behavior, not a bug. Making
+ * profile data visible cross-device would require moving it on-chain
+ * (e.g. into the Creator Registry contract alongside is_premium), which
+ * is tracked as a roadmap item, not implemented yet.
+ *
  * Avatars are rendered via DiceBear's public HTTP API (api.dicebear.com),
  * not a bundled library -- deliberate choice over @dicebear/core +
  * @dicebear/styles after finding the bundled approach would add real

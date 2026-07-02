@@ -341,7 +341,7 @@ export default function PublicTipPage() {
         {!address ? (
           <Card>
             <p style={{ fontSize: "14px", color: "#737373", marginBottom: "16px", textAlign: "center" }}>
-              Connect your Freighter wallet to send a tip.
+              Connect your wallet to send a tip.
             </p>
             <button
               onClick={connectWallet}
@@ -355,11 +355,11 @@ export default function PublicTipPage() {
           </Card>
         ) : (
           <>
-            {/* Connected wallet indicator -- Freighter is a single global
-                browser extension account, not per-tab. This makes it
-                explicit which wallet is currently active, since the page
-                cannot switch it (no such API exists in Freighter) -- the
-                user must do that inside the Freighter popup itself. */}
+            {/* Connected wallet indicator -- browser wallet extensions
+                (Freighter, xBull) are a single global account, not per-tab.
+                This makes it explicit which wallet is currently active,
+                since the page cannot switch it programmatically -- the
+                user must do that inside the wallet extension's own popup. */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: "10px", border: "1px solid #E5E5E5", background: "white" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <Icon icon="ph:wallet-bold" style={{ fontSize: "14px", color: "#737373" }} />
@@ -375,7 +375,7 @@ export default function PublicTipPage() {
               <div style={{ padding: "12px 14px", borderRadius: "10px", border: "1px solid #FDE68A", background: "#FFFBEB", display: "flex", alignItems: "flex-start", gap: "8px" }}>
                 <Icon icon="ph:warning-bold" style={{ fontSize: "16px", color: "#92400E", flexShrink: 0, marginTop: "1px" }} />
                 <p style={{ fontSize: "12px", color: "#92400E", lineHeight: 1.5 }}>
-                  Your connected wallet is the same as this tip link&apos;s recipient. You&apos;re about to send a tip to yourself. If that&apos;s not intended, switch accounts inside the Freighter extension first.
+                  Your connected wallet is the same as this tip link&apos;s recipient. You&apos;re about to send a tip to yourself. If that&apos;s not intended, switch accounts inside your wallet extension first.
                 </p>
               </div>
             )}
