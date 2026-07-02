@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Buffer } from "buffer";
 import Link from "next/link";
 import { Icon } from "@iconify/react";
+import WalletModal from "@/components/WalletModal";
 import {
   isConnected,
   requestAccess,
@@ -80,23 +81,10 @@ export default function DepositPage() {
     setDisplayAmount(0);
   }
 
-  async function connectWallet() {
-    setBusy(true);
-    setStatus("Connecting wallet...");
-    try {
-      const { connectWalletModal } = await import("@/lib/wallet");
-      const addr = await connectWalletModal();
-      setAddress(addr);
-      setNetwork("TESTNET");
-      localStorage.setItem("growthip:wallet", addr);
-      void warmPoseidon();
-      setStatus("Wallet connected.");
-      setStep("select");
-    } catch (err) {
-      setStatus(err instanceof Error ? err.message : "Connection failed.");
-    } finally {
-      setBusy(false);
-    }
+  const [showWalletModal, setShowWalletModal] = useState(false);
+
+  function connectWallet() {
+    setShowWalletModal(true);
   }
 
   const buildClient = useCallback(
@@ -200,7 +188,7 @@ export default function DepositPage() {
                 opacity: busy ? 0.5 : 1, transition: "opacity 0.2s",
               }}
             >
-              {busy ? "Connecting..." : "Connect Freighter"}
+              {busy ? "Connecting..." : "Connect Wallet"}
             </button>
             {status && <p style={{ fontSize: "12px", color: "#737373", marginTop: "12px" }}>{status}</p>}
           </Card>
@@ -374,6 +362,29 @@ export default function DepositPage() {
           </div>
         )}
       </div>
+      <WalletModal
+        show={showWalletModal}
+        onClose={() => setShowWalletModal(false)}
+        onSelectWallet={async (walletId) => {
+          setBusy(true);
+          setStatus("Connecting wallet...");
+          try {
+            const { connectWithWallet } = await import("@/lib/wallet");
+            const addr = await connectWithWallet(walletId);
+            setAddress(addr);
+            setNetwork("TESTNET");
+            localStorage.setItem("growthip:wallet", addr);
+            void warmPoseidon();
+            setStatus("Wallet connected.");
+            setStep("select");
+            setShowWalletModal(false);
+          } catch (err) {
+            setStatus(err instanceof Error ? err.message : "Connection failed.");
+          } finally {
+            setBusy(false);
+          }
+        }}
+      />
     </div>
   );
 }

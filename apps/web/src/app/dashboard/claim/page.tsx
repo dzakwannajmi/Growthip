@@ -1,5 +1,6 @@
 "use client";
 import { Icon } from "@iconify/react";
+import WalletModal from "@/components/WalletModal";
 
 import { useCallback, useMemo, useState, Suspense } from "react";
 import Link from "next/link";
@@ -71,21 +72,10 @@ function ClaimContent() {
     [stage],
   );
 
-  async function connectWallet() {
-    setError(null);
-    setStage("connecting");
-    try {
-      const { connectWalletModal } = await import("@/lib/wallet");
-      const addr = await connectWalletModal();
-      setAddress(addr);
-      if (!recipient) setRecipient(addr);
-      setNetwork("TESTNET");
-      localStorage.setItem("growthip:wallet", addr);
-      setStage("idle");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Connection failed.");
-      setStage("error");
-    }
+  const [showWalletModal, setShowWalletModal] = useState(false);
+
+  function connectWallet() {
+    setShowWalletModal(true);
   }
 
   const getPoolId = useCallback((tokenSymbol: string): string => {
@@ -250,7 +240,7 @@ function ClaimContent() {
           disabled={busy}
           className="w-full px-5 py-3 text-sm font-black disabled:opacity-50" style={{ borderRadius: "12px", background: "#0A0A0A", color: "white", border: "none", cursor: "pointer" }}
         >
-          {busy ? "Connecting..." : "Connect Freighter"}
+          {busy ? "Connecting..." : "Connect Wallet"}
         </button>
       )}
 
@@ -362,6 +352,27 @@ function ClaimContent() {
           <p className="text-sm" style={{ color: "#EF4444" }}>{error}</p>
         </div>
       )}
+      <WalletModal
+        show={showWalletModal}
+        onClose={() => setShowWalletModal(false)}
+        onSelectWallet={async (walletId) => {
+          setError(null);
+          setStage("connecting");
+          try {
+            const { connectWithWallet } = await import("@/lib/wallet");
+            const addr = await connectWithWallet(walletId);
+            setAddress(addr);
+            if (!recipient) setRecipient(addr);
+            setNetwork("TESTNET");
+            localStorage.setItem("growthip:wallet", addr);
+            setStage("idle");
+            setShowWalletModal(false);
+          } catch (err) {
+            setError(err instanceof Error ? err.message : "Connection failed.");
+            setStage("error");
+          }
+        }}
+      />
     </div>
   );
 }

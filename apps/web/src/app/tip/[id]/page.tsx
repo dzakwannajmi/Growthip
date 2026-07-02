@@ -332,7 +332,7 @@ export default function PublicTipPage() {
               style={{ width: "100%", padding: "12px", borderRadius: "12px", background: "#0A0A0A", color: "white", fontSize: "14px", fontWeight: 700, border: "none", cursor: walletBusy ? "not-allowed" : "pointer", opacity: walletBusy ? 0.6 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
             >
               <Icon icon="ph:wallet" style={{ fontSize: "18px" }} />
-              {walletBusy ? "Connecting..." : "Connect Freighter"}
+              {walletBusy ? "Connecting..." : "Connect Wallet"}
             </button>
             {walletStatus && <p style={{ fontSize: "12px", color: "#737373", marginTop: "12px", textAlign: "center" }}>{walletStatus}</p>}
           </Card>
