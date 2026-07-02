@@ -84,7 +84,7 @@ export default function PendingNotes() {
           </p>
           {tab === "pending" && (
             <Link
-              href="/dashboard/deposit"
+              href="/dashboard/links"
               style={{
                 display: "inline-block",
                 marginTop: "16px",
@@ -97,7 +97,7 @@ export default function PendingNotes() {
                 textDecoration: "none",
               }}
             >
-              Send a tip
+              Get your tip link
             </Link>
           )}
         </div>
