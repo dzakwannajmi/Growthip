@@ -244,6 +244,8 @@ export default function ThemeToggle() {
   const [dark, setDark] = useState(false);
 
   useEffect(() => {
+    // Dark mode temporarily disabled — force light regardless of saved preference
+    return;
     const saved = localStorage.getItem("growthip:theme");
     if (saved === "dark") {
       isDark = true;
@@ -292,6 +294,9 @@ export default function ThemeToggle() {
       localStorage.setItem("growthip:theme", "light");
     }
   }
+
+  // Temporarily hidden — dark mode disabled for launch stability
+  return null;
 
   return (
     <button

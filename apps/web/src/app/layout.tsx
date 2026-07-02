@@ -24,7 +24,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={plusJakartaSans.variable + " font-sans"} suppressHydrationWarning>
         {/* Init theme before React hydration to prevent flash */}
-        <script dangerouslySetInnerHTML={{ __html: "(function(){try{var t=localStorage.getItem('growthip:theme');if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}})();" }} />
+        <script dangerouslySetInnerHTML={{ __html: "/* dark mode temporarily disabled for launch stability */" }} />
         {children}
       </body>
     </html>
