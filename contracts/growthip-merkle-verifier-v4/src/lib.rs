@@ -218,3 +218,97 @@ mod test {
         assert_eq!(client.verify(&proof_bytes, &public_inputs), false);
     }
 }
+
+#[cfg(test)]
+mod test_v4 {
+    extern crate std;
+    use super::*;
+    use soroban_sdk::{Bytes, BytesN, Env, Vec};
+
+    fn bytes_from_hex(env: &Env, hex_str: &str) -> Bytes {
+        let raw = hex::decode(hex_str.trim()).expect("invalid hex");
+        Bytes::from_slice(env, &raw)
+    }
+
+    fn public_inputs_from_hex(env: &Env, hex_str: &str) -> Vec<BytesN<32>> {
+        let clean = hex_str.trim();
+        assert!(clean.len() % 64 == 0, "public input hex must be multiple of 64");
+        let mut out = Vec::new(env);
+        for start in (0..clean.len()).step_by(64) {
+            let chunk = &clean[start..start + 64];
+            let raw: [u8; 32] = hex::decode(chunk)
+                .expect("invalid hex chunk").try_into().expect("must be 32 bytes");
+            out.push_back(BytesN::from_array(env, &raw));
+        }
+        out
+    }
+
+    // GENERATE these from the SAME frontend proof pipeline production uses.
+    // proof = A|B|C concatenated (256 bytes = 512 hex chars).
+    // public_inputs = 4 x 32 bytes (root, nullifierHash, recipientHashOut, index).
+    const V4_PROOF_HEX: &str =
+        include_str!("../../../circuits/build/growthip_merkle_note_v4_proof_abc.hex");
+    const V4_PUBLIC_INPUTS_HEX: &str =
+        include_str!("../../../circuits/build/growthip_merkle_note_v4_public_inputs.hex");
+
+    // ACCEPT PATH — passing == G2 encoding + VK + proof serialization all correct.
+    // A wrong G2 [imag,real] order makes a valid proof FAIL here.
+    #[test]
+    fn v4_valid_proof_accepted() {
+        let env = Env::default();
+        let id = env.register(GrowthipMerkleVerifierV31, ());
+        let client = GrowthipMerkleVerifierV31Client::new(&env, &id);
+
+        let proof = bytes_from_hex(&env, V4_PROOF_HEX);
+        let inputs = public_inputs_from_hex(&env, V4_PUBLIC_INPUTS_HEX);
+
+        assert_eq!(client.verify(&proof, &inputs), true, "valid V4 proof must verify");
+    }
+
+    // SOUNDNESS PATH — start from the VALID proof, flip one bit in each public
+    // input. Any outcome except a clean Ok(Ok(true)) counts as rejection
+    // (Ok(Ok(false)) = pairing failed; Err(_) = host rejected out-of-range Fp —
+    // both are fail-closed). Robust to byte endianness.
+    #[test]
+    fn v4_tampered_public_inputs_rejected() {
+        let env = Env::default();
+        let id = env.register(GrowthipMerkleVerifierV31, ());
+        let client = GrowthipMerkleVerifierV31Client::new(&env, &id);
+
+        let proof = bytes_from_hex(&env, V4_PROOF_HEX);
+        let base = public_inputs_from_hex(&env, V4_PUBLIC_INPUTS_HEX);
+        assert_eq!(client.verify(&proof, &base), true, "sanity: base must verify");
+
+        for i in 0..base.len() {
+            for byte_idx in [0usize, 16, 31] {
+                let mut arr = base.get(i).unwrap().to_array();
+                arr[byte_idx] ^= 0x01;
+                let mut tampered = base.clone();
+                tampered.set(i, BytesN::from_array(&env, &arr));
+
+                let accepted = matches!(client.try_verify(&proof, &tampered), Ok(Ok(true)));
+                assert!(!accepted, "tampered input {} (byte {}) must be rejected", i, byte_idx);
+            }
+        }
+    }
+
+    // Extra coverage: flip one bit in the proof bytes (A/B/C) -> must reject.
+    #[test]
+    fn v4_tampered_proof_rejected() {
+        let env = Env::default();
+        let id = env.register(GrowthipMerkleVerifierV31, ());
+        let client = GrowthipMerkleVerifierV31Client::new(&env, &id);
+
+        let inputs = public_inputs_from_hex(&env, V4_PUBLIC_INPUTS_HEX);
+        let raw = hex::decode(V4_PROOF_HEX.trim()).expect("invalid hex");
+
+        for byte_idx in [0usize, 80, 200] { // touch A, B (G2), and C regions
+            let mut bytes = raw.clone();
+            bytes[byte_idx] ^= 0x01;
+            let proof = Bytes::from_slice(&env, &bytes);
+
+            let accepted = matches!(client.try_verify(&proof, &inputs), Ok(Ok(true)));
+            assert!(!accepted, "tampered proof byte {} must be rejected", byte_idx);
+        }
+    }
+}

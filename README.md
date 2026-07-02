@@ -494,6 +494,20 @@ check had been updated in `claim()` but an identical, separate check
 inside `claim_to()` was missed, silently causing every claim to fail —
 caught through systematic isolation debugging rather than guessing.
 
+### Verifier V4 Test Coverage Gap — found and fixed, production unaffected
+
+While adding missing accept-path tests for the V4 verifier, a G2
+(Fp2) coordinate ordering bug was found — but only in a standalone
+local test-fixture script, not in shipped code. The actual contract
+build (`build.rs`) and the actual frontend proof serialization
+(`zkp.ts`) were both independently checked and confirmed correct
+before the script was identified as the outlier. Three new tests
+(`v4_valid_proof_accepted` and two tamper-rejection tests) now prove
+this against a real V4 proof, closing a gap where zero tests
+previously demonstrated the V4 verifier's accept path worked at all.
+See [SECURITY.md](SECURITY.md#verifier-v4-test-coverage-gap--found-and-fixed)
+for the full writeup.
+
 ### Private Note Encryption — design, not a bug fix
 
 Unlike the three issues above, end-to-end note encryption was built as a
@@ -674,7 +688,7 @@ growthip/
 * Node.js 18+
 * Rust + cargo
 * Stellar CLI 26+
-* Freighter Wallet (browser extension)
+* Freighter or xBull Wallet (browser extension)
 * circom 2.1.6+
 * snarkjs
 

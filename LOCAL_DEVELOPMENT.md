@@ -28,7 +28,7 @@ security details, see [SECURITY.md](SECURITY.md).
 | Stellar CLI | 26+ | `stellar --version` |
 | circom | 2.1.6+ | `circom --version` |
 | snarkjs | latest | `npx snarkjs --version` |
-| Freighter | browser extension | [freighter.app](https://www.freighter.app) |
+| Freighter or xBull | browser extension | [freighter.app](https://www.freighter.app) / [xbull.app](https://xbull.app) |
 
 A funded Stellar Testnet account is required for deployment and
 on-chain testing:
@@ -56,37 +56,37 @@ circuit/contract helper scripts) and triggers `npm install` inside
 
 ## 2. Circuit Toolchain
 
-The V3 circuit and its proving artifacts are already compiled and
-checked into `circuits/build/` for convenience — you do **not** need to
-recompile the circuit just to run the app locally against the existing
-testnet deployment.
+The V4 circuit (depth-20, current production circuit) and its proving
+artifacts are already compiled and checked into `circuits/build/v4/`
+for convenience — you do **not** need to recompile the circuit just to
+run the app locally against the existing testnet deployment.
 
 You only need this section if you're modifying the circuit itself.
 
 ```bash
 # Compile the circuit
-circom circuits/growthip_merkle_note_v3.circom \
+circom circuits/growthip_merkle_note_v4.circom \
   --r1cs --wasm --sym \
-  -o circuits/build
+  -o circuits/build/v4
 
 # Powers of Tau (reuse an existing .ptau file rather than generating
 # your own — see SECURITY.md's Trusted Setup section for why this
 # matters)
 snarkjs groth16 setup \
-  circuits/build/growthip_merkle_note_v3.r1cs \
+  circuits/build/v4/growthip_merkle_note_v4.r1cs \
   <path-to-ptau-file> \
-  circuits/build/growthip_merkle_note_v3_0.zkey
+  circuits/build/v4/growthip_merkle_note_v4_0000.zkey
 
 # Phase-2 contribution (local, for development only — see
 # SECURITY.md Trusted Setup for the production-grade alternative)
 snarkjs zkey contribute \
-  circuits/build/growthip_merkle_note_v3_0.zkey \
-  circuits/build/growthip_merkle_note_v3_final.zkey
+  circuits/build/v4/growthip_merkle_note_v4_0000.zkey \
+  circuits/build/v4/growthip_merkle_note_v4_final.zkey
 
 # Export the verification key
 snarkjs zkey export verificationkey \
-  circuits/build/growthip_merkle_note_v3_final.zkey \
-  circuits/build/growthip_merkle_note_v3_verification_key.json
+  circuits/build/v4/growthip_merkle_note_v4_final.zkey \
+  circuits/build/v4/verification_key_v4.json
 ```
 
 If you change the circuit, the verifier contract's hardcoded verifying
@@ -106,7 +106,7 @@ stellar contract build
 cargo test --workspace
 ```
 
-Expect **25 passed, 0 failed, 3 ignored**. The three ignored tests are
+Expect **38 passed, 0 failed, 5 ignored**. The ignored tests are
 intentionally disabled — see
 [SECURITY.md](SECURITY.md#self-found-issue-1--root-forgery) for why.
 
@@ -137,7 +137,7 @@ Quick version:
 ```bash
 # Verifier
 stellar contract deploy \
-  --wasm target/wasm32v1-none/release/growthip_merkle_verifier_v3.wasm \
+  --wasm target/wasm32v1-none/release/growthip_merkle_verifier_v4.wasm \
   --source <identity> --network testnet
 
 # Pool
@@ -168,8 +168,7 @@ cp .env.example .env.local
 ```
 
 Fill in `.env.local` with the contract addresses from step 4 (or from
-the existing testnet deployment — see
-[testnet.env](testnet.env) and the
+the existing testnet deployment — see the
 [root README's deployment table](README.md#testnet-deployment)).
 
 ```bash
@@ -184,19 +183,25 @@ npm run dev
 A full local verification that deposit → claim actually works, before
 trusting any change:
 
-1. Connect Freighter (testnet account, funded with XLM/USDC via
-   `stellar keys fund` or a testnet faucet)
-2. From the dashboard, **Send Tip** — pick a token and a preset amount,
-   confirm the deposit transaction in Freighter
-3. Save the private note shown after a successful deposit (copy it
+1. Connect a wallet (Freighter or xBull, testnet account funded with
+   XLM/USDC via `stellar keys fund` or a testnet faucet) on
+   `/dashboard/links` — this is the creator side
+2. Copy the tip link shown there (`/tip/<id>`), open it in a second
+   browser profile or incognito window to simulate a real supporter
+3. On the tip page, connect a wallet (can be the same or a different
+   one — Freighter and xBull are interchangeable, only the connected
+   *address* matters), pick a token and a preset amount, confirm the
+   deposit transaction
+4. Save the private note shown after a successful deposit (copy it
    somewhere safe — this is the only way to claim it)
-4. Switch to the **Withdraw** tab (or go to **Activity** and click
-   **Claim** on the pending note)
-5. Paste the note, confirm — the browser will generate a Groth16 proof
-   (5–15 seconds), then submit `claim_to()` via Freighter
-6. Confirm: recipient balance increases by 99% of the tip amount,
+5. Back on the creator's `/dashboard`, paste the note under
+   **Withdraw** (or go to **Activity** and click **Claim** on the
+   pending note)
+6. Confirm — the browser will generate a Groth16 proof (5–15 seconds
+   for the V4 depth-20 circuit), then submit `claim_to()`
+7. Confirm: recipient balance increases by 99% of the tip amount,
    `accumulated_fees()` on the pool increases by the remaining 1%
-7. Check the transaction on
+8. Check the transaction on
    [Stellar Expert (testnet)](https://stellar.expert/explorer/testnet)
    using the tx hash shown after a successful claim
 

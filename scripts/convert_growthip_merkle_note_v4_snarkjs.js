@@ -15,11 +15,15 @@ function g1ToHex(p) {
 }
 
 function g2ToHex(p) {
-  // G2 points: x = [x1, x0], y = [y1, y0] — snarkjs stores [c1, c0]
-  const x1 = BigInt(p[0][0]).toString(16).padStart(64, "0");
-  const x0 = BigInt(p[0][1]).toString(16).padStart(64, "0");
-  const y1 = BigInt(p[1][0]).toString(16).padStart(64, "0");
-  const y0 = BigInt(p[1][1]).toString(16).padStart(64, "0");
+  // G2 points: snarkjs stores Fp2 coords as [c0, c1]. Soroban's
+  // Bn254G2Affine::from_bytes expects [c1, c0] per coordinate (imag
+  // first, real second) — same order proven correct in V3.1's
+  // (tested, live-testnet-verified) g2Hex(). V4's original swap here
+  // was backwards; this matches V3.1 exactly.
+  const x1 = BigInt(p[0][1]).toString(16).padStart(64, "0");
+  const x0 = BigInt(p[0][0]).toString(16).padStart(64, "0");
+  const y1 = BigInt(p[1][1]).toString(16).padStart(64, "0");
+  const y0 = BigInt(p[1][0]).toString(16).padStart(64, "0");
   return x1 + x0 + y1 + y0;
 }
 
