@@ -242,7 +242,7 @@ export default function PublicTipPage() {
       const noteBytes = new TextEncoder().encode(JSON.stringify(partialNote));
       const encryptedBundle = await encryptNoteForRecipient(creatorEncryptionPubKey, noteBytes);
 
-      setStatus("Approve the deposit transaction in Freighter...");
+      setStatus("Approve the deposit transaction in your wallet...");
       const tx = await client.deposit_paid({
         depositor:  address,
         commitment: Buffer.from(commitmentHex, "hex"),
@@ -351,7 +351,7 @@ export default function PublicTipPage() {
                   {address.slice(0, 4)}...{address.slice(-4)}
                 </span>
               </div>
-              <span style={{ fontSize: "11px", color: "#A3A3A3" }}>Switch in Freighter</span>
+              <span style={{ fontSize: "11px", color: "#A3A3A3" }}>Switch in your wallet</span>
             </div>
 
             {recipientAddress && address === recipientAddress && (

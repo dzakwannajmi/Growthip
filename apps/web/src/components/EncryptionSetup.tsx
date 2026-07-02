@@ -493,7 +493,7 @@ export default function EncryptionSetup({ address, onComplete }: EncryptionSetup
       <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
         <p style={{ fontSize: "13px", fontWeight: 700, color: "#171717" }}>Activate Premium</p>
         <p style={{ fontSize: "12px", color: "#737373" }}>
-          One-time 6 XLM payment to publish your encryption key on-chain. Approve in Freighter.
+          One-time 6 XLM payment to publish your encryption key on-chain. Approve in your wallet.
         </p>
         {error && <p style={{ fontSize: "12px", color: "#EF4444" }}>{error}</p>}
         <button onClick={handlePayAndRegister} disabled={busy} style={{ padding: "12px", borderRadius: "12px", background: "#0A0A0A", color: "white", border: "none", fontSize: "13px", fontWeight: 700, cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1 }}>

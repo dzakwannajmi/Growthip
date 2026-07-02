@@ -429,7 +429,7 @@ export default function DashboardPage() {
         await tx.signAndSend({ force: true });
       }
 
-      setSendStatus("Approve in Freighter...");
+      setSendStatus("Approve in your wallet...");
       const tx = await client.deposit_paid({
         depositor: address,
         commitment: Buffer.from(commitmentHex, "hex"),
