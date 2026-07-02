@@ -18,6 +18,7 @@ against the source code — not as marketing copy.
 - [Self-Found Issue #2 — Verifier Interface Leak](#self-found-issue-2--verifier-interface-leak)
 - [Self-Found Issue #3 — Deposit-Amount-Aware Claims](#self-found-issue-3--deposit-amount-aware-claims)
 - [Private Note Encryption (Phase 3)](#private-note-encryption-phase-3)
+- [A Note on V4 (depth-20)](#a-note-on-v4-depth-20)
 - [Trusted Setup](#trusted-setup)
 - [Known Limitations](#known-limitations)
 - [Reporting a Vulnerability](#reporting-a-vulnerability)
@@ -57,7 +58,7 @@ Honest accounting of what still requires trust, as of this deployment:
 
 | Component | Trust required | Why |
 |---|---|---|
-| Merkle root | **None.** Computed on-chain via the native Poseidon host function, validated against on-chain history. | Fixed in [Issue #1](#self-found-issue-1--root-forgery) below. |
+| Merkle root | **None.** Computed on-chain via the native Poseidon host function, validated against a bounded on-chain root history (`ROOT_HISTORY_SIZE = 64` in the current V4 pool, depth-20 tree). | Fixed in [Issue #1](#self-found-issue-1--root-forgery) below; see [V4 note](#a-note-on-v4-depth-20) for the current parameters. |
 | Verifying key | Compiled into the verifier contract at build time from a local trusted-setup ceremony. | See [Trusted Setup](#trusted-setup). |
 | Admin key | Controls contract upgrades (`upgrade`), token configuration (`set_token`, blocked after first deposit), verifier address (`update_verifier`), and fee withdrawal (`withdraw_fees`). | Standard admin-key pattern for an upgradeable contract; not eliminated in this prototype phase. |
 | Note delivery | For premium creators: end-to-end encrypted (X25519 + AES-GCM), mandatory with no plaintext fallback. For non-premium: not applicable — a creator must activate encryption to receive tips at all. | See [Private Note Encryption](#private-note-encryption-phase-3) and [Known Limitations](#known-limitations). |
@@ -129,9 +130,18 @@ if !root_is_known {
 }
 ```
 
-The history is bounded to the tree's maximum leaf count (8), which is
-sufficient because the root changes at most 7 times across this pool's
-entire lifetime (1 leaf inserted up to 8, after which the pool is full).
+> **Note:** the description above reflects the depth-3 (8-leaf) pool
+> as it existed when this bug was found and fixed. The currently
+> deployed V4 pool uses a depth-20 tree (1,048,576 leaves) with a
+> fixed-size `ROOT_HISTORY_SIZE = 64` ring buffer instead of tracking
+> every historical root — see [A Note on V4](#a-note-on-v4-depth-20)
+> below. The root-history validation *mechanism* this fix introduced
+> is unchanged; only the tree depth and history bound have grown.
+
+The history was originally bounded to the tree's maximum leaf count (8),
+which was sufficient at the time because the root changed at most 7
+times across that pool's entire lifetime (1 leaf inserted up to 8, after
+which the pool was full).
 A history-based (rather than single-`current_root`) check also correctly
 handles the legitimate race condition where a new deposit lands between
 a creator generating their proof and submitting their claim — the old
@@ -294,10 +304,12 @@ for (var i = 0; i < DEPTH; i++) {
 index <== indexAcc[DEPTH];
 ```
 
-This reveals only the deposit's position in a (small, depth-3, max
-8-leaf) Merkle tree — not the depositor's identity, not the secret, not
-the nullifier preimage. The position is no more sensitive than the
-commitment list itself, which is already fully public on-chain.
+This reveals only the deposit's position in the Merkle tree — not the
+depositor's identity, not the secret, not the nullifier preimage. The
+position is no more sensitive than the commitment list itself, which is
+already fully public on-chain. (At the time this fix was written the
+tree was depth-3, max 8 leaves; the currently deployed V4 pool uses
+depth-20, up to 1,048,576 leaves — see [A Note on V4](#a-note-on-v4-depth-20).)
 
 Before trusting this derivation, the bit ordering was checked against
 `apps/web/src/lib/merkle.ts`'s `getMerklePathByIndex()` (which pushes
@@ -369,10 +381,14 @@ JSON as in earlier iterations of this project.
 
 The natural-seeming approach — derive an encryption keypair from the
 creator's existing Stellar (Ed25519) identity — was considered and
-rejected for a concrete, verified reason: Freighter (the only wallet
-this project integrates with) exposes only a `submitMessage()` (signing)
-function in its public API, never the raw private key, and has no
-`decrypt()` or shared-secret-derivation method at all. Ed25519 keys
+rejected for a concrete, verified reason: Freighter exposes only a
+`submitMessage()` (signing) function in its public API, never the raw
+private key, and has no `decrypt()` or shared-secret-derivation method
+at all. **This has been verified for Freighter specifically; xBull
+(added later, also integrated via `@creit.tech/stellar-wallets-kit`)
+has not yet been independently audited for the same limitation, though
+no non-custodial browser wallet extension is expected to expose raw
+key material to a dApp by design.** Ed25519 keys
 *can* be mathematically converted to X25519 keys usable for ECDH
 encryption, but that conversion requires the raw private key, which a
 non-custodial wallet extension never exposes to a dApp by design. This
@@ -499,13 +515,51 @@ is listed explicitly under Phase 4 (Production Hardening) in the project [Roadma
 
 ---
 
+## A Note on V4 (depth-20)
+
+Issues #1 and #3 above, and their fixes, were originally written against
+a depth-3 (max 8-leaf) Merkle tree — the pool's size at the time each bug
+was found. The pool has since been redeployed on a **V4 circuit**
+(`circuits/growthip_merkle_note_v4.circom`) using an **incremental,
+frontier-based depth-20 tree** (1,048,576 leaves max), so no further
+redeployment is needed as real deposits accumulate.
+
+Two parameters changed as a direct consequence of the larger tree; the
+underlying security mechanisms introduced by Issues #1 and #3 (on-chain
+root recomputation, root-history validation before the pairing check,
+`index`-based actual-amount payout) are otherwise unchanged:
+
+* **Root history bound.** The depth-3 pool bounded its on-chain root
+  history to 8 entries (the tree's max leaf count). A depth-20 tree can
+  in principle produce far more historical roots than is practical to
+  store, so V4 uses a fixed-size ring buffer instead:
+  `ROOT_HISTORY_SIZE = 64` most recent roots, overwriting the oldest
+  entry once full. This preserves the same claim-window guarantee (a
+  proof generated against a recent root remains valid while that root
+  is still in the buffer) without unbounded storage growth.
+* **Poseidon calls per deposit.** The incremental, frontier-based
+  construction recomputes only the `20` frontier nodes touched by a new
+  leaf, not the full tree — so deposit cost stays constant (`20`
+  Poseidon calls) regardless of how many leaves already exist in the
+  tree, rather than scaling with tree depth times leaf count.
+
+The `index` public output introduced in the V3.1 circuit (Issue #3)
+carries directly into V4 unchanged in purpose — it locates a deposit's
+leaf position, now within a depth-20 rather than depth-3 tree, to look
+up the actual deposited amount at claim time.
+
+---
+
 ## Known Limitations
 
-* **Small anonymity set on testnet.** The Merkle tree is fixed at depth 3
-  (max 8 leaves). Privacy strength scales with the number of real
-  participants in a tree at claim time; on a low-traffic testnet, this is
-  weak. This is a parameter, not an architectural limitation — a larger
-  tree depth is a roadmap item.
+* **Small anonymity set on testnet, independent of tree capacity.** The
+  currently deployed V4 pool uses a depth-20 incremental Merkle tree
+  (1,048,576 leaves max), so tree capacity is not the limiting factor.
+  Privacy strength still scales with the number of *real deposits*
+  actually made into a tree at claim time — on a low-traffic testnet
+  with few real participants, the anonymity set is small regardless of
+  the tree's maximum size. This is a usage-volume limitation, not an
+  architectural one.
 * **Public timing metadata.** Deposit and claim timestamps are visible
   on-chain. An observer correlating deposit and claim timing patterns
   (especially in a low-traffic pool) may be able to make probabilistic

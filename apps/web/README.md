@@ -168,7 +168,7 @@ See `.env.local` (not committed) or `.env.example` for the template.
 
 ```bash
 NEXT_PUBLIC_POOL_ID=                  # XLM pool contract address
-NEXT_PUBLIC_VERIFIER_V3_ID=           # V4 verifier contract address
+NEXT_PUBLIC_VERIFIER_V3_ID=           # V4 verifier contract address (var name kept as V3 for backward compat with existing .env files; holds the V4 verifier's address)
 NEXT_PUBLIC_TOKEN_ID=                 # Native XLM SAC address
 NEXT_PUBLIC_POOL_USDC_ID=             # USDC pool contract address
 NEXT_PUBLIC_TOKEN_USDC_ID=            # USDC SAC address
@@ -250,7 +250,6 @@ src/app/
     ├── page.tsx                   # Main dashboard: wallet balance,
     │                            # Withdraw tab, Personal
     │                            # Link card (QR + copy)
-    ├── deposit/page.tsx           # Standalone send-tip flow
     ├── claim/page.tsx             # Standalone claim flow — detects and
     │                            # decrypts encrypted note bundles
     │                            # automatically, falls back to legacy
@@ -272,7 +271,7 @@ src/app/
 Notes (the `secret`/`nullifier`/`recipientHash` bundle needed to claim a
 tip) are stored in the browser's `localStorage`, **namespaced per
 connected wallet address** (`growthip:notes:${address}`) — switching the
-active Freighter account changes which notes are visible. This was a
+active wallet account changes which notes are visible. This was a
 real gap fixed during development: storage was previously a single
 global key shared across every address in the same browser. They are
 never sent anywhere, and clearing browser storage means losing the
@@ -289,7 +288,7 @@ elsewhere (backup file, copied text, etc.) by the user.
   last-known price rather than erroring.
 * **Wallet balances** — [Stellar Horizon Testnet](https://horizon-testnet.stellar.org),
   refreshed every 15 seconds, queried directly from the connected
-  Freighter address. Labeled "Your Wallet Balance" in the dashboard —
+  wallet address. Labeled "Your Wallet Balance" in the dashboard —
   this is the account's actual on-chain balance, not a running total of
   tips received through Growthip specifically (that figure lives in
   Analytics instead).

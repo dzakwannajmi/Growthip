@@ -186,7 +186,7 @@ graph TD
 
         subgraph Supporter ["Supporter Flow"]
             direction TB
-            S1["1. Connect Freighter Wallet"]
+            S1["1. Connect Wallet\n(Freighter or xBull)"]
             S2["2. Open /tip/creator-id"]
             S3["3. Select token and amount"]
             S4["4. Encrypt private note\nX25519 ECDH + AES-GCM"]
@@ -196,7 +196,7 @@ graph TD
 
         subgraph Creator ["Creator Flow"]
             direction TB
-            C1["1. Connect Freighter Wallet"]
+            C1["1. Connect Wallet\n(Freighter or xBull)"]
             C2["2. Auto-register recipient hash\nto all token pools"]
             C3["3. Auto-fetch encrypted bundle\nfrom on-chain message field"]
             C4["4. Decrypt note with password\nX25519 private key"]
@@ -625,10 +625,10 @@ cargo test --workspace
 ```
 
 ```text
-Total: 37 passed, 0 failed, 3 ignored (across all 8 workspace crates)
+Total: 38 passed, 0 failed, 5 ignored (across all 8 workspace crates)
 ```
 
-The three ignored tests predate the root-history fix and relied on the
+The ignored tests predate the root-history fix and relied on the
 absence of root validation to pass — each carries an `#[ignore = "..."]`
 reason explaining exactly why, rather than being silently deleted. See
 [SECURITY.md](SECURITY.md) and
@@ -736,10 +736,10 @@ When you tip a street musician, nobody records your name. When you support a cre
 * Pool escrow with nullifier anti-double-claim
 * Trustless on-chain Merkle root computation + root-history validation
 * 1% platform fee with privacy-preserving batch withdrawal
-* Freighter deposit + claim flow
+* Freighter and xBull deposit + claim flow
 * Testnet E2E working, including live verification of correct payout on
   multi-unit deposits
-* 37 tests passing across an 8-crate contract workspace
+* 38 tests passing across an 8-crate contract workspace
 * Vercel deployment
 
 **Phase 2 — Creator Profiles & Sharing ✅**
@@ -806,4 +806,4 @@ Growthip is a hackathon/testnet prototype.
 
 ## License
 
-MIT — Muhammad Dzakwan Najmi
+Apache License 2.0 — Muhammad Dzakwan Najmi. See [LICENSE](LICENSE) for the full text.
