@@ -116,10 +116,10 @@ export default function Home() {
           </div>
           <h1 className="text-5xl md:text-7xl lg:text-[5.5rem] font-black tracking-tight text-[#0A0A0A] leading-[1.05] mb-8">
             Tip creators privately.{" "}<br className="hidden md:block" />
-            <span className="text-[#6b45f3]">No one sees who, or how much.</span>
+            <span className="text-[#6b45f3]">No one can link you to it.</span>
           </h1>
           <p className="mx-auto max-w-2xl text-lg md:text-xl leading-relaxed text-[#525252] mb-12">
-            Support your favorite creators without anyone seeing who you tipped, how much, or when. Your tip goes through privately — only the creator can claim it.
+            Support your favorite creators without anyone linking your identity to the tip. Your tip goes through privately — only your chosen creator can claim it.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/dashboard" className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-[#0A0A0A] px-8 py-4 text-base font-bold text-white transition-all hover:bg-[#262626] hover:scale-[1.02] shadow-lg shadow-black/10">
@@ -139,7 +139,7 @@ export default function Home() {
             </div>
             <div className="grid gap-8 md:grid-cols-2">
               {[
-                { icon: "hugeicons:absolute", title: "Absolute Privacy", desc: "Tip freely without being tracked. ZK proofs ensure nobody knows who sent the tip, how much, or to whom." },
+                { icon: "hugeicons:absolute", title: "Cryptographic Privacy", desc: "Tip freely without being linked. ZK proofs ensure nobody can prove which deposit corresponds to which claim." },
                 { icon: "ph:lightning-bold", title: "Lightning Fast", desc: "Tips settle in under a second, with network fees so small you'll barely notice them. Support a creator and move on." },
                 { icon: "ph:lock-key-bold", title: "Trustless Smart Contracts", desc: "No middlemen or centralized servers holding your funds. Everything is enforced purely by immutable code." },
                 { icon: "ph:hand-coins-bold", title: "Direct to Creators", desc: "Creators receive 99% of every tip straight to their wallet on claim. A flat 1% platform fee — transparent and verifiable on-chain — keeps the protocol sustainable." },
@@ -165,9 +165,9 @@ export default function Home() {
           </div>
           <div className="grid gap-6 md:grid-cols-3">
             {[
-              { step: "01", icon: "ph:paper-plane-tilt-bold", title: "You send a tip", desc: "A fixed-value tip goes to a shared smart contract. A secret code is mathematically created on your device — your identity stays totally hidden." },
-              { step: "02", icon: "ph:database-bold", title: "Network verifies securely", desc: "The blockchain only stores the mathematical proof. No wallet addresses, no tip amounts, and absolutely no personal data is saved." },
-              { step: "03", icon: "ph:check-circle-bold", title: "Creator claims instantly", desc: "The creator claims the tip by matching your secret proof right in their browser. The funds are sent directly and instantly to their wallet." },
+              { step: "01", icon: "ph:paper-plane-tilt-bold", title: "You send a tip", desc: "A fixed-value tip goes to a shared smart contract. A secret code is mathematically created on your device — nobody can link this deposit back to you as the sender." },
+              { step: "02", icon: "ph:database-bold", title: "Network verifies securely", desc: "The blockchain stores your deposit and the creator’s claim as separate, public events. What stays hidden is the cryptographic link between them." },
+              { step: "03", icon: "ph:check-circle-bold", title: "Creator claims instantly", desc: "The creator decrypts a private note and generates their own zero-knowledge proof right in their browser. The funds are sent directly and instantly to their wallet." },
             ].map((item) => (
               <TiltCard key={item.step} className="group rounded-[32px] border border-[#E5E5E5] bg-white p-8 relative overflow-hidden cursor-default">
                 <div className="flex items-center justify-between mb-8">
@@ -193,7 +193,7 @@ export default function Home() {
               { icon: "ph:shield-check-bold", title: "Truly Anonymous", desc: "Your tip is proven valid without ever revealing who you are. Not to the creator, not to us, not to anyone watching the blockchain." },
               { icon: "ph:tree-structure-bold", title: "No Sneaky Servers", desc: "Your tipping data isn't stored on a central server. Everything is verified by the network, so no one can secretly peek." },
               { icon: "ph:prohibit-bold", title: "One-Time Tip Tickets", desc: "Every tip comes with a unique, digital ticket. Once your favorite creator claims it, it can never be used again." },
-              { icon: "ph:link-bold", title: "Locked to the Creator", desc: "Your tip is mathematically tied to your chosen creator. Absolutely nobody else can claim it — not even the platform." },
+              { icon: "ph:link-bold", title: "Locked to the Creator", desc: "Your tip is mathematically tied to your chosen creator. Nobody else can claim it — not even the platform." },
               { icon: "ph:globe-hemisphere-west-bold", title: "Stays on Your Device", desc: "All the security checks happen directly inside your web browser. Your private secrets never leave your phone or computer." },
               { icon: "ph:coins-bold", title: "Flexible Tipping Options", desc: "Tip easily using XLM or USDC right now. We are adding more crypto options soon to make supporting creators effortless." },
             ].map((f, i) => (
@@ -319,7 +319,7 @@ export default function Home() {
                 <img src="/growthip-logo.png" alt="Growthip" className="w-9 h-9 object-contain" />
                 <span className="font-extrabold text-xl tracking-tight text-[#0A0A0A]">Growthip</span>
               </div>
-              <p className="text-[14px] leading-relaxed text-[#737373]">Private creator tipping on Stellar. Support creators without revealing who, how much, or when.</p>
+              <p className="text-[14px] leading-relaxed text-[#737373]">Private creator tipping on Stellar. Support creators without revealing who sent the tip.</p>
             </div>
 
             {/* Nav columns */}
