@@ -24,6 +24,7 @@ import { config } from "@/lib/config";
 import { getAvailableTokens, type Token, type TokenSymbol } from "@/lib/tokens";
 import { saveNote, type PrivateNote } from "@/lib/note";
 import { decodeTipId } from "@/lib/addressId";
+import { getProfile, avatarUrlFor } from "@/lib/profile";
 import { useRegistryClient } from "@/lib/registryClient";
 import { encryptNoteForRecipient } from "@/lib/encryption/keyManagement";
 import TokenSelector from "@/components/TokenSelector";
@@ -52,6 +53,8 @@ export default function PublicTipPage() {
   const tipId  = typeof params.id === "string" ? params.id : "";
 
   const [recipientAddress, setRecipientAddress] = useState<string | null>(null);
+  const [creatorDisplayName, setCreatorDisplayName] = useState("");
+  const [creatorAvatarVariant, setCreatorAvatarVariant] = useState("");
   const [linkError, setLinkError] = useState("");
 
   // Premium / encryption gating -- private notes are mandatory: a
@@ -137,6 +140,9 @@ export default function PublicTipPage() {
     try {
       const decoded = decodeTipId(tipId);
       setRecipientAddress(decoded);
+      const p = getProfile(decoded);
+      setCreatorDisplayName(p.displayName);
+      setCreatorAvatarVariant(p.avatarVariant);
     } catch {
       setLinkError("This tip link is invalid or corrupted.");
     }
@@ -301,12 +307,23 @@ export default function PublicTipPage() {
 
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: "8px" }}>
-          <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#F5F5F5", border: "2px dashed #D4D4D4", margin: "0 auto 12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Icon icon="ph:user-circle-dashed-bold" style={{ fontSize: "32px", color: "#A3A3A3" }} />
-          </div>
-          <h1 style={{ fontSize: "20px", fontWeight: 800, color: "#0A0A0A" }}>Send a Private Tip</h1>
+          {creatorDisplayName ? (
+            <img
+              src={avatarUrlFor(recipientAddress ?? "", creatorAvatarVariant)}
+              alt={creatorDisplayName}
+              width={56} height={56}
+              style={{ width: 56, height: 56, borderRadius: "50%", border: "1px solid #E5E5E5", background: "#F5F5F5", margin: "0 auto 12px", display: "block" }}
+            />
+          ) : (
+            <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#F5F5F5", border: "2px dashed #D4D4D4", margin: "0 auto 12px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Icon icon="ph:user-circle-dashed-bold" style={{ fontSize: "32px", color: "#A3A3A3" }} />
+            </div>
+          )}
+          <h1 style={{ fontSize: "20px", fontWeight: 800, color: "#0A0A0A" }}>
+            Send a Private Tip{creatorDisplayName ? ` to ${creatorDisplayName}` : ""}
+          </h1>
           <p style={{ fontSize: "13px", color: "#737373", marginTop: "4px", fontFamily: "monospace" }}>
-            to {tipId ? `${tipId.slice(0, 6)}...${tipId.slice(-4)}` : ""}
+            {creatorDisplayName ? shortAddr : (tipId ? `${tipId.slice(0, 6)}...${tipId.slice(-4)}` : "")}
           </p>
         </div>
 
