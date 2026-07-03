@@ -5,13 +5,22 @@ import { QRCodeSVG } from "qrcode.react";
 import Modal from "@/components/Modal";
 import { encodeTipId } from "@/lib/addressId";
 import { getProfile, avatarUrlFor } from "@/lib/profile";
+import { getToken, getAvailableTokens, toBaseUnits, fromBaseUnits, type TokenSymbol } from "@/lib/tokens";
+import {
+  generateCampaignId,
+  buildCampaignPath,
+  saveCampaign,
+  loadCampaigns,
+  deleteCampaign,
+  type CampaignMetadata,
+} from "@/lib/campaign";
 
 const TEMPLATES = [
   { id: "simple-payment", icon: "ph:currency-dollar-bold", iconBg: "#F0FDF4", iconColor: "#22c55e", label: "Simple payment", desc: "Accept private tips with one universal link. Zero-knowledge proof, nobody knows who paid.", bestFor: "Content creators, streamers, open source developers", active: true },
   { id: "digital-product", icon: "ph:package-bold", iconBg: "#F5F3FF", iconColor: "#7c3aed", label: "Digital product", desc: "Sell AI prompts, Notion templates, Figma presets, and more.", bestFor: "Prompt engineers, designers, educators", active: false },
   { id: "monthly-support", icon: "ph:arrows-clockwise-bold", iconBg: "#EFF6FF", iconColor: "#2563eb", label: "Monthly support", desc: "Let supporters back you every month. Private, recurring tips.", bestFor: "Newsletters, podcasters, indie developers", active: false },
   { id: "commission", icon: "ph:briefcase-bold", iconBg: "#FFFBEB", iconColor: "#d97706", label: "Commission request", desc: "Set a price for custom work. Client pays privately, you deliver.", bestFor: "Freelancers, illustrators, developers", active: false },
-  { id: "fundraiser", icon: "ph:target-bold", iconBg: "#FEF2F2", iconColor: "#dc2626", label: "Fundraiser", desc: "Set a goal, show progress. Community supports anonymously.", bestFor: "Community projects, open source, indie games", active: false },
+  { id: "fundraiser", icon: "ph:target-bold", iconBg: "#FEF2F2", iconColor: "#dc2626", label: "Fundraiser", desc: "Set a goal, show progress. Supporters back it without being linked to their contribution.", bestFor: "Community projects, open source, indie games", active: true },
 ];
 
 const SHARE_PLATFORMS = [
@@ -31,6 +40,15 @@ export default function LinksPage() {
   const [showTemplates, setShowTemplates] = useState(false);
   const [shareMsg, setShareMsg] = useState("");
 
+  // Fundraiser campaign creation + listing state
+  const [showCampaignForm, setShowCampaignForm] = useState(false);
+  const [campaignTitle, setCampaignTitle] = useState("");
+  const [campaignGoal, setCampaignGoal] = useState("");
+  const [campaignDeadline, setCampaignDeadline] = useState("");
+  const [campaignToken, setCampaignToken] = useState("XLM");
+  const [campaigns, setCampaigns] = useState<CampaignMetadata[]>([]);
+  const [copiedCampaignId, setCopiedCampaignId] = useState<string | null>(null);
+
   useEffect(() => {
     const addr = localStorage.getItem("growthip:wallet") ?? "";
     setAddress(addr);
@@ -42,6 +60,7 @@ export default function LinksPage() {
         setTipLink(link);
         setShareMsg(`Support me privately on Growthip — zero-knowledge tips, nobody knows who paid 🌱`);
       } catch {}
+      setCampaigns(loadCampaigns(addr));
     }
   }, []);
 
@@ -50,6 +69,49 @@ export default function LinksPage() {
     navigator.clipboard.writeText(tipLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  function createCampaign() {
+    if (!address || !campaignTitle.trim() || !campaignGoal.trim()) return;
+
+    const token = getToken(campaignToken as TokenSymbol);
+    if (!token) return;
+
+    const goalAmount = toBaseUnits(Number(campaignGoal), token);
+    if (!Number.isFinite(goalAmount) || goalAmount <= 0) return;
+
+    const deadline = campaignDeadline
+      ? Math.floor(new Date(campaignDeadline).getTime() / 1000)
+      : null;
+
+    const meta: CampaignMetadata = {
+      recipientAddress: address,
+      campaignId: generateCampaignId(),
+      title: campaignTitle.trim(),
+      goalAmount,
+      deadline,
+      tokenSymbol: campaignToken,
+    };
+
+    saveCampaign(meta);
+    setCampaigns(loadCampaigns(address));
+    setShowCampaignForm(false);
+    setCampaignTitle("");
+    setCampaignGoal("");
+    setCampaignDeadline("");
+  }
+
+  function copyCampaignLink(meta: CampaignMetadata) {
+    const url = `https://growthip.vercel.app${buildCampaignPath(meta)}`;
+    navigator.clipboard.writeText(url);
+    setCopiedCampaignId(meta.campaignId);
+    setTimeout(() => setCopiedCampaignId(null), 2000);
+  }
+
+  function handleDeleteCampaign(campaignId: string) {
+    if (!address) return;
+    deleteCampaign(address, campaignId);
+    setCampaigns(loadCampaigns(address));
   }
 
   const avatarUrl = address ? avatarUrlFor(address) : "";
@@ -121,6 +183,111 @@ export default function LinksPage() {
           </div>
         </div>
       </div>
+
+      {/* Fundraiser Campaigns */}
+      {campaigns.length > 0 && (
+        <div style={{ marginTop: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+          <p className="text-[13px] font-bold text-[#0A0A0A] dark:text-[#FAFAFA]" style={{ margin: 0 }}>Your Campaigns</p>
+          {campaigns.map((c) => {
+            const token = getToken(c.tokenSymbol as TokenSymbol);
+            const goalHuman = token ? fromBaseUnits(c.goalAmount, token) : 0;
+            return (
+              <div key={c.campaignId} className="dark:bg-[#1A1A1A] dark:border-[#2A2A2A]" style={{ background: "white", border: "1px solid #E5E5E5", borderRadius: "16px", padding: "16px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "#FEF2F2", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Icon icon="ph:target-bold" style={{ fontSize: "16px", color: "#dc2626", WebkitTextFillColor: "#dc2626" }} />
+                    </div>
+                    <div>
+                      <p className="text-[#0A0A0A] dark:text-[#FAFAFA] font-bold text-[13px]" style={{ margin: 0 }}>{c.title}</p>
+                      <p className="text-[11px] text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ margin: 0 }}>
+                        Goal: {goalHuman} {c.tokenSymbol}
+                        {c.deadline && ` \u00b7 Ends ${new Date(c.deadline * 1000).toLocaleDateString()}`}
+                      </p>
+                    </div>
+                  </div>
+                  <button onClick={() => handleDeleteCampaign(c.campaignId)} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px" }}>
+                    <Icon icon="ph:trash-bold" style={{ fontSize: "15px", color: "#A3A3A3" }} />
+                  </button>
+                </div>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button onClick={() => copyCampaignLink(c)} className="btn-hover dark:border-[#2A2A2A] dark:!bg-[#1A1A1A] dark:[&>*]:text-[#D4D4D4]" style={{ flex: 1, padding: "9px 4px", borderRadius: "10px", border: "1px solid #E5E5E5", background: copiedCampaignId === c.campaignId ? "#F0FDF4" : "#F9FAFB", fontSize: "12px", fontWeight: 600, color: copiedCampaignId === c.campaignId ? "#16a34a" : "#0A0A0A", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px" }}>
+                    <Icon icon={copiedCampaignId === c.campaignId ? "ph:check-bold" : "ph:copy-simple-bold"} style={{ fontSize: "14px" }} />
+                    {copiedCampaignId === c.campaignId ? "Copied!" : "Copy Link"}
+                  </button>
+                  <a href={buildCampaignPath(c)} target="_blank" rel="noreferrer" className="btn-hover dark:border-[#2A2A2A] dark:!bg-[#1A1A1A] dark:!text-[#D4D4D4]" style={{ flex: 1, padding: "9px 4px", borderRadius: "10px", border: "1px solid #E5E5E5", background: "#F9FAFB", fontSize: "12px", fontWeight: 600, color: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px", textDecoration: "none" }}>
+                    <Icon icon="ph:arrow-square-out-bold" style={{ fontSize: "14px" }} /> View
+                  </a>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Create Campaign Modal */}
+      <Modal show={showCampaignForm} onClose={() => setShowCampaignForm(false)}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+          <p style={{ fontSize: "16px", fontWeight: 800, color: "#0A0A0A", margin: 0 }}>Create Fundraiser</p>
+          <button onClick={() => setShowCampaignForm(false)} style={{ width: "30px", height: "30px", borderRadius: "8px", border: "1px solid #E5E5E5", background: "#F5F5F5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Icon icon="ph:x-bold" style={{ fontSize: "14px", color: "#737373" }} />
+          </button>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+          <div>
+            <label style={{ fontSize: "12px", fontWeight: 600, color: "#525252", display: "block", marginBottom: "6px" }}>Campaign title</label>
+            <input
+              value={campaignTitle}
+              onChange={(e) => setCampaignTitle(e.target.value)}
+              placeholder="Help fund my open-source project"
+              maxLength={80}
+              style={{ width: "100%", padding: "10px 12px", borderRadius: "10px", border: "1px solid #E5E5E5", fontSize: "13px" }}
+            />
+          </div>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: "12px", fontWeight: 600, color: "#525252", display: "block", marginBottom: "6px" }}>Goal amount</label>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                value={campaignGoal}
+                onChange={(e) => setCampaignGoal(e.target.value)}
+                placeholder="100"
+                style={{ width: "100%", padding: "10px 12px", borderRadius: "10px", border: "1px solid #E5E5E5", fontSize: "13px" }}
+              />
+            </div>
+            <div style={{ width: "110px" }}>
+              <label style={{ fontSize: "12px", fontWeight: 600, color: "#525252", display: "block", marginBottom: "6px" }}>Token</label>
+              <select
+                value={campaignToken}
+                onChange={(e) => setCampaignToken(e.target.value)}
+                style={{ width: "100%", padding: "10px 12px", borderRadius: "10px", border: "1px solid #E5E5E5", fontSize: "13px", background: "white" }}
+              >
+                {getAvailableTokens().map((t) => (
+                  <option key={t.symbol} value={t.symbol}>{t.symbol}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label style={{ fontSize: "12px", fontWeight: 600, color: "#525252", display: "block", marginBottom: "6px" }}>Deadline (optional)</label>
+            <input
+              type="date"
+              value={campaignDeadline}
+              onChange={(e) => setCampaignDeadline(e.target.value)}
+              style={{ width: "100%", padding: "10px 12px", borderRadius: "10px", border: "1px solid #E5E5E5", fontSize: "13px" }}
+            />
+          </div>
+          <button
+            onClick={createCampaign}
+            disabled={!campaignTitle.trim() || !campaignGoal.trim()}
+            style={{ width: "100%", padding: "12px", borderRadius: "12px", background: (!campaignTitle.trim() || !campaignGoal.trim()) ? "#E5E5E5" : "#0A0A0A", color: "white", border: "none", fontSize: "14px", fontWeight: 700, cursor: (!campaignTitle.trim() || !campaignGoal.trim()) ? "not-allowed" : "pointer" }}
+          >
+            Create Campaign
+          </button>
+        </div>
+      </Modal>
 
       {/* QR Modal */}
       <Modal show={showQR} onClose={() => setShowQR(false)}>
@@ -243,7 +410,11 @@ export default function LinksPage() {
           {TEMPLATES.map((t) => (
             <div
               key={t.id}
-              onClick={() => { if (t.active) setShowTemplates(false); }}
+              onClick={() => {
+                if (!t.active) return;
+                setShowTemplates(false);
+                if (t.id === "fundraiser") setShowCampaignForm(true);
+              }}
               style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "14px", borderRadius: "12px", border: t.active ? "1.5px solid #22c55e" : "1px solid #E5E5E5", background: "white", cursor: t.active ? "pointer" : "default", opacity: t.active ? 1 : 0.55 }}
             >
               <div style={{ width: "38px", height: "38px", borderRadius: "10px", background: t.iconBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
