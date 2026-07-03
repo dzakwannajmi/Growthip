@@ -98,7 +98,8 @@ export async function getCampaignProgress(
 
   for (let i = 0; i < total; i++) {
     const { result: message } = await poolClient.get_message({ index: i });
-    if (message === targetMessage) {
+    const { campaignId: taggedId } = message ? unwrapCampaignMessage(message) : { campaignId: null };
+    if (taggedId === campaignId) {
       const { result: amount } = await poolClient.get_commitment_amount({ index: i });
       totalRaised += BigInt(amount);
       depositCount++;
@@ -163,4 +164,52 @@ export function deleteCampaign(recipientAddress: string, campaignId: string): vo
     campaignStorageKey(recipientAddress),
     JSON.stringify(updated)
   );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Campaign-tagged deposit messages.
+//
+// deposit_paid()'s `message` field is also where the encrypted private
+// note bundle is stored (see /tip/[id]/page.tsx and dashboard/activity/
+// page.tsx's fetchOnChainNotes()) -- private notes are mandatory, so a
+// real deposit's message is always an encrypted bundle, never plain
+// text. A campaign deposit therefore can't just overwrite message with
+// a campaign tag; it must carry BOTH the tag (for progress tracking)
+// and the encrypted bundle (for the creator's auto-fetch/claim flow),
+// in one string.
+// ─────────────────────────────────────────────────────────────────────
+
+const CAMPAIGN_TAGGED_SEPARATOR = "|";
+
+/** Wraps an encrypted note bundle with a campaign tag for on-chain
+ *  storage in deposit_paid()'s message field. */
+export function wrapCampaignMessage(
+  campaignId: string,
+  encryptedBundle: string
+): string {
+  return `${encodeCampaignMessage(campaignId)}${CAMPAIGN_TAGGED_SEPARATOR}${encryptedBundle}`;
+}
+
+/**
+ * Splits a raw on-chain message into its campaign ID (if any) and the
+ * underlying encrypted bundle. Returns campaignId: null for a message
+ * that isn't campaign-tagged -- callers should treat the returned
+ * `bundle` as the value to pass to decryptIncomingNote() either way.
+ */
+export function unwrapCampaignMessage(
+  rawMessage: string
+): { campaignId: string | null; bundle: string } {
+  if (!rawMessage.startsWith(CAMPAIGN_MESSAGE_PREFIX)) {
+    return { campaignId: null, bundle: rawMessage };
+  }
+  const sepIdx = rawMessage.indexOf(CAMPAIGN_TAGGED_SEPARATOR);
+  if (sepIdx === -1) {
+    // Tagged but no separator found -- malformed, treat whole thing as
+    // opaque (decryption will fail downstream, which is the correct
+    // fail-closed behavior rather than silently guessing).
+    return { campaignId: null, bundle: rawMessage };
+  }
+  const campaignId = rawMessage.slice(CAMPAIGN_MESSAGE_PREFIX.length, sepIdx);
+  const bundle = rawMessage.slice(sepIdx + 1);
+  return { campaignId, bundle };
 }

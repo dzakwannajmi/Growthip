@@ -1,4 +1,5 @@
 "use client";
+import { unwrapCampaignMessage } from "@/lib/campaign";
 
 import { useCallback, useEffect, useState } from "react";
 import { Buffer } from "buffer";
@@ -136,7 +137,8 @@ export default function ActivityPage() {
               const msg = msgTx.result;
               if (!msg) continue;
               // Try to decrypt as encrypted bundle
-              const decrypted = await decryptIncomingNote(msg).catch(() => null);
+              const { campaignId: taggedCampaignId, bundle } = unwrapCampaignMessage(msg);
+              const decrypted = await decryptIncomingNote(bundle).catch(() => null);
               if (!decrypted) continue;
               const note = JSON.parse(new TextDecoder().decode(decrypted));
               if (note.version !== "growthip-v3") continue;
