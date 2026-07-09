@@ -290,20 +290,20 @@ export default function ActivityPage() {
   });
 
   return (
-    <div style={{ padding: "32px", background: "#FAFAFA", minHeight: "100%" }}>
+    <div className="bg-[#FAFAFA] dark:bg-[#0A0A0A]" style={{ padding: "32px", minHeight: "100%" }}>
       <div style={{ maxWidth: "700px", margin: "0 auto", paddingBottom: "80px", display: "flex", flexDirection: "column", gap: "24px" }}>
 
         {/* Header */}
         <div>
-          <h1 style={{ fontSize: "24px", fontWeight: 800, color: "#0A0A0A" }}>Activity</h1>
-          <p style={{ fontSize: "14px", color: "#737373", marginTop: "4px" }}>Your tip transaction history</p>
+          <h1 className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "24px", fontWeight: 800 }}>Activity</h1>
+          <p className="text-[#737373] dark:text-[#8A8A8A]" style={{ fontSize: "14px", marginTop: "4px" }}>Your tip transaction history</p>
         </div>
 
         {/* Unlock banner */}
         {encLocked && (
           <div className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] rounded-2xl flex flex-col gap-2.5" style={{ padding: "16px 20px" }}>
-            <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>🔐 Unlock encryption to see pending tips</p>
-            <p style={{ fontSize: "12px", color: "#737373" }}>Enter your encryption password to auto-fetch incoming tips from the pool.</p>
+            <p className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "14px", fontWeight: 700 }}>🔐 Unlock encryption to see pending tips</p>
+            <p className="text-[#737373] dark:text-[#8A8A8A]" style={{ fontSize: "12px" }}>Enter your encryption password to auto-fetch incoming tips from the pool.</p>
             <div style={{ display: "flex", gap: "8px" }}>
               <input
                 type="password"
@@ -321,7 +321,7 @@ export default function ActivityPage() {
                     fetchOnChainNotes();
                   } catch { setUnlockErr("Wrong password."); } finally { setUnlockBusy(false); }
                 }}
-                style={{ flex: 1, padding: "10px 12px", borderRadius: "10px", border: "1px solid #E5E5E5", fontSize: "13px", outline: "none" }}
+                className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-white dark:bg-[#1A1A1A] text-[#0A0A0A] dark:text-[#E5E5E5]" style={{ flex: 1, padding: "10px 12px", borderRadius: "10px", fontSize: "13px", outline: "none" }}
               />
               <button
                 disabled={unlockBusy || !unlockPw.trim()}
@@ -346,17 +346,18 @@ export default function ActivityPage() {
         {/* Filter */}
         <div className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] rounded-2xl" style={{ padding: "12px 16px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#A3A3A3" }}>
+            <div className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700 }}>
               <Icon icon="ph:funnel-bold" style={{ fontSize: "16px" }} />
               FILTER
             </div>
-            <div style={{ width: "1px", height: "20px", background: "#E5E5E5" }} />
+            <div className="bg-[#E5E5E5] dark:bg-[#2A2A2A]" style={{ width: "1px", height: "20px" }} />
 
             {/* Status custom dropdown */}
             <div style={{ position: "relative" }}>
               <button
                 onClick={() => setOpenDropdown(openDropdown === "status" ? null : "status")}
-                style={{ display: "flex", alignItems: "center", gap: "8px", padding: "7px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: 600, color: filter !== "all" ? "white" : "#171717", background: filter !== "all" ? "#0A0A0A" : "#F5F5F5", border: "none", cursor: "pointer" }}
+                className={filter !== "all" ? "bg-[#0A0A0A] text-white" : "bg-[#F5F5F5] dark:bg-[#1E1E1E] text-[#171717] dark:text-[#E5E5E5]"}
+                style={{ display: "flex", alignItems: "center", gap: "8px", padding: "7px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: 600, border: "none", cursor: "pointer" }}
               >
                 {filter === "all" ? "All Status" : filter === "pending" ? `Pending (${pending.length})` : `Withdrawn (${claimed.length})`}
                 <Icon icon="ph:caret-down-bold" style={{ fontSize: "11px", opacity: 0.6 }} />
@@ -365,10 +366,10 @@ export default function ActivityPage() {
                 <div className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] rounded-[14px] flex flex-col gap-0.5" style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 50, minWidth: "180px", padding: "6px" }}>
                   {(["all", "pending", "withdrawn"] as Filter[]).map((f) => (
                     <button key={f} onClick={() => { setFilter(f); setOpenDropdown(null); }}
-                      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: filter === f ? 700 : 500, color: "#171717", background: filter === f ? "#F5F5F5" : "transparent", border: "none", cursor: "pointer", textAlign: "left", width: "100%" }}
+                      className={["text-[#171717] dark:text-[#E5E5E5]", filter === f ? "bg-[#F5F5F5] dark:bg-[#2A2A2A]" : "bg-transparent"].join(" ")} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: filter === f ? 700 : 500, border: "none", cursor: "pointer", textAlign: "left", width: "100%" }}
                     >
                       {f === "all" ? "All Status" : f === "pending" ? `Pending (${pending.length})` : `Withdrawn (${claimed.length})`}
-                      {filter === f && <Icon icon="ph:check-bold" style={{ fontSize: "14px", color: "#0A0A0A" }} />}
+                      {filter === f && <Icon icon="ph:check-bold" className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "14px" }} />}
                     </button>
                   ))}
                 </div>
@@ -379,7 +380,8 @@ export default function ActivityPage() {
             <div style={{ position: "relative" }}>
               <button
                 onClick={() => setOpenDropdown(openDropdown === "token" ? null : "token")}
-                style={{ display: "flex", alignItems: "center", gap: "8px", padding: "7px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: 600, color: tokenFilter !== "all" ? "white" : "#171717", background: tokenFilter !== "all" ? "#0A0A0A" : "#F5F5F5", border: "none", cursor: "pointer" }}
+                className={tokenFilter !== "all" ? "bg-[#0A0A0A] text-white" : "bg-[#F5F5F5] dark:bg-[#1E1E1E] text-[#171717] dark:text-[#E5E5E5]"}
+                style={{ display: "flex", alignItems: "center", gap: "8px", padding: "7px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: 600, border: "none", cursor: "pointer" }}
               >
                 {tokenFilter === "all" ? "All Tokens" : tokenFilter}
                 <Icon icon="ph:caret-down-bold" style={{ fontSize: "11px", opacity: 0.6 }} />
@@ -388,16 +390,16 @@ export default function ActivityPage() {
                 <div className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] rounded-[14px] flex flex-col gap-0.5" style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 50, minWidth: "180px", padding: "6px" }}>
                   {(["all", "XLM", "USDC"] as TokenFilter[]).map((t) => (
                     <button key={t} onClick={() => { setTokenFilter(t); setOpenDropdown(null); }}
-                      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: tokenFilter === t ? 700 : 500, color: "#171717", background: tokenFilter === t ? "#F5F5F5" : "transparent", border: "none", cursor: "pointer", textAlign: "left", width: "100%" }}
+                      className={["text-[#171717] dark:text-[#E5E5E5]", tokenFilter === t ? "bg-[#F5F5F5] dark:bg-[#2A2A2A]" : "bg-transparent"].join(" ")} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: tokenFilter === t ? 700 : 500, border: "none", cursor: "pointer", textAlign: "left", width: "100%" }}
                     >
                       {t === "all" ? "All Tokens" : t}
-                      {tokenFilter === t && <Icon icon="ph:check-bold" style={{ fontSize: "14px", color: "#0A0A0A" }} />}
+                      {tokenFilter === t && <Icon icon="ph:check-bold" className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "14px" }} />}
                     </button>
                   ))}
-                  <div style={{ borderTop: "1px solid #F5F5F5", margin: "4px 0" }} />
-                  <button disabled style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: 500, color: "#A3A3A3", background: "transparent", border: "none", cursor: "not-allowed", textAlign: "left", width: "100%" }}>
+                  <div className="border-t border-[#F5F5F5] dark:border-[#232323]" style={{ margin: "4px 0" }} />
+                  <button disabled className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: 500, background: "transparent", border: "none", cursor: "not-allowed", textAlign: "left", width: "100%" }}>
                     EURC
-                    <span style={{ fontSize: "10px", padding: "2px 6px", borderRadius: "6px", background: "#F5F5F5", color: "#A3A3A3" }}>Soon</span>
+                    <span className="bg-[#F5F5F5] dark:bg-[#2A2A2A] text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "10px", padding: "2px 6px", borderRadius: "6px" }}>Soon</span>
                   </button>
                 </div>
               )}
@@ -407,7 +409,8 @@ export default function ActivityPage() {
             <div style={{ position: "relative", marginLeft: "auto" }}>
               <button
                 onClick={() => setOpenDropdown(openDropdown === "sort" ? null : "sort")}
-                style={{ display: "flex", alignItems: "center", gap: "8px", padding: "7px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: 600, color: "#171717", background: "#F5F5F5", border: "none", cursor: "pointer" }}
+                className="bg-[#F5F5F5] dark:bg-[#1E1E1E] text-[#171717] dark:text-[#E5E5E5]"
+                style={{ display: "flex", alignItems: "center", gap: "8px", padding: "7px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: 600, border: "none", cursor: "pointer" }}
               >
                 {sortOrder === "newest" ? "Newest first" : "Oldest first"}
                 <Icon icon="ph:caret-down-bold" style={{ fontSize: "11px", opacity: 0.6 }} />
@@ -416,10 +419,10 @@ export default function ActivityPage() {
                 <div className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] rounded-[14px] flex flex-col gap-0.5" style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, boxShadow: "0 8px 24px rgba(0,0,0,0.10)", zIndex: 50, minWidth: "160px", padding: "6px" }}>
                   {(["newest", "oldest"] as SortOrder[]).map((s) => (
                     <button key={s} onClick={() => { setSortOrder(s); setOpenDropdown(null); }}
-                      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: sortOrder === s ? 700 : 500, color: "#171717", background: sortOrder === s ? "#F5F5F5" : "transparent", border: "none", cursor: "pointer", textAlign: "left", width: "100%" }}
+                      className={["text-[#171717] dark:text-[#E5E5E5]", sortOrder === s ? "bg-[#F5F5F5] dark:bg-[#2A2A2A]" : "bg-transparent"].join(" ")} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "10px", fontSize: "13px", fontWeight: sortOrder === s ? 700 : 500, border: "none", cursor: "pointer", textAlign: "left", width: "100%" }}
                     >
                       {s === "newest" ? "Newest first" : "Oldest first"}
-                      {sortOrder === s && <Icon icon="ph:check-bold" style={{ fontSize: "14px", color: "#0A0A0A" }} />}
+                      {sortOrder === s && <Icon icon="ph:check-bold" className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "14px" }} />}
                     </button>
                   ))}
                 </div>
@@ -429,7 +432,7 @@ export default function ActivityPage() {
 
           {/* Active filter chips */}
           {(filter !== "all" || tokenFilter !== "all") && (
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "10px", paddingTop: "10px", borderTop: "1px solid #F5F5F5" }}>
+            <div className="border-t border-[#F5F5F5] dark:border-[#232323]" style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "10px", paddingTop: "10px" }}>
               {filter !== "all" && (
                 <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "4px 10px", borderRadius: "999px", background: "#0A0A0A", color: "white", fontSize: "12px", fontWeight: 700 }}>
                   {filter === "pending" ? `Pending (${pending.length})` : `Withdrawn (${claimed.length})`}
@@ -446,7 +449,7 @@ export default function ActivityPage() {
                   </button>
                 </div>
               )}
-              <button onClick={() => { setFilter("all"); setTokenFilter("all"); }} style={{ padding: "4px 10px", borderRadius: "999px", background: "#F5F5F5", color: "#525252", fontSize: "12px", fontWeight: 600, border: "none", cursor: "pointer" }}>
+              <button onClick={() => { setFilter("all"); setTokenFilter("all"); }} className="bg-[#F5F5F5] dark:bg-[#2A2A2A] text-[#525252] dark:text-[#B0B0B0]" style={{ padding: "4px 10px", borderRadius: "999px", fontSize: "12px", fontWeight: 600, border: "none", cursor: "pointer" }}>
                 Clear all
               </button>
             </div>
@@ -456,26 +459,26 @@ export default function ActivityPage() {
         {/* Notes list */}
         {notes.length === 0 ? (
           <div className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] rounded-2xl flex flex-col items-center text-center" style={{ padding: "64px 24px" }}>
-            <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#F5F5F5", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
-              <Icon icon="ph:gift-bold" style={{ fontSize: "28px", color: "#A3A3A3" }} />
+            <div className="bg-[#F5F5F5] dark:bg-[#1E1E1E]" style={{ width: 64, height: 64, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
+              <Icon icon="ph:gift-bold" className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "28px" }} />
             </div>
-            <p style={{ fontSize: "16px", fontWeight: 700, color: "#0A0A0A", marginBottom: "4px" }}>No tips yet</p>
-            <p style={{ fontSize: "13px", color: "#737373" }}>Send a tip from the Dashboard to get started!</p>
+            <p className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "16px", fontWeight: 700, marginBottom: "4px" }}>No tips yet</p>
+            <p className="text-[#737373] dark:text-[#8A8A8A]" style={{ fontSize: "13px" }}>Send a tip from the Dashboard to get started!</p>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {notes.map((note) => (
               <div key={note.nullifierHash || note.commitment} className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] rounded-2xl flex items-center justify-between gap-4" style={{ padding: "16px 20px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, minWidth: 0 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: "50%", background: note.claimed ? "#F0FDF4" : "#FAFAFA", border: `1px solid ${note.claimed ? "#BBF7D0" : "#E5E5E5"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <Icon icon={note.claimed ? "ph:check-circle-bold" : "ph:clock-bold"} style={{ fontSize: "20px", color: note.claimed ? "#22c55e" : "#A3A3A3" }} />
+                  <div className={note.claimed ? "bg-[#F0FDF4] dark:bg-[#12271A] border border-[#BBF7D0] dark:border-[#1F4A2E]" : "bg-[#FAFAFA] dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A]"} style={{ width: 40, height: 40, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon icon={note.claimed ? "ph:check-circle-bold" : "ph:clock-bold"} className={note.claimed ? "" : "dark:text-[#6A6A6A]"} style={{ fontSize: "20px", color: note.claimed ? "#22c55e" : "#A3A3A3" }} />
                   </div>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <span style={{ fontSize: "15px", fontWeight: 800, color: "#0A0A0A" }}>{formatAmount(note)}</span>
-                      <span style={{ fontSize: "11px", fontWeight: 600, padding: "2px 8px", borderRadius: "999px", background: "#F5F5F5", color: "#525252" }}>{note.token}</span>
+                      <span className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "15px", fontWeight: 800 }}>{formatAmount(note)}</span>
+                      <span className="bg-[#F5F5F5] dark:bg-[#2A2A2A] text-[#525252] dark:text-[#B0B0B0]" style={{ fontSize: "11px", fontWeight: 600, padding: "2px 8px", borderRadius: "999px" }}>{note.token}</span>
                     </div>
-                    <p style={{ fontSize: "12px", color: "#A3A3A3", marginTop: "4px" }}>
+                    <p className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "12px", marginTop: "4px" }}>
                       {note.claimed && note.claimedAt ? `Withdrawn ${formatRelativeTime(note.claimedAt)}` : `Deposited ${formatRelativeTime(note.timestamp)}`}
                       
                     </p>
@@ -494,7 +497,8 @@ export default function ActivityPage() {
                 ) : (
                   <button
                     onClick={() => address ? openModal(note) : connectWallet()}
-                    style={{ padding: "8px 16px", borderRadius: "999px", background: "#0A0A0A", color: "white", fontSize: "13px", fontWeight: 700, border: "none", cursor: "pointer", flexShrink: 0 }}
+                    className="bg-[#0A0A0A] text-white"
+                    style={{ padding: "8px 16px", borderRadius: "999px", fontSize: "13px", fontWeight: 700, border: "none", cursor: "pointer", flexShrink: 0 }}
                   >
                     {address ? "Claim →" : "Connect & Claim"}
                   </button>
@@ -511,15 +515,15 @@ export default function ActivityPage() {
           onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}
         >
-          <div className="dark:bg-[#1A1A1A]" style={{ background: "white", borderRadius: "20px", width: "100%", maxWidth: "480px", overflow: "hidden", boxShadow: "0 24px 64px rgba(0,0,0,0.15)" }}>
+          <div className="bg-white dark:bg-[#1A1A1A]" style={{ borderRadius: "20px", width: "100%", maxWidth: "480px", overflow: "hidden", boxShadow: "0 24px 64px rgba(0,0,0,0.15)" }}>
             {/* Modal header */}
-            <div style={{ padding: "20px 24px", borderBottom: "1px solid #E5E5E5", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div className="border-b border-[#E5E5E5] dark:border-[#2A2A2A]" style={{ padding: "20px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
-                <h2 style={{ fontSize: "16px", fontWeight: 800, color: "#0A0A0A" }}>Claim Tip</h2>
-                <p style={{ fontSize: "13px", color: "#737373", marginTop: "2px" }}>{formatAmount(modalNote)}</p>
+                <h2 className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "16px", fontWeight: 800 }}>Claim Tip</h2>
+                <p className="text-[#737373] dark:text-[#8A8A8A]" style={{ fontSize: "13px", marginTop: "2px" }}>{formatAmount(modalNote)}</p>
               </div>
-              <button onClick={closeModal} style={{ width: 32, height: 32, borderRadius: "8px", border: "1px solid #E5E5E5", background: "#FAFAFA", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Icon icon="ph:x-bold" style={{ fontSize: "14px", color: "#525252" }} />
+              <button onClick={closeModal} className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-[#FAFAFA] dark:bg-[#1A1A1A]" style={{ width: 32, height: 32, borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Icon icon="ph:x-bold" className="text-[#525252] dark:text-[#B0B0B0]" style={{ fontSize: "14px" }} />
               </button>
             </div>
 
@@ -528,8 +532,8 @@ export default function ActivityPage() {
               {claimStage === "done" ? (
                 <div style={{ textAlign: "center", padding: "24px 0" }}>
                   <Icon icon="ph:confetti-bold" style={{ fontSize: "48px", color: "#22c55e" }} />
-                  <p style={{ fontSize: "20px", fontWeight: 800, color: "#0A0A0A", marginTop: "12px" }}>Tip Claimed!</p>
-                  <p style={{ fontSize: "13px", color: "#737373", marginTop: "4px" }}>ZK proof verified. Funds transferred to your wallet.</p>
+                  <p className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "20px", fontWeight: 800, marginTop: "12px" }}>Tip Claimed!</p>
+                  <p className="text-[#737373] dark:text-[#8A8A8A]" style={{ fontSize: "13px", marginTop: "4px" }}>ZK proof verified. Funds transferred to your wallet.</p>
                   {claimTxHash && (
                     <a
                       href={"https://stellar.expert/explorer/testnet/tx/" + claimTxHash}
@@ -541,7 +545,7 @@ export default function ActivityPage() {
                       View on Stellar Expert
                     </a>
                   )}
-                  <button onClick={closeModal} style={{ display: "block", width: "100%", marginTop: "20px", padding: "12px", borderRadius: "12px", background: "#0A0A0A", color: "white", fontSize: "14px", fontWeight: 700, border: "none", cursor: "pointer" }}>
+                  <button onClick={closeModal} className="bg-[#0A0A0A] text-white" style={{ display: "block", width: "100%", marginTop: "20px", padding: "12px", borderRadius: "12px", fontSize: "14px", fontWeight: 700, border: "none", cursor: "pointer" }}>
                     Done
                   </button>
                 </div>
@@ -549,19 +553,19 @@ export default function ActivityPage() {
                 <>
                   {/* Recipient */}
                   <div>
-                    <p style={{ fontSize: "11px", fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>Recipient Wallet</p>
+                    <p className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>Recipient Wallet</p>
                     <input
                       value={recipient}
                       onChange={(e) => setRecipient(e.target.value)}
                       placeholder="G... (defaults to connected wallet)"
                       disabled={claimStage !== "idle" && claimStage !== "error"}
-                      style={{ width: "100%", fontFamily: "monospace", fontSize: "12px", color: "#0A0A0A", background: "#FAFAFA", border: "1px solid #E5E5E5", borderRadius: "10px", padding: "10px 12px", outline: "none" }}
+                      className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-[#FAFAFA] dark:bg-[#1A1A1A] text-[#0A0A0A] dark:text-[#E5E5E5]" style={{ width: "100%", fontFamily: "monospace", fontSize: "12px", borderRadius: "10px", padding: "10px 12px", outline: "none" }}
                     />
                   </div>
 
                   {/* What happens */}
-                  <div style={{ background: "#FAFAFA", borderRadius: "12px", border: "1px solid #E5E5E5", padding: "14px" }}>
-                    <p style={{ fontSize: "11px", fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "10px" }}>Why Growthip is private</p>
+                  <div className="bg-[#FAFAFA] dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A]" style={{ borderRadius: "12px", padding: "14px" }}>
+                    <p className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "10px" }}>Why Growthip is private</p>
                     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                       {[
                         { icon: "ph:shield-check-bold", text: "Zero-knowledge proof — nobody knows who tipped who" },
@@ -571,7 +575,7 @@ export default function ActivityPage() {
                       ].map((item, i) => (
                         <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
                           <Icon icon={item.icon} style={{ fontSize: "14px", color: "#6366f1", flexShrink: 0, marginTop: "2px" }} />
-                          <span style={{ fontSize: "12px", color: "#525252" }}>{item.text}</span>
+                          <span className="text-[#525252] dark:text-[#B0B0B0]" style={{ fontSize: "12px" }}>{item.text}</span>
                         </div>
                       ))}
                     </div>
@@ -580,7 +584,7 @@ export default function ActivityPage() {
                   {/* Progress bar during proving */}
                   {claimStage === "proving" && (
                     <div style={{ background: "#FAF5FF", borderRadius: "12px", border: "1px solid #DDD6FE", padding: "14px" }}>
-                      <div style={{ height: "4px", borderRadius: "999px", background: "#E5E5E5", overflow: "hidden", marginBottom: "8px" }}>
+                      <div className="bg-[#E5E5E5] dark:bg-[#2A2A2A]" style={{ height: "4px", borderRadius: "999px", overflow: "hidden", marginBottom: "8px" }}>
                         <div style={{ height: "100%", width: "60%", borderRadius: "999px", background: "#6366f1", animation: "pulse 1.5s infinite" }} />
                       </div>
                       <p style={{ fontSize: "12px", color: "#6366f1", fontWeight: 600 }}>
@@ -591,7 +595,7 @@ export default function ActivityPage() {
 
                   {/* Status */}
                   {claimStatus && claimStage !== "idle" && claimStage !== "proving" && claimStage !== "error" && (
-                    <p style={{ fontSize: "12px", color: "#737373" }}>{claimStatus}</p>
+                    <p className="text-[#737373] dark:text-[#8A8A8A]" style={{ fontSize: "12px" }}>{claimStatus}</p>
                   )}
 
                   {/* Error */}
@@ -603,7 +607,7 @@ export default function ActivityPage() {
 
                   {/* Fee breakdown */}
                   {claimStage === "idle" && modalNote && (
-                    <div style={{ padding: "12px", borderRadius: "10px", background: "#F5F5F5", display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px", color: "#737373", marginBottom: "8px" }}>
+                    <div className="bg-[#F5F5F5] dark:bg-[#1E1E1E] text-[#737373] dark:text-[#8A8A8A]" style={{ padding: "12px", borderRadius: "10px", display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px", marginBottom: "8px" }}>
                       <div style={{ display: "flex", justifyContent: "space-between" }}>
                         <span>Platform fee (1%)</span>
                         <span>~{(Number(modalNote.amount) / 1e7 * 0.01).toFixed(2)} {modalNote.token}</span>
@@ -612,7 +616,7 @@ export default function ActivityPage() {
                         <span>Est. network fee</span>
                         <span>~0.022 XLM</span>
                       </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, color: "#0A0A0A", paddingTop: "4px", borderTop: "1px solid #E5E5E5", marginTop: "2px" }}>
+                      <div className="text-[#0A0A0A] dark:text-[#F5F5F5] border-t border-[#E5E5E5] dark:border-[#2A2A2A]" style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, paddingTop: "4px", marginTop: "2px" }}>
                         <span>You receive</span>
                         <span>~{(Number(modalNote.amount) / 1e7 * 0.99).toFixed(2)} {modalNote.token}</span>
                       </div>
@@ -622,9 +626,10 @@ export default function ActivityPage() {
                   <button
                     onClick={handleClaim}
                     disabled={claimStage !== "idle" && claimStage !== "error"}
+                    className="bg-[#0A0A0A] text-white"
                     style={{
                       width: "100%", padding: "14px", borderRadius: "12px",
-                      background: "#0A0A0A", color: "white", fontSize: "14px",
+                      fontSize: "14px",
                       fontWeight: 700, border: "none",
                       cursor: (claimStage !== "idle" && claimStage !== "error") ? "not-allowed" : "pointer",
                       opacity: (claimStage !== "idle" && claimStage !== "error") ? 0.6 : 1,
