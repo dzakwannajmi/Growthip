@@ -181,19 +181,19 @@ export default function AnalyticsPage() {
   // Not connected gate — show immediately without waiting for premium check
   if (!address) {
     return (
-      <div style={{ padding: "32px", background: "#FAFAFA", minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div className="bg-[#FAFAFA] dark:bg-[#0A0A0A]" style={{ padding: "32px", minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div style={{ maxWidth: "360px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
-          <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#F5F5F5", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Icon icon="ph:wallet-bold" style={{ fontSize: "32px", color: "#A3A3A3" }} />
+          <div className="bg-[#F5F5F5] dark:bg-[#1E1E1E]" style={{ width: 64, height: 64, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Icon icon="ph:wallet-bold" className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "32px" }} />
           </div>
-          <p style={{ fontSize: "16px", fontWeight: 700, color: "#171717" }}>Connect your wallet first</p>
-          <p style={{ fontSize: "13px", color: "#737373", lineHeight: 1.6 }}>
+          <p className="text-[#171717] dark:text-[#E5E5E5]" style={{ fontSize: "16px", fontWeight: 700 }}>Connect your wallet first</p>
+          <p className="text-[#737373] dark:text-[#8A8A8A]" style={{ fontSize: "13px", lineHeight: 1.6 }}>
             To see your analytics, you need to connect your Stellar wallet. It's like logging in — just one click and your earnings data will appear here.
           </p>
           
           <a
             href="/dashboard"
-            style={{ marginTop: "8px", padding: "10px 20px", borderRadius: "10px", background: "#0A0A0A", color: "white", fontSize: "13px", fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", gap: "8px" }}
+            className="bg-[#0A0A0A] text-white" style={{ marginTop: "8px", padding: "10px 20px", borderRadius: "10px", fontSize: "13px", fontWeight: 700, textDecoration: "none", display: "flex", alignItems: "center", gap: "8px" }}
           >
             <Icon icon="ph:arrow-left-bold" style={{ fontSize: "14px" }} />
             Go to Dashboard to Connect
@@ -207,16 +207,16 @@ export default function AnalyticsPage() {
   // is_premium(), the same activation flow as private notes.
   if (premiumChecked && !isPremium) {
     return (
-      <div style={{ padding: "32px", background: "#FAFAFA", minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div className="bg-[#FAFAFA] dark:bg-[#0A0A0A]" style={{ padding: "32px", minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div style={{ maxWidth: "360px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
-          <Icon icon="ph:chart-line-up-bold" style={{ fontSize: "36px", color: "#A3A3A3" }} />
-          <p style={{ fontSize: "16px", fontWeight: 700, color: "#171717" }}>Analytics is a Premium feature</p>
-          <p style={{ fontSize: "13px", color: "#737373", lineHeight: 1.6 }}>
+          <Icon icon="ph:chart-line-up-bold" className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "36px" }} />
+          <p className="text-[#171717] dark:text-[#E5E5E5]" style={{ fontSize: "16px", fontWeight: 700 }}>Analytics is a Premium feature</p>
+          <p className="text-[#737373] dark:text-[#8A8A8A]" style={{ fontSize: "13px", lineHeight: 1.6 }}>
             Activate private notes (one-time 6 XLM) in Settings to unlock detailed analytics, alongside encrypted notes from supporters.
           </p>
           <a
             href="/dashboard/settings"
-            style={{ marginTop: "8px", padding: "10px 20px", borderRadius: "10px", background: "#0A0A0A", color: "white", fontSize: "13px", fontWeight: 700, textDecoration: "none" }}
+            className="bg-[#0A0A0A] text-white" style={{ marginTop: "8px", padding: "10px 20px", borderRadius: "10px", fontSize: "13px", fontWeight: 700, textDecoration: "none" }}
           >
             Go to Settings
           </a>
@@ -226,15 +226,15 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div style={{ padding: "32px", background: "#FAFAFA" }}>
+    <div className="bg-[#FAFAFA] dark:bg-[#0A0A0A]" style={{ padding: "32px" }}>
       <div style={{ maxWidth: "900px", margin: "0 auto", paddingBottom: "80px", display: "flex", flexDirection: "column", gap: "24px" }}>
 
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <Icon icon="ph:chart-line-up-bold" style={{ fontSize: "24px", color: "#f59e0b" }} />
           <div>
-            <h1 style={{ fontSize: "24px", fontWeight: 800, color: "#0A0A0A" }}>Analytics</h1>
-            <p style={{ fontSize: "14px", color: "#737373" }}>Detailed insights into your earnings</p>
+            <h1 className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "24px", fontWeight: 800 }}>Analytics</h1>
+            <p className="text-[#737373] dark:text-[#8A8A8A]" style={{ fontSize: "14px" }}>Detailed insights into your earnings</p>
           </div>
         </div>
 
@@ -245,13 +245,13 @@ export default function AnalyticsPage() {
           {summaryCards.map((card) => (
             <div key={card.label} className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] rounded-2xl p-5">
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-                <p style={{ fontSize: "13px", color: "#737373", fontWeight: 500 }}>{card.label}</p>
+                <p className="text-[#737373] dark:text-[#8A8A8A]" style={{ fontSize: "13px", fontWeight: 500 }}>{card.label}</p>
                 <div style={{ width: 32, height: 32, borderRadius: "8px", background: card.iconBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <Icon icon={card.icon} style={{ fontSize: "16px", color: card.iconColor, WebkitTextFillColor: card.iconColor }} />
                 </div>
               </div>
-              <p style={{ fontSize: "24px", fontWeight: 800, color: "#0A0A0A" }}>{loading ? "—" : card.value}</p>
-              <p style={{ fontSize: "12px", color: "#A3A3A3", marginTop: "4px" }}>{card.sub}</p>
+              <p className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "24px", fontWeight: 800 }}>{loading ? "—" : card.value}</p>
+              <p className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "12px", marginTop: "4px" }}>{card.sub}</p>
             </div>
           ))}
         </div>
@@ -263,7 +263,7 @@ export default function AnalyticsPage() {
           <div className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] rounded-2xl p-5">
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
               <Icon icon="ph:coins-bold" style={{ fontSize: "18px", color: "#f59e0b" }} />
-              <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>Received by Token</p>
+              <p className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "14px", fontWeight: 700 }}>Received by Token</p>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               {availableTokens.map((token) => {
@@ -275,11 +275,11 @@ export default function AnalyticsPage() {
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                       <Icon icon={TOKEN_ICONS[token.symbol] || "ph:coin-bold"} style={{ fontSize: "28px" }} />
                       <div>
-                        <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>{totalReceived % 1 === 0 ? totalReceived.toFixed(0) : totalReceived.toFixed(1)} {token.symbol}</p>
-                        <p style={{ fontSize: "12px", color: "#A3A3A3" }}>{token.symbol === "XLM" && xlmPrice > 0 ? `$${(totalReceived * xlmPrice).toFixed(2)}` : token.symbol === "USDC" ? `$${totalReceived.toFixed(2)}` : "$0.00"}</p>
+                        <p className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "14px", fontWeight: 700 }}>{totalReceived % 1 === 0 ? totalReceived.toFixed(0) : totalReceived.toFixed(1)} {token.symbol}</p>
+                        <p className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "12px" }}>{token.symbol === "XLM" && xlmPrice > 0 ? `$${(totalReceived * xlmPrice).toFixed(2)}` : token.symbol === "USDC" ? `$${totalReceived.toFixed(2)}` : "$0.00"}</p>
                       </div>
                     </div>
-                    <p style={{ fontSize: "12px", color: "#A3A3A3" }}>{`${tipCount} tips`}</p>
+                    <p className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "12px" }}>{`${tipCount} tips`}</p>
                   </div>
                 );
               })}
@@ -288,11 +288,11 @@ export default function AnalyticsPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <Icon icon="cryptocurrency-color:eur" style={{ fontSize: "28px" }} />
                   <div>
-                    <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>0 EURC</p>
-                    <p style={{ fontSize: "12px", color: "#A3A3A3" }}>€0.00</p>
+                    <p className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "14px", fontWeight: 700 }}>0 EURC</p>
+                    <p className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "12px" }}>€0.00</p>
                   </div>
                 </div>
-                <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "999px", background: "#F5F5F5", color: "#A3A3A3" }}>Soon</span>
+                <span className="bg-[#F5F5F5] dark:bg-[#2A2A2A] text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "999px" }}>Soon</span>
               </div>
             </div>
           </div>
@@ -301,7 +301,7 @@ export default function AnalyticsPage() {
           <div className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] rounded-2xl p-5">
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
               <Icon icon="ph:trend-up-bold" style={{ fontSize: "18px", color: "#f59e0b" }} />
-              <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>Average Tip Amount</p>
+              <p className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "14px", fontWeight: 700 }}>Average Tip Amount</p>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               {availableTokens.map((token) => {
@@ -315,11 +315,11 @@ export default function AnalyticsPage() {
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                       <Icon icon={TOKEN_ICONS[token.symbol] || "ph:coin-bold"} style={{ fontSize: "28px" }} />
                       <div>
-                        <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>{tokenNotes.length > 0 ? avgHuman : "—"} {token.symbol}</p>
-                        <p style={{ fontSize: "12px", color: "#A3A3A3" }}>{token.symbol === "XLM" && xlmPrice > 0 ? `$${(avgAmount * xlmPrice).toFixed(2)}` : token.symbol === "USDC" ? `$${avgAmount.toFixed(2)}` : "$0.00"}</p>
+                        <p className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "14px", fontWeight: 700 }}>{tokenNotes.length > 0 ? avgHuman : "—"} {token.symbol}</p>
+                        <p className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "12px" }}>{token.symbol === "XLM" && xlmPrice > 0 ? `$${(avgAmount * xlmPrice).toFixed(2)}` : token.symbol === "USDC" ? `$${avgAmount.toFixed(2)}` : "$0.00"}</p>
                       </div>
                     </div>
-                    <p style={{ fontSize: "12px", color: "#A3A3A3" }}>per tip</p>
+                    <p className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "12px" }}>per tip</p>
                   </div>
                 );
               })}
@@ -328,11 +328,11 @@ export default function AnalyticsPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                   <Icon icon="cryptocurrency-color:eur" style={{ fontSize: "28px" }} />
                   <div>
-                    <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>0 EURC</p>
-                    <p style={{ fontSize: "12px", color: "#A3A3A3" }}>€0.00</p>
+                    <p className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "14px", fontWeight: 700 }}>0 EURC</p>
+                    <p className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "12px" }}>€0.00</p>
                   </div>
                 </div>
-                <p style={{ fontSize: "12px", color: "#A3A3A3" }}>per tip</p>
+                <p className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "12px" }}>per tip</p>
               </div>
             </div>
           </div>
@@ -343,7 +343,7 @@ export default function AnalyticsPage() {
           <div className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] rounded-2xl p-5">
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
               <Icon icon="ph:clock-counter-clockwise-bold" style={{ fontSize: "18px", color: "#f59e0b" }} />
-              <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>Recent Tips</p>
+              <p className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "14px", fontWeight: 700 }}>Recent Tips</p>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
               {[...claimed, ...pending]
@@ -352,10 +352,10 @@ export default function AnalyticsPage() {
                 .map((note, i, arr) => (
                   <div
                     key={note.nullifierHash || note.commitment}
+                    className={i < arr.length - 1 ? "border-b border-[#F5F5F5] dark:border-[#232323]" : ""}
                     style={{
                       display: "flex", alignItems: "center", justifyContent: "space-between",
                       padding: "12px 0",
-                      borderBottom: i < arr.length - 1 ? "1px solid #F5F5F5" : "none",
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -364,22 +364,23 @@ export default function AnalyticsPage() {
                         style={{ fontSize: "28px" }}
                       />
                       <div>
-                        <p style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>{formatAmount(note)}</p>
-                        <p style={{ fontSize: "12px", color: "#A3A3A3" }}>{note.token === "XLM" && xlmPrice > 0 ? `$${(Number(note.amount) / 1e7 * xlmPrice).toFixed(2)}` : note.token === "USDC" ? `$${(Number(note.amount) / 1e7).toFixed(2)}` : "$0.00"}</p>
+                        <p className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "14px", fontWeight: 700 }}>{formatAmount(note)}</p>
+                        <p className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "12px" }}>{note.token === "XLM" && xlmPrice > 0 ? `$${(Number(note.amount) / 1e7 * xlmPrice).toFixed(2)}` : note.token === "USDC" ? `$${(Number(note.amount) / 1e7).toFixed(2)}` : "$0.00"}</p>
                       </div>
                     </div>
                     <div style={{ textAlign: "right" }}>
-                      <span style={{
-                        fontSize: "11px", fontWeight: 700, padding: "3px 10px", borderRadius: "999px",
-                        background: note.claimed ? "#F0FDF4" : "#FAFAFA",
-                        color: note.claimed ? "#16a34a" : "#A3A3A3",
-                        WebkitTextFillColor: note.claimed ? "#16a34a" : "#A3A3A3",
-                        border: `1px solid ${note.claimed ? "#BBF7D0" : "#E5E5E5"}`,
-                        display: "inline-block", marginBottom: "4px",
-                      }}>
+                      <span
+                        className={note.claimed ? "bg-[#F0FDF4] dark:bg-[#12271A] border border-[#BBF7D0] dark:border-[#1F4A2E]" : "bg-[#FAFAFA] dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A]"}
+                        style={{
+                          fontSize: "11px", fontWeight: 700, padding: "3px 10px", borderRadius: "999px",
+                          color: note.claimed ? "#16a34a" : "#A3A3A3",
+                          WebkitTextFillColor: note.claimed ? "#16a34a" : "#A3A3A3",
+                          display: "inline-block", marginBottom: "4px",
+                        }}
+                      >
                         {note.claimed ? "Withdrawn" : "Pending"}
                       </span>
-                      <p style={{ fontSize: "11px", color: "#A3A3A3" }}>
+                      <p className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "11px" }}>
                         {note.claimed && note.claimedAt
                           ? formatRelativeTime(note.claimedAt)
                           : formatRelativeTime(note.timestamp)}
