@@ -63,6 +63,10 @@ let isDark = false;
 
 function colorElement(el: HTMLElement) {
   if (!isDark) return;
+  // Hard guard: never touch anything outside the dashboard shell. This is
+  // what was missing earlier — CSS scoping alone doesn't stop this JS
+  // logic from running document-wide via the MutationObserver.
+  if (!el.closest("[data-dashboard-shell]")) return;
   // Skip aside — bg/border handled by Tailwind dark: variants
   if (el.tagName === "ASIDE" || el.closest("aside")) return;
   if (el.hasAttribute("data-no-dark") || el.closest("[data-no-dark]")) return;
@@ -78,10 +82,14 @@ function colorElement(el: HTMLElement) {
   }
 
   const mapProp = (prop: string, map: Record<string, string>) => {
+    // Previously bailed out here when there was no INLINE style value for
+    // `prop` — blind to anything colored via a Tailwind className (e.g.
+    // text-[#0A0A0A]) rather than style={{...}}, which is exactly how the
+    // whole marketing landing page is built. Always checking computed
+    // style fixes that; dashboard elements using inline styles still work
+    // exactly as before via the `val` branch of the lookup below.
     const val = el.style[prop as any];
-    if (!val) return;
     const computed = window.getComputedStyle(el)[prop as any];
-    // Check inline val, computed value (rgb format)
     const mapped = map[val?.toLowerCase()] || map[computed?.toLowerCase()];
     if (mapped && !el.hasAttribute(`data-orig-${prop}`)) {
       el.setAttribute(`data-orig-${prop}`, el.style[prop as any] || "");
@@ -95,9 +103,11 @@ function colorElement(el: HTMLElement) {
 }
 
 function applyDark() {
-  document.querySelectorAll<HTMLElement>("*").forEach(colorElement);
-  document.body.style.background = "#0A0A0A";
-  document.body.style.color = "#F5F5F5";
+  const shell = document.querySelector<HTMLElement>("[data-dashboard-shell]");
+  if (!shell) return; // Not on a dashboard page — do nothing at all.
+  shell.querySelectorAll<HTMLElement>("*").forEach(colorElement);
+  shell.style.background = "#0A0A0A";
+  shell.style.color = "#F5F5F5";
   // Sidebar handled by Tailwind dark: variants — no inline override needed
 
   // Inject hover + divider styles
@@ -169,8 +179,11 @@ function restoreLight() {
   // 1. Remove injected dark style FIRST so !important rules are gone
   document.getElementById("growthip-dark-hover")?.remove();
 
+  const shell = document.querySelector<HTMLElement>("[data-dashboard-shell]");
+  if (!shell) return; // Not on a dashboard page — nothing to restore.
+
   // 2. Force remove ALL inline styles set by applyDark on every element
-  document.querySelectorAll<HTMLElement>("*").forEach((el) => {
+  shell.querySelectorAll<HTMLElement>("*").forEach((el) => {
     // Remove data-orig attrs and restore/clear inline styles
     const hasOrigAttrs = Array.from(el.attributes).some(a => a.name.startsWith("data-orig-"));
     if (hasOrigAttrs) {
@@ -196,10 +209,10 @@ function restoreLight() {
     }
   });
 
-  // 3. Reset body and sidebar explicitly
-  document.body.style.removeProperty("background");
-  document.body.style.removeProperty("color");
-  const aside = document.querySelector("aside");
+  // 3. Reset shell and sidebar explicitly
+  shell.style.removeProperty("background");
+  shell.style.removeProperty("color");
+  const aside = shell.querySelector("aside");
   if (aside) {
     (aside as HTMLElement).style.removeProperty("background");
     (aside as HTMLElement).style.removeProperty("border-color");
@@ -207,6 +220,8 @@ function restoreLight() {
 }
 
 function startObserver() {
+  const shell = document.querySelector<HTMLElement>("[data-dashboard-shell]");
+  if (!shell) return; // Not on a dashboard page — nothing to observe.
   if (observer) observer.disconnect();
   observer = new MutationObserver((mutations) => {
     if (!isDark) return;
@@ -227,7 +242,7 @@ function startObserver() {
       }
     });
   });
-  observer.observe(document.body, {
+  observer.observe(shell, {
     childList: true,
     subtree: true,
     attributes: true,
@@ -244,8 +259,6 @@ export default function ThemeToggle() {
   const [dark, setDark] = useState(false);
 
   useEffect(() => {
-    // Dark mode temporarily disabled — force light regardless of saved preference
-    return;
     const saved = localStorage.getItem("growthip:theme");
     if (saved === "dark") {
       isDark = true;
@@ -294,9 +307,6 @@ export default function ThemeToggle() {
       localStorage.setItem("growthip:theme", "light");
     }
   }
-
-  // Temporarily hidden — dark mode disabled for launch stability
-  return null;
 
   return (
     <button

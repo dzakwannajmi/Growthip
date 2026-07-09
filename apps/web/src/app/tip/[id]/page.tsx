@@ -1,5 +1,6 @@
 "use client";
 import WalletModal from "@/components/WalletModal";
+import { useDepositFlow } from "@/hooks/useDepositFlow";
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
@@ -57,82 +58,18 @@ export default function PublicTipPage() {
   const [creatorAvatarVariant, setCreatorAvatarVariant] = useState("");
   const [linkError, setLinkError] = useState("");
 
-  // Premium / encryption gating -- private notes are mandatory: a
-  // supporter cannot tip a creator who hasn't activated private notes.
-  const { isReady: registryReady, buildRegistryClient } = useRegistryClient();
-  const [premiumChecked, setPremiumChecked] = useState(false);
-  const [creatorIsPremium, setCreatorIsPremium] = useState(false);
-  const [creatorEncryptionPubKey, setCreatorEncryptionPubKey] = useState<Uint8Array | null>(null);
+  const {
+    premiumChecked, creatorIsPremium, creatorEncryptionPubKey,
+    address, network, isTestnet, walletBusy, showWalletModal, walletStatus,
+    setShowWalletModal, connectWallet, handleSelectWallet,
+    step, setStep, token, setToken, contractAmount, setContractAmount,
+    displayAmount, setDisplayAmount, simFee, simFeeLoading, fetchNetworkFee,
+    poolTipAmount, message, setMessage, busy, status, sentNote,
+    encryptedNoteBundle, handleDeposit,
+  } = useDepositFlow(recipientAddress);
 
-  // Wallet
-  const [address, setAddress]     = useState("");
-  const [network, setNetwork]     = useState("");
-  const [walletBusy, setWalletBusy] = useState(false);
-  const [showWalletModal, setShowWalletModal] = useState(false);
-  const [walletStatus, setWalletStatus] = useState("");
-  const isTestnet = network.toUpperCase() === "TESTNET";
-
-  // Send flow
-  const [step, setStep]                     = useState<Step>("select");
-  const [token, setToken]                   = useState<Token>(getAvailableTokens()[0]);
-  const [contractAmount, setContractAmount] = useState(0);
-  const [displayAmount, setDisplayAmount]   = useState(0);
-  const [simFee, setSimFee]                 = useState<number | null>(null);
-  const [simFeeLoading, setSimFeeLoading]   = useState(false);
-  const [poolTipAmount, setPoolTipAmount]   = useState<number | null>(null);
-  const [message, setMessage]               = useState("");
-  const [busy, setBusy]                     = useState(false);
-  const [status, setStatus]                 = useState("");
-  const [sentNote, setSentNote]             = useState<PrivateNote | null>(null);
-  const [encryptedNoteBundle, setEncryptedNoteBundle] = useState<string | null>(null);
-  const [copiedNote, setCopiedNote]         = useState(false);
-  const [showQR, setShowQR]                 = useState(false);
-
-  const [PoolClient, setPoolClient] = useState<null | {
-    Client:   typeof import("@/lib/growthipPoolClient").Client;
-    networks: typeof import("@/lib/growthipPoolClient").networks;
-  }>(null);
-
-  useEffect(() => {
-    import("@/lib/growthipPoolClient").then((mod) =>
-      setPoolClient({ Client: mod.Client, networks: mod.networks })
-    );
-  }, []);
-  // Fetch simulated network fee from Stellar RPC fee stats.
-  async function fetchNetworkFee() {
-    setSimFeeLoading(true);
-    try {
-      const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL ?? "https://soroban-testnet.stellar.org";
-      const res = await fetch(rpcUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getFeeStats", params: {} }),
-      });
-      const data = await res.json();
-      const p90 = data?.result?.sorobanInclusionFee?.p90;
-      if (p90) setSimFee(Math.ceil(Number(p90)) / 1e7);
-    } catch { /* silent fail */ }
-    finally { setSimFeeLoading(false); }
-  }
-
-  // Fetch tip_amount from contract so AmountSelector is locked to valid amount.
-  useEffect(() => {
-    if (!PoolClient || !token) return;
-    (async () => {
-      try {
-        const { Client, networks } = PoolClient;
-        const poolId = token.symbol === "USDC"
-          ? (process.env.NEXT_PUBLIC_POOL_USDC_ID || networks.testnet.contractId)
-          : networks.testnet.contractId;
-        const client = new Client({ ...networks.testnet, contractId: poolId, rpcUrl: process.env.NEXT_PUBLIC_RPC_URL || "https://soroban-testnet.stellar.org" });
-        const tx = await client.tip_amount();
-        const amount = Number(tx.result ?? 0);
-        setPoolTipAmount(amount);
-      } catch (e) {
-        console.error("Failed to fetch tip_amount:", e);
-      }
-    })();
-  }, [PoolClient, token]);
+  const [copiedNote, setCopiedNote] = useState(false);
+  const [showQR, setShowQR] = useState(false);
 
   // Decode the tip ID into a real Stellar address on mount.
   useEffect(() => {
@@ -147,133 +84,6 @@ export default function PublicTipPage() {
       setLinkError("This tip link is invalid or corrupted.");
     }
   }, [tipId]);
-
-  // Once we know the creator's real address, check whether they've
-  // activated premium (mandatory for private notes -- see Tahap 3
-  // design decision: no plaintext fallback).
-  useEffect(() => {
-    if (!recipientAddress || !registryReady) return;
-    (async () => {
-      try {
-        const client = buildRegistryClient(recipientAddress);
-        const [premiumResult, pubkeyResult] = await Promise.all([
-          client.is_premium({ recipient: recipientAddress }),
-          client.get_encryption_pubkey({ recipient: recipientAddress }),
-        ]);
-        setCreatorIsPremium(premiumResult.result === true);
-        if (pubkeyResult.result) {
-          setCreatorEncryptionPubKey(new Uint8Array(pubkeyResult.result));
-        }
-      } catch (err) {
-        console.error("Failed to check creator premium status:", err);
-        setCreatorIsPremium(false);
-      } finally {
-        setPremiumChecked(true);
-      }
-    })();
-  }, [recipientAddress, registryReady, buildRegistryClient]);
-
-  async function connectWallet() {
-    setWalletBusy(true);
-    setWalletStatus("Connecting...");
-    try {
-      setShowWalletModal(true);
-      return;
-    } catch (err) {
-      setWalletStatus(err instanceof Error ? err.message : "Failed.");
-    } finally {
-      setWalletBusy(false);
-    }
-  }
-
-  const buildClient = useCallback(
-    (publicKey: string, tokenSymbol: string = "XLM") => {
-      if (!PoolClient) throw new Error("Client not ready");
-      const { Client, networks } = PoolClient;
-      const poolId = tokenSymbol === "USDC"
-        ? (process.env.NEXT_PUBLIC_POOL_USDC_ID || networks.testnet.contractId)
-        : networks.testnet.contractId;
-      return new Client({
-        ...networks.testnet,
-        contractId: poolId,
-        rpcUrl: RPC_URL,
-        publicKey,
-        signTransaction: async (xdr: string) => {
-          const { signTransaction: walletSign } = await import("@/lib/wallet");
-          const signed = await walletSign(xdr, { address: publicKey, networkPassphrase: NETWORK_PASSPHRASE });
-          return { signedTxXdr: signed.signedTxXdr, signerAddress: publicKey };
-        },
-      });
-    },
-    [PoolClient],
-  );
-
-  async function handleDeposit() {
-    if (!address || !isTestnet || !PoolClient || contractAmount === 0 || !recipientAddress) return;
-    // Private notes are mandatory (Tahap 3 design decision) -- a
-    // supporter cannot deposit at all if the creator hasn't activated
-    // premium / published an encryption public key.
-    if (!creatorIsPremium || !creatorEncryptionPubKey) {
-      setStatus("This creator hasn't activated private notes yet.");
-      return;
-    }
-    setBusy(true);
-    setStatus("Generating secret and nullifier...");
-    try {
-      const secret        = generateSecret();
-      const nullifier     = generateNullifier();
-      setStatus("Computing recipient hash...");
-      // IMPORTANT: recipientHash is computed from the CREATOR's address
-      // (decoded from the tip link), not the supporter's own address —
-      // the supporter is paying, the creator is the intended claimant.
-      const recipientHash = await computeRecipientHash(recipientAddress);
-      const commitment    = await computeCommitment(secret, nullifier, recipientHash);
-      const nullifierHash = await computeNullifierHash(nullifier);
-      const commitmentHex = decimalToHex32(commitment);
-      const client        = buildClient(address, token.symbol);
-
-      // Encrypt note BEFORE deposit so bundle can be stored on-chain
-      // as the `message` field -- creator auto-fetches it later.
-      setStatus("Encrypting note for the creator...");
-      const partialNote: PrivateNote = {
-        version: "growthip-v3", secret, nullifier, recipientHash,
-        commitment: commitmentHex, nullifierHash: decimalToHex32(nullifierHash),
-        root: "0".padStart(64, "0"), token: token.symbol as TokenSymbol,
-        amount: String(contractAmount), timestamp: Date.now(), depositIndex: -1, claimed: false,
-        recipientAddress: recipientAddress ?? undefined,
-        poolId: buildClient(address, token.symbol) ? (token.symbol === "USDC"
-          ? process.env.NEXT_PUBLIC_POOL_USDC_ID
-          : process.env.NEXT_PUBLIC_POOL_ID) : undefined,
-      };
-      const noteBytes = new TextEncoder().encode(JSON.stringify(partialNote));
-      const encryptedBundle = await encryptNoteForRecipient(creatorEncryptionPubKey, noteBytes);
-
-      setStatus("Approve the deposit transaction in your wallet...");
-      const tx = await client.deposit_paid({
-        depositor:  address,
-        commitment: Buffer.from(commitmentHex, "hex"),
-        amount:     BigInt(contractAmount),
-        // Encrypted bundle stored on-chain -- creator fetches automatically.
-        message:    encryptedBundle
-          ? encryptedBundle
-          : message.trim() ? message.trim() : undefined,
-      });
-      const { result } = await tx.signAndSend({ force: true });
-      const depositIndex = Number(result ?? 0);
-
-      const newNote: PrivateNote = { ...partialNote, depositIndex };
-      if (recipientAddress) saveNote(recipientAddress, newNote);
-      setSentNote(newNote);
-      setEncryptedNoteBundle(encryptedBundle);
-      setStatus("Tip sent!");
-      setStep("done");
-    } catch (err) {
-      console.error(err);
-      setStatus(err instanceof Error ? err.message : "Deposit failed.");
-    } finally {
-      setBusy(false);
-    }
-  }
 
   const fmtDisplay = (n: number) => (n % 1 === 0 ? String(n) : n.toFixed(1));
   const shortAddr  = recipientAddress
@@ -598,21 +408,7 @@ export default function PublicTipPage() {
       <WalletModal
           show={showWalletModal}
           onClose={() => setShowWalletModal(false)}
-          onSelectWallet={async (walletId) => {
-            try {
-              const { connectWithWallet } = await import("@/lib/wallet");
-              const addr = await connectWithWallet(walletId);
-              setAddress(addr);
-              setNetwork("TESTNET");
-              void warmPoseidon();
-              setWalletStatus("Connected!");
-              setShowWalletModal(false);
-            } catch (err) {
-              setWalletStatus(err instanceof Error ? err.message : "Failed.");
-            } finally {
-              setWalletBusy(false);
-            }
-          }}
+          onSelectWallet={handleSelectWallet}
         />
       </div>
     </div>

@@ -73,7 +73,8 @@ function InfoTooltip({ text }: { text: string }) {
     <div style={{ position: "relative", display: "inline-flex" }}>
       <Icon
         icon="ph:info"
-        style={{ fontSize: "14px", color: "#A3A3A3", cursor: "help" }}
+        className="text-[#A3A3A3] dark:text-[#6A6A6A]"
+        style={{ fontSize: "14px", cursor: "help" }}
         onMouseEnter={() => setShow(true)}
         onMouseLeave={() => setShow(false)}
       />
@@ -136,9 +137,12 @@ function useLivePrices() {
 }
 
 // ── Card wrapper ───────────────────────────────────────────────────────────
-function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+function Card({ children, style, className }: { children: React.ReactNode; style?: React.CSSProperties; className?: string }) {
   return (
-    <div style={{ background: "white", borderRadius: "16px", border: "1px solid #E5E5E5", padding: "24px", ...style }}>
+    <div
+      className={["rounded-2xl border border-[#E5E5E5] dark:border-[#2A2A2A] bg-white dark:bg-[#151515] p-6", className].filter(Boolean).join(" ")}
+      style={style}
+    >
       {children}
     </div>
   );
@@ -146,7 +150,7 @@ function Card({ children, style }: { children: React.ReactNode; style?: React.CS
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ fontSize: "11px", fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "12px" }}>
+    <p className="text-[11px] font-bold text-[#A3A3A3] dark:text-[#6A6A6A] uppercase tracking-widest mb-3">
       {children}
     </p>
   );
@@ -583,17 +587,17 @@ export default function DashboardPage() {
 
   // ══════════════════════════════════════════════════════════════════════
   return (
-    <div style={{ padding: "32px", background: "#FAFAFA" }}>
+    <div className="p-8 bg-[#FAFAFA] dark:bg-[#0A0A0A]">
       {/* Mainnet warning overlay */}
       {isMainnet && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)", zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}>
-          <div style={{ background: "white", borderRadius: "20px", maxWidth: "420px", width: "100%", padding: "28px", display: "flex", flexDirection: "column", alignItems: "center", gap: "16px", textAlign: "center" }}>
+          <div className="bg-white dark:bg-[#151515]" style={{ borderRadius: "20px", maxWidth: "420px", width: "100%", padding: "28px", display: "flex", flexDirection: "column", alignItems: "center", gap: "16px", textAlign: "center" }}>
             <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#FEF2F2", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Icon icon="ph:warning-circle-bold" style={{ fontSize: "28px", color: "#EF4444" }} />
             </div>
             <div>
-              <p style={{ fontSize: "17px", fontWeight: 800, color: "#0A0A0A", marginBottom: "8px" }}>Mainnet not supported</p>
-              <p style={{ fontSize: "13px", color: "#737373", lineHeight: 1.6 }}>
+              <p className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "17px", fontWeight: 800, marginBottom: "8px" }}>Mainnet not supported</p>
+              <p className="text-[#737373] dark:text-[#8A8A8A]" style={{ fontSize: "13px", lineHeight: 1.6 }}>
                 Growthip is currently testnet-only. Your wallet is set to <strong>Mainnet</strong> — real funds are at risk if you proceed.
                 Please switch your wallet back to <strong>Testnet</strong> to continue using Growthip safely.
               </p>
@@ -603,7 +607,7 @@ export default function DashboardPage() {
                 Smart contracts on mainnet are unaudited. The ZK trusted setup is not a public ceremony. <strong>Do not use with real funds.</strong>
               </p>
             </div>
-            <p style={{ fontSize: "12px", color: "#A3A3A3" }}>Switch to Testnet in your wallet extension to dismiss this warning.</p>
+            <p className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "12px" }}>Switch to Testnet in your wallet extension to dismiss this warning.</p>
           </div>
         </div>
       )}
@@ -714,9 +718,9 @@ export default function DashboardPage() {
           <Card>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
               <Icon icon="ph:wallet-bold" style={{ fontSize: "18px" }} />
-              <span style={{ fontSize: "14px", fontWeight: 700, color: "#171717" }}>Wallet Connection</span>
+              <span className="text-[#171717] dark:text-[#E5E5E5]" style={{ fontSize: "14px", fontWeight: 700 }}>Wallet Connection</span>
             </div>
-            <p style={{ fontSize: "13px", color: "#525252", marginBottom: "20px" }}>
+            <p className="text-[#525252] dark:text-[#B0B0B0]" style={{ fontSize: "13px", marginBottom: "20px" }}>
               Connect your wallet to send or withdraw tips.
             </p>
             <button
@@ -727,31 +731,32 @@ export default function DashboardPage() {
               <Icon icon="ph:wallet" style={{ fontSize: "18px" }} />
               {walletBusy ? "Connecting..." : "Connect Wallet"}
             </button>
-            {walletStatus && <p style={{ fontSize: "12px", color: "#737373", marginTop: "12px" }}>{walletStatus}</p>}
+            {walletStatus && <p className="text-[#737373] dark:text-[#8A8A8A]" style={{ fontSize: "12px", marginTop: "12px" }}>{walletStatus}</p>}
           </Card>
         ) : (
           /* Wallet connected - show Send/Withdraw tabs */
           <Card style={{ padding: 0 }}>
             {/* Wallet info bar */}
-            <div style={{ padding: "14px 20px", borderBottom: "1px solid #E5E5E5", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+            <div className="border-b border-[#E5E5E5] dark:border-[#2A2A2A]" style={{ padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#F5F5F5", border: "1px solid #E5E5E5", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <Icon icon="ph:wallet-bold" style={{ fontSize: "16px", color: "#525252" }} />
+                <div className="bg-[#F5F5F5] dark:bg-[#1E1E1E] border border-[#E5E5E5] dark:border-[#2A2A2A]" style={{ width: 32, height: 32, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Icon icon="ph:wallet-bold" className="text-[#525252] dark:text-[#B0B0B0]" style={{ fontSize: "16px" }} />
                 </div>
-                <span style={{ fontFamily: "monospace", fontSize: "12px", color: "#525252", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <span className="text-[#525252] dark:text-[#B0B0B0]" style={{ fontFamily: "monospace", fontSize: "12px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {address.slice(0, 6)}...{address.slice(-4)}
                 </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-                <span style={{ fontSize: "11px", fontWeight: 700, padding: "4px 10px", borderRadius: "999px", background: isTestnet ? "#F0FDF4" : "#FEF2F2", color: isTestnet ? "#16a34a" : "#ef4444", WebkitTextFillColor: isTestnet ? "#16a34a" : "#ef4444" }}>
+                <span className={isTestnet ? "bg-[#F0FDF4] dark:bg-[#12271A]" : "bg-[#FEF2F2] dark:bg-[#2D1515]"} style={{ fontSize: "11px", fontWeight: 700, padding: "4px 10px", borderRadius: "999px", color: isTestnet ? "#16a34a" : "#ef4444", WebkitTextFillColor: isTestnet ? "#16a34a" : "#ef4444" }}>
                   {network === "TESTNET" ? "Testnet" : network === "FUTURENET" ? "Futurenet" : network}
                 </span>
                 <button
                   onClick={() => setShowWalletModal(true)}
                   title="Switch wallet"
-                  style={{ width: 32, height: 32, borderRadius: "8px", border: "1px solid #E5E5E5", background: "#FAFAFA", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                  className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-[#FAFAFA] dark:bg-[#1A1A1A]"
+                  style={{ width: 32, height: 32, borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                 >
-                  <Icon icon="ph:arrows-left-right-bold" style={{ fontSize: "14px", color: "#525252" }} />
+                  <Icon icon="ph:arrows-left-right-bold" className="text-[#525252] dark:text-[#B0B0B0]" style={{ fontSize: "14px" }} />
                 </button>
                 <button
                   onClick={() => {
@@ -761,15 +766,16 @@ export default function DashboardPage() {
                     localStorage.removeItem("growthip:network");
                   }}
                   title="Disconnect wallet"
-                  style={{ width: 32, height: 32, borderRadius: "8px", border: "1px solid #E5E5E5", background: "#FAFAFA", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
+                  className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-[#FAFAFA] dark:bg-[#1A1A1A]"
+                  style={{ width: 32, height: 32, borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}
                 >
-                  <Icon icon="ph:sign-out-bold" style={{ fontSize: "14px", color: "#525252" }} />
+                  <Icon icon="ph:sign-out-bold" className="text-[#525252] dark:text-[#B0B0B0]" style={{ fontSize: "14px" }} />
                 </button>
               </div>
             </div>
 
             {/* Withdraw header */}
-            <div style={{ padding: "14px 20px", borderBottom: "1px solid #E5E5E5" }}>
+            <div className="border-b border-[#E5E5E5] dark:border-[#2A2A2A]" style={{ padding: "14px 20px" }}>
               <p className="text-sm font-bold text-[#0A0A0A] dark:text-[#F0F0F0]">Withdraw</p>
             </div>
 
@@ -945,11 +951,11 @@ export default function DashboardPage() {
                 {claimStage === "done" ? (
                   <div style={{ textAlign: "center", padding: "24px 0" }}>
                     <p style={{ fontSize: "32px" }}>🎉</p>
-                    <p style={{ fontSize: "18px", fontWeight: 800, color: "#0A0A0A", marginTop: "8px" }}>Tip Claimed!</p>
-                    <p style={{ fontSize: "13px", color: "#737373", marginTop: "4px" }}>ZK proof verified. Funds transferred to your wallet.</p>
-                    <div style={{ marginTop: "16px", padding: "12px", borderRadius: "12px", background: "#FAFAFA", border: "1px solid #E5E5E5" }}>
-                      <p style={{ fontSize: "11px", color: "#A3A3A3" }}>Transaction</p>
-                      <p style={{ fontSize: "11px", fontFamily: "monospace", color: "#525252", wordBreak: "break-all", marginTop: "4px" }}>{claimTxHash}</p>
+                    <p className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "18px", fontWeight: 800, marginTop: "8px" }}>Tip Claimed!</p>
+                    <p className="text-[#737373] dark:text-[#8A8A8A]" style={{ fontSize: "13px", marginTop: "4px" }}>ZK proof verified. Funds transferred to your wallet.</p>
+                    <div className="bg-[#FAFAFA] dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A]" style={{ marginTop: "16px", padding: "12px", borderRadius: "12px" }}>
+                      <p className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "11px" }}>Transaction</p>
+                      <p className="text-[#525252] dark:text-[#B0B0B0]" style={{ fontSize: "11px", fontFamily: "monospace", wordBreak: "break-all", marginTop: "4px" }}>{claimTxHash}</p>
                     </div>
                     <button
                       onClick={() => { setClaimStage("idle"); setNoteInput(""); setClaimTxHash(""); }}
@@ -1024,7 +1030,8 @@ export default function DashboardPage() {
                         placeholder='Paste your private note (JSON or base64)...'
                         rows={4}
                         disabled={claimBusy}
-                        style={{ width: "100%", fontFamily: "monospace", fontSize: "12px", color: "#0A0A0A", background: "#FAFAFA", border: "1px solid #E5E5E5", borderRadius: "12px", padding: "12px", resize: "none", outline: "none" }}
+                        className="bg-[#FAFAFA] dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] text-[#0A0A0A] dark:text-[#E5E5E5]"
+                        style={{ width: "100%", fontFamily: "monospace", fontSize: "12px", borderRadius: "12px", padding: "12px", resize: "none", outline: "none" }}
                       />
                     </div>
                     <div>
@@ -1034,16 +1041,17 @@ export default function DashboardPage() {
                         onChange={(e) => setRecipient(e.target.value)}
                         placeholder="G... (defaults to connected wallet)"
                         disabled={claimBusy}
-                        style={{ width: "100%", fontFamily: "monospace", fontSize: "12px", color: "#0A0A0A", background: "#FAFAFA", border: "1px solid #E5E5E5", borderRadius: "12px", padding: "12px", outline: "none" }}
+                        className="bg-[#FAFAFA] dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] text-[#0A0A0A] dark:text-[#E5E5E5]"
+                        style={{ width: "100%", fontFamily: "monospace", fontSize: "12px", borderRadius: "12px", padding: "12px", outline: "none" }}
                       />
                     </div>
 
                     {claimStage === "proving" && (
                       <div style={{ padding: "16px", borderRadius: "12px", border: "1px solid #DDD6FE", background: "#FAF5FF" }}>
-                        <div style={{ height: "6px", borderRadius: "999px", background: "#E5E5E5", overflow: "hidden", marginBottom: "8px" }}>
+                        <div className="bg-[#E5E5E5] dark:bg-[#2A2A2A]" style={{ height: "6px", borderRadius: "999px", overflow: "hidden", marginBottom: "8px" }}>
                           <div style={{ height: "100%", width: "50%", borderRadius: "999px", background: "#6366f1", animation: "pulse 1.5s infinite" }} />
                         </div>
-                        <p style={{ fontSize: "12px", color: "#737373" }}>
+                        <p className="text-[#737373] dark:text-[#8A8A8A]" style={{ fontSize: "12px" }}>
                           {claimProgress ?? "Generating privacy proof..."} — Please keep this tab open.
                         </p>
                       </div>
@@ -1074,14 +1082,14 @@ export default function DashboardPage() {
         {/* Personal Link */}
         <Card style={{ padding: 0, overflow: "hidden" }}>
           {/* Header */}
-          <div style={{ padding: "16px 20px", borderBottom: "1px solid #E5E5E5", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div className="border-b border-[#E5E5E5] dark:border-[#2A2A2A]" style={{ padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div>
-              <h2 style={{ fontSize: "14px", fontWeight: 700, color: "#0A0A0A", margin: "0 0 2px" }}>Simple Payment</h2>
-              <p style={{ fontSize: "12px", color: "#A3A3A3", margin: 0 }}>Your active tip link</p>
+              <h2 className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "14px", fontWeight: 700, margin: "0 0 2px" }}>Simple Payment</h2>
+              <p className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "12px", margin: 0 }}>Your active tip link</p>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span style={{ fontSize: "11px", fontWeight: 700, padding: "3px 10px", borderRadius: "999px", background: "#F0FDF4", color: "#16a34a", WebkitTextFillColor: "#16a34a" }}>Active</span>
-              <Link href="/dashboard/profile" style={{ padding: "6px 12px", border: "1px solid #E5E5E5", borderRadius: "8px", fontSize: "12px", fontWeight: 600, color: "#404040", background: "white", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", textDecoration: "none" }}>
+              <Link href="/dashboard/profile" className="border border-[#E5E5E5] dark:border-[#2A2A2A] text-[#404040] dark:text-[#D0D0D0] bg-white dark:bg-[#1A1A1A]" style={{ padding: "6px 12px", borderRadius: "8px", fontSize: "12px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", textDecoration: "none" }}>
                 <Icon icon="ph:pencil-simple-bold" style={{ fontSize: "13px" }} /> Edit Profile
               </Link>
             </div>
@@ -1089,31 +1097,32 @@ export default function DashboardPage() {
           <div style={{ padding: "16px 20px" }}>
             {address ? (
               <>
-                <div style={{ background: "#F9FAFB", borderRadius: "12px", padding: "12px 14px", display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px" }}>
-                  <img src={avatarUrlFor(address)} alt="avatar" width={40} height={40} style={{ width: 40, height: 40, borderRadius: "50%", border: "1px solid #E5E5E5", flexShrink: 0 }} />
+                <div className="bg-[#F9FAFB] dark:bg-[#1A1A1A]" style={{ borderRadius: "12px", padding: "12px 14px", display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px" }}>
+                  <img src={avatarUrlFor(address)} alt="avatar" width={40} height={40} className="border border-[#E5E5E5] dark:border-[#2A2A2A]"
+                    style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0 }} />
                   <div style={{ minWidth: 0 }}>
-                    <p style={{ fontSize: "13px", fontWeight: 700, color: "#0A0A0A", margin: "0 0 2px" }}>@{getProfile(address).displayName || address.slice(0, 6) + "..." + address.slice(-4)}</p>
-                    <p style={{ fontSize: "11px", color: "#A3A3A3", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tipLink?.replace("https://", "")}</p>
+                    <p className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "13px", fontWeight: 700, margin: "0 0 2px" }}>@{getProfile(address).displayName || address.slice(0, 6) + "..." + address.slice(-4)}</p>
+                    <p className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "11px", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tipLink?.replace("https://", "")}</p>
                   </div>
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px" }}>
-                  <button onClick={copyLink} style={{ padding: "9px 4px", borderRadius: "10px", border: "1px solid #E5E5E5", background: copied ? "#F0FDF4" : "#F9FAFB", fontSize: "12px", fontWeight: 600, color: copied ? "#22c55e" : "#0A0A0A", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px" }}>
+                  <button onClick={copyLink} className={["border border-[#E5E5E5] dark:border-[#2A2A2A]", copied ? "bg-[#F0FDF4] dark:bg-[#12271A]" : "bg-[#F9FAFB] dark:bg-[#1A1A1A]", copied ? "" : "text-[#0A0A0A] dark:text-[#E5E5E5]"].join(" ")} style={{ padding: "9px 4px", borderRadius: "10px", fontSize: "12px", fontWeight: 600, color: copied ? "#22c55e" : undefined, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px" }}>
                     <Icon icon={copied ? "ph:check-bold" : "ph:copy-simple-bold"} style={{ fontSize: "14px" }} /> {copied ? "Copied!" : "Copy"}
                   </button>
-                  <button onClick={() => setShowDashShare(true)} style={{ padding: "9px 4px", borderRadius: "10px", border: "1px solid #E5E5E5", background: "#F9FAFB", fontSize: "12px", fontWeight: 600, color: "#0A0A0A", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px" }}>
+                  <button onClick={() => setShowDashShare(true)} className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-[#F9FAFB] dark:bg-[#1A1A1A] text-[#0A0A0A] dark:text-[#E5E5E5]" style={{ padding: "9px 4px", borderRadius: "10px", fontSize: "12px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px" }}>
                     <Icon icon="ph:share-network-bold" style={{ fontSize: "14px" }} /> Share
                   </button>
-                  <button onClick={() => setShowLinkQR(true)} style={{ padding: "9px 4px", borderRadius: "10px", border: "1px solid #E5E5E5", background: "#F9FAFB", fontSize: "12px", fontWeight: 600, color: "#0A0A0A", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px" }}>
+                  <button onClick={() => setShowLinkQR(true)} className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-[#F9FAFB] dark:bg-[#1A1A1A] text-[#0A0A0A] dark:text-[#E5E5E5]" style={{ padding: "9px 4px", borderRadius: "10px", fontSize: "12px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px" }}>
                     <Icon icon="ph:qr-code-bold" style={{ fontSize: "14px" }} /> QR
                   </button>
-                  <a href={tipLink ?? "#"} target="_blank" rel="noreferrer" style={{ padding: "9px 4px", borderRadius: "10px", border: "1px solid #E5E5E5", background: "#F9FAFB", fontSize: "12px", fontWeight: 600, color: "#0A0A0A", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px", textDecoration: "none" }}>
+                  <a href={tipLink ?? "#"} target="_blank" rel="noreferrer" className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-[#F9FAFB] dark:bg-[#1A1A1A] text-[#0A0A0A] dark:text-[#E5E5E5]" style={{ padding: "9px 4px", borderRadius: "10px", fontSize: "12px", fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "center", gap: "5px", textDecoration: "none" }}>
                     <Icon icon="ph:arrow-square-out-bold" style={{ fontSize: "14px" }} /> View
                   </a>
                 </div>
               </>
             ) : (
-              <div style={{ padding: "20px", borderRadius: "12px", border: "1px dashed #E5E5E5", background: "#FAFAFA", textAlign: "center" }}>
-                <p style={{ fontSize: "13px", color: "#A3A3A3" }}>Connect your wallet to get your personal tip link</p>
+              <div className="border border-dashed border-[#E5E5E5] dark:border-[#2A2A2A] bg-[#FAFAFA] dark:bg-[#1A1A1A]" style={{ padding: "20px", borderRadius: "12px", textAlign: "center" }}>
+                <p className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "13px" }}>Connect your wallet to get your personal tip link</p>
               </div>
             )}
           </div>
@@ -1123,21 +1132,21 @@ export default function DashboardPage() {
         <Modal show={showLinkQR && !!tipLink} onClose={() => setShowLinkQR(false)} maxWidth="380px">
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
                 <div style={{ flex: 1 }} />
-                <p style={{ fontSize: "16px", fontWeight: 800, color: "#0A0A0A", margin: 0, flex: 2, textAlign: "center" }}>Your QR Code</p>
+                <p className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "16px", fontWeight: 800, margin: 0, flex: 2, textAlign: "center" }}>Your QR Code</p>
                 <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
-                  <button onClick={() => setShowLinkQR(false)} style={{ width: "30px", height: "30px", borderRadius: "50%", border: "1px solid #E5E5E5", background: "#F5F5F5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Icon icon="ph:x-bold" style={{ fontSize: "13px", color: "#737373" }} />
+                  <button onClick={() => setShowLinkQR(false)} className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-[#F5F5F5] dark:bg-[#1E1E1E]" style={{ width: "30px", height: "30px", borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Icon icon="ph:x-bold" className="text-[#737373] dark:text-[#8A8A8A]" style={{ fontSize: "13px" }} />
                   </button>
                 </div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "14px" }}>
                 <div style={{ padding: "12px", background: "#22c55e", borderRadius: "18px" }}>
-                  <div style={{ padding: "10px", background: "white", borderRadius: "10px" }}>
+                  <div className="bg-white" style={{ padding: "10px", borderRadius: "10px" }}>
                     <QRCodeSVG value={tipLink ?? ""} size={160} level="M" />
                   </div>
                 </div>
-                <div style={{ width: "100%", padding: "10px 14px", background: "#F9FAFB", borderRadius: "10px", border: "1px solid #E5E5E5" }}>
-                  <p style={{ fontSize: "11px", color: "#525252", margin: 0, textAlign: "center", fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tipLink}</p>
+                <div className="bg-[#F9FAFB] dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A]" style={{ width: "100%", padding: "10px 14px", borderRadius: "10px" }}>
+                  <p className="text-[#525252] dark:text-[#B0B0B0]" style={{ fontSize: "11px", margin: 0, textAlign: "center", fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tipLink}</p>
                 </div>
                 <button
                   onClick={() => {
@@ -1152,11 +1161,11 @@ export default function DashboardPage() {
                   }}
                   style={{ width: "100%", padding: "11px", borderRadius: "12px", background: "#0A0A0A", color: "white", border: "none", fontSize: "13px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
                 >
-                  <Icon icon="ph:download-simple-bold" style={{ fontSize: "15px" }} /> Download QR Code
+                  <Icon icon="ph:download-simple-bold" className="text-white" style={{ fontSize: "15px" }} /> Download QR Code
                 </button>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                   <img src="/growthip-logo.png" alt="Growthip" style={{ width: "20px", height: "20px", objectFit: "contain" }} />
-                  <span style={{ fontSize: "13px", fontWeight: 700, color: "#0A0A0A" }}>Growthip</span>
+                  <span className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "13px", fontWeight: 700 }}>Growthip</span>
                 </div>
               </div>
         </Modal>
@@ -1164,42 +1173,44 @@ export default function DashboardPage() {
         {/* Share Modal for dashboard */}
         <Modal show={showDashShare} onClose={() => setShowDashShare(false)} maxWidth="420px">
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-                <p style={{ fontSize: "16px", fontWeight: 800, color: "#0A0A0A", margin: 0 }}>Share your link</p>
-                <button onClick={() => setShowDashShare(false)} style={{ width: "30px", height: "30px", borderRadius: "50%", border: "1px solid #E5E5E5", background: "#F5F5F5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Icon icon="ph:x-bold" style={{ fontSize: "13px", color: "#737373" }} />
+                <p className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "16px", fontWeight: 800, margin: 0 }}>Share your link</p>
+                <button onClick={() => setShowDashShare(false)} className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-[#F5F5F5] dark:bg-[#1E1E1E]" style={{ width: "30px", height: "30px", borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Icon icon="ph:x-bold" className="text-[#737373] dark:text-[#8A8A8A]" style={{ fontSize: "13px" }} />
                 </button>
               </div>
               {/* Custom message */}
               <div style={{ marginBottom: "16px" }}>
-                <p style={{ fontSize: "12px", fontWeight: 600, color: "#525252", margin: "0 0 8px" }}>Custom message</p>
+                <p className="text-[#525252] dark:text-[#B0B0B0]" style={{ fontSize: "12px", fontWeight: 600, margin: "0 0 8px" }}>Custom message</p>
                 <textarea
                   value={dashShareMsg}
                   onChange={(e) => setDashShareMsg(e.target.value.slice(0, 280))}
                   rows={3}
                   maxLength={280}
                   placeholder="Write a message to share with your link..."
-                  style={{ width: "100%", padding: "10px 12px", borderRadius: "10px", border: "1px solid #E5E5E5", fontSize: "13px", resize: "none", outline: "none", fontFamily: "inherit", boxSizing: "border-box", lineHeight: 1.5, color: "#0A0A0A" }}
+                  className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-white dark:bg-[#1A1A1A] text-[#0A0A0A] dark:text-[#E5E5E5]"
+                  style={{ width: "100%", padding: "10px 12px", borderRadius: "10px", fontSize: "13px", resize: "none", outline: "none", fontFamily: "inherit", boxSizing: "border-box", lineHeight: 1.5 }}
                 />
-                <p style={{ fontSize: "11px", color: dashShareMsg.length >= 260 ? "#ef4444" : "#A3A3A3", margin: "4px 0 0" }}>{dashShareMsg.length}/280</p>
+                <p className={dashShareMsg.length >= 260 ? "" : "dark:text-[#6A6A6A]"} style={{ fontSize: "11px", color: dashShareMsg.length >= 260 ? "#ef4444" : "#A3A3A3", margin: "4px 0 0" }}>{dashShareMsg.length}/280</p>
               </div>
               {/* Platforms */}
-              <p style={{ fontSize: "12px", fontWeight: 600, color: "#525252", margin: "0 0 10px" }}>Share to</p>
+              <p className="text-[#525252] dark:text-[#B0B0B0]" style={{ fontSize: "12px", fontWeight: 600, margin: "0 0 10px" }}>Share to</p>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "12px" }}>
                 <button
                   onClick={() => window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(dashShareMsg + "\n" + (tipLink ?? ""))}`, "_blank")}
-                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderRadius: "12px", border: "1px solid #E5E5E5", background: "white", cursor: "pointer" }}
+                  className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-white dark:bg-[#1A1A1A]"
+                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderRadius: "12px", cursor: "pointer" }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <Icon icon="ri:twitter-x-fill" style={{ fontSize: "20px", color: "#000" }} />
-                    <span style={{ fontSize: "13px", fontWeight: 600, color: "#0A0A0A" }}>X (Twitter)</span>
+                    <Icon icon="ri:twitter-x-fill" className="text-black dark:text-white" style={{ fontSize: "20px" }} />
+                    <span className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "13px", fontWeight: 600 }}>X (Twitter)</span>
                   </div>
                   <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "999px", background: "#F0FDF4", color: "#22c55e" }}>Available</span>
                 </button>
                 {[{ icon: "ri:discord-fill", label: "Discord", color: "#5865F2" }, { icon: "ri:twitch-fill", label: "Twitch", color: "#9146FF" }].map((p) => (
-                  <div key={p.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderRadius: "12px", border: "1px solid #E5E5E5", background: "white", opacity: 0.5 }}>
+                  <div key={p.label} className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-white dark:bg-[#1A1A1A]" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderRadius: "12px", opacity: 0.5 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                       <Icon icon={p.icon} style={{ fontSize: "20px", color: p.color }} />
-                      <span style={{ fontSize: "13px", fontWeight: 600, color: "#0A0A0A" }}>{p.label}</span>
+                      <span className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "13px", fontWeight: 600 }}>{p.label}</span>
                     </div>
                     <span className="dark:bg-[#2A2A2A] dark:text-[#6A6A6A]" style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "999px", background: "#F5F5F5", color: "#A3A3A3" }}>Coming soon</span>
                   </div>
@@ -1207,9 +1218,10 @@ export default function DashboardPage() {
               </div>
               <button
                 onClick={() => { navigator.clipboard.writeText(dashShareMsg + "\n" + (tipLink ?? "")); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-                style={{ width: "100%", padding: "11px", borderRadius: "12px", border: "1px solid #E5E5E5", background: "#F9FAFB", fontSize: "13px", fontWeight: 600, color: "#0A0A0A", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+                className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-[#F9FAFB] dark:bg-[#1A1A1A] text-[#0A0A0A] dark:text-[#E5E5E5]"
+                style={{ width: "100%", padding: "11px", borderRadius: "12px", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
               >
-                <Icon icon={copied ? "ph:check-bold" : "ph:copy-simple-bold"} style={{ fontSize: "15px", color: copied ? "#22c55e" : "#0A0A0A" }} />
+                <Icon icon={copied ? "ph:check-bold" : "ph:copy-simple-bold"} style={{ fontSize: "15px", color: copied ? "#22c55e" : undefined }} className={copied ? "" : "text-[#0A0A0A] dark:text-[#E5E5E5]"} />
                 {copied ? "Copied!" : "Copy message + link"}
               </button>
         </Modal>

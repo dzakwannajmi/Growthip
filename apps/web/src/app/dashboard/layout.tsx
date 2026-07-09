@@ -5,7 +5,7 @@ import ThemeApplier from "@/components/ThemeApplier";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="dark:bg-[#0A0A0A]" style={{ display: "flex", height: "100dvh", overflow: "hidden", background: "#FAFAFA" }}>
+    <div data-dashboard-shell className="dark:bg-[#0A0A0A]" style={{ display: "flex", height: "100dvh", overflow: "hidden", background: "#FAFAFA" }}>
       <DashboardSidebar />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflow: "hidden" }}>
         <main
