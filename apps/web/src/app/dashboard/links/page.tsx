@@ -133,13 +133,13 @@ export default function LinksPage() {
             <h1 className="text-[26px] font-extrabold text-[#0A0A0A] dark:text-[#FAFAFA]" style={{ margin: "0 0 2px" }}>Your Links</h1>
             <p className="text-[13px] text-[#737373] dark:text-[#8A8A8A]" style={{ margin: 0 }}>Manage your payment links</p>
           </div>
-          <button onClick={() => setShowTemplates(true)} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "10px 18px", borderRadius: "12px", background: "#0A0A0A", color: "white", border: "none", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
+          <button onClick={() => setShowTemplates(true)} className="bg-[#0A0A0A] text-white" style={{ display: "flex", alignItems: "center", gap: "6px", padding: "10px 18px", borderRadius: "12px", border: "none", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
             <Icon icon="ph:plus-bold" style={{ fontSize: "15px" }} /> Create New Link
           </button>
         </div>
 
         {/* Active card */}
-        <div className="dark:bg-[#1A1A1A] dark:border-[#2A2A2A]" style={{ background: "white", border: "1px solid #E5E5E5", borderRadius: "20px", padding: "20px" }}>
+        <div className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A]" style={{ borderRadius: "20px", padding: "20px" }}>
           {/* Card header */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -155,14 +155,14 @@ export default function LinksPage() {
           </div>
 
           {/* Profile preview */}
-          <div style={{ background: "#F9FAFB", borderRadius: "12px", padding: "12px 14px", display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px" }}>
+          <div className="bg-[#F9FAFB] dark:bg-[#1A1A1A]" style={{ borderRadius: "12px", padding: "12px 14px", display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px" }}>
             {avatarUrl
               ? <img src={avatarUrl} alt="avatar" style={{ width: "38px", height: "38px", borderRadius: "50%", objectFit: "cover" }} />
-              : <div style={{ width: "38px", height: "38px", borderRadius: "50%", background: "#E5E5E5", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon icon="ph:user-bold" style={{ fontSize: "18px", color: "#A3A3A3" }} /></div>
+              : <div className="bg-[#E5E5E5] dark:bg-[#2A2A2A]" style={{ width: "38px", height: "38px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon icon="ph:user-bold" className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "18px" }} /></div>
             }
             <div style={{ minWidth: 0 }}>
-              <p style={{ fontSize: "13px", fontWeight: 700, color: "#0A0A0A", margin: "0 0 2px" }}>@{username}</p>
-              <p style={{ fontSize: "11px", color: "#A3A3A3", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tipLink || "Connect wallet to see your link"}</p>
+              <p className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "13px", fontWeight: 700, margin: "0 0 2px" }}>@{username}</p>
+              <p className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "11px", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tipLink || "Connect wallet to see your link"}</p>
             </div>
           </div>
 
@@ -192,7 +192,7 @@ export default function LinksPage() {
             const token = getToken(c.tokenSymbol as TokenSymbol);
             const goalHuman = token ? fromBaseUnits(c.goalAmount, token) : 0;
             return (
-              <div key={c.campaignId} className="dark:bg-[#1A1A1A] dark:border-[#2A2A2A]" style={{ background: "white", border: "1px solid #E5E5E5", borderRadius: "16px", padding: "16px" }}>
+              <div key={c.campaignId} className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A]" style={{ borderRadius: "16px", padding: "16px" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                     <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: "#FEF2F2", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -207,7 +207,7 @@ export default function LinksPage() {
                     </div>
                   </div>
                   <button onClick={() => handleDeleteCampaign(c.campaignId)} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px" }}>
-                    <Icon icon="ph:trash-bold" style={{ fontSize: "15px", color: "#A3A3A3" }} />
+                    <Icon icon="ph:trash-bold" className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "15px" }} />
                   </button>
                 </div>
                 <div style={{ display: "flex", gap: "8px" }}>
@@ -228,25 +228,25 @@ export default function LinksPage() {
       {/* Create Campaign Modal */}
       <Modal show={showCampaignForm} onClose={() => setShowCampaignForm(false)}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
-          <p style={{ fontSize: "16px", fontWeight: 800, color: "#0A0A0A", margin: 0 }}>Create Fundraiser</p>
-          <button onClick={() => setShowCampaignForm(false)} style={{ width: "30px", height: "30px", borderRadius: "8px", border: "1px solid #E5E5E5", background: "#F5F5F5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Icon icon="ph:x-bold" style={{ fontSize: "14px", color: "#737373" }} />
+          <p className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "16px", fontWeight: 800, margin: 0 }}>Create Fundraiser</p>
+          <button onClick={() => setShowCampaignForm(false)} className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-[#F5F5F5] dark:bg-[#1E1E1E]" style={{ width: "30px", height: "30px", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Icon icon="ph:x-bold" className="text-[#737373] dark:text-[#8A8A8A]" style={{ fontSize: "14px" }} />
           </button>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
           <div>
-            <label style={{ fontSize: "12px", fontWeight: 600, color: "#525252", display: "block", marginBottom: "6px" }}>Campaign title</label>
+            <label className="text-[#525252] dark:text-[#B0B0B0]" style={{ fontSize: "12px", fontWeight: 600, display: "block", marginBottom: "6px" }}>Campaign title</label>
             <input
               value={campaignTitle}
               onChange={(e) => setCampaignTitle(e.target.value)}
               placeholder="Help fund my open-source project"
               maxLength={80}
-              style={{ width: "100%", padding: "10px 12px", borderRadius: "10px", border: "1px solid #E5E5E5", fontSize: "13px" }}
+              className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-white dark:bg-[#1A1A1A] text-[#0A0A0A] dark:text-[#E5E5E5]" style={{ width: "100%", padding: "10px 12px", borderRadius: "10px", fontSize: "13px" }}
             />
           </div>
           <div style={{ display: "flex", gap: "10px" }}>
             <div style={{ flex: 1 }}>
-              <label style={{ fontSize: "12px", fontWeight: 600, color: "#525252", display: "block", marginBottom: "6px" }}>Goal amount</label>
+              <label className="text-[#525252] dark:text-[#B0B0B0]" style={{ fontSize: "12px", fontWeight: 600, display: "block", marginBottom: "6px" }}>Goal amount</label>
               <input
                 type="number"
                 min="0"
@@ -254,15 +254,15 @@ export default function LinksPage() {
                 value={campaignGoal}
                 onChange={(e) => setCampaignGoal(e.target.value)}
                 placeholder="100"
-                style={{ width: "100%", padding: "10px 12px", borderRadius: "10px", border: "1px solid #E5E5E5", fontSize: "13px" }}
+                className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-white dark:bg-[#1A1A1A] text-[#0A0A0A] dark:text-[#E5E5E5]" style={{ width: "100%", padding: "10px 12px", borderRadius: "10px", fontSize: "13px" }}
               />
             </div>
             <div style={{ width: "110px" }}>
-              <label style={{ fontSize: "12px", fontWeight: 600, color: "#525252", display: "block", marginBottom: "6px" }}>Token</label>
+              <label className="text-[#525252] dark:text-[#B0B0B0]" style={{ fontSize: "12px", fontWeight: 600, display: "block", marginBottom: "6px" }}>Token</label>
               <select
                 value={campaignToken}
                 onChange={(e) => setCampaignToken(e.target.value)}
-                style={{ width: "100%", padding: "10px 12px", borderRadius: "10px", border: "1px solid #E5E5E5", fontSize: "13px", background: "white" }}
+                className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-white dark:bg-[#1A1A1A] text-[#0A0A0A] dark:text-[#E5E5E5]" style={{ width: "100%", padding: "10px 12px", borderRadius: "10px", fontSize: "13px" }}
               >
                 {getAvailableTokens().map((t) => (
                   <option key={t.symbol} value={t.symbol}>{t.symbol}</option>
@@ -271,18 +271,18 @@ export default function LinksPage() {
             </div>
           </div>
           <div>
-            <label style={{ fontSize: "12px", fontWeight: 600, color: "#525252", display: "block", marginBottom: "6px" }}>Deadline (optional)</label>
+            <label className="text-[#525252] dark:text-[#B0B0B0]" style={{ fontSize: "12px", fontWeight: 600, display: "block", marginBottom: "6px" }}>Deadline (optional)</label>
             <input
               type="date"
               value={campaignDeadline}
               onChange={(e) => setCampaignDeadline(e.target.value)}
-              style={{ width: "100%", padding: "10px 12px", borderRadius: "10px", border: "1px solid #E5E5E5", fontSize: "13px" }}
+              className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-white dark:bg-[#1A1A1A] text-[#0A0A0A] dark:text-[#E5E5E5]" style={{ width: "100%", padding: "10px 12px", borderRadius: "10px", fontSize: "13px" }}
             />
           </div>
           <button
             onClick={createCampaign}
             disabled={!campaignTitle.trim() || !campaignGoal.trim()}
-            style={{ width: "100%", padding: "12px", borderRadius: "12px", background: (!campaignTitle.trim() || !campaignGoal.trim()) ? "#E5E5E5" : "#0A0A0A", color: "white", border: "none", fontSize: "14px", fontWeight: 700, cursor: (!campaignTitle.trim() || !campaignGoal.trim()) ? "not-allowed" : "pointer" }}
+            className={(!campaignTitle.trim() || !campaignGoal.trim()) ? "bg-[#E5E5E5] dark:bg-[#2A2A2A]" : "bg-[#0A0A0A]"} style={{ width: "100%", padding: "12px", borderRadius: "12px", color: "white", border: "none", fontSize: "14px", fontWeight: 700, cursor: (!campaignTitle.trim() || !campaignGoal.trim()) ? "not-allowed" : "pointer" }}
           >
             Create Campaign
           </button>
@@ -293,24 +293,24 @@ export default function LinksPage() {
       <Modal show={showQR} onClose={() => setShowQR(false)}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
           <div style={{ flex: 1 }} />
-          <p style={{ fontSize: "17px", fontWeight: 800, color: "#0A0A0A", margin: 0, textAlign: "center", flex: 2 }}>Personal</p>
+          <p className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "17px", fontWeight: 800, margin: 0, textAlign: "center", flex: 2 }}>Personal</p>
           <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
-            <button onClick={() => setShowQR(false)} style={{ width: "32px", height: "32px", borderRadius: "50%", border: "1px solid #E5E5E5", background: "#F5F5F5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Icon icon="ph:x-bold" style={{ fontSize: "14px", color: "#737373" }} />
+            <button onClick={() => setShowQR(false)} className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-[#F5F5F5] dark:bg-[#1E1E1E]" style={{ width: "32px", height: "32px", borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Icon icon="ph:x-bold" className="text-[#737373] dark:text-[#8A8A8A]" style={{ fontSize: "14px" }} />
             </button>
           </div>
         </div>
-        <p style={{ fontSize: "13px", color: "#A3A3A3", margin: "0 0 20px", textAlign: "center" }}>Scan to open payment link</p>
+        <p className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "13px", margin: "0 0 20px", textAlign: "center" }}>Scan to open payment link</p>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
           {/* QR with green border */}
           <div style={{ padding: "14px", background: "#22c55e", borderRadius: "20px", display: "inline-flex" }}>
-            <div style={{ padding: "12px", background: "white", borderRadius: "12px" }}>
+            <div className="bg-white" style={{ padding: "12px", borderRadius: "12px" }}>
               {tipLink && <QRCodeSVG value={tipLink} size={200} />}
             </div>
           </div>
           {/* URL box */}
-          <div style={{ width: "100%", padding: "12px 14px", background: "#F9FAFB", borderRadius: "12px", border: "1px solid #E5E5E5" }}>
-            <p style={{ fontSize: "12px", color: "#525252", margin: 0, textAlign: "center", fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tipLink}</p>
+          <div className="bg-[#F9FAFB] dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A]" style={{ width: "100%", padding: "12px 14px", borderRadius: "12px" }}>
+            <p className="text-[#525252] dark:text-[#B0B0B0]" style={{ fontSize: "12px", margin: 0, textAlign: "center", fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tipLink}</p>
           </div>
           {/* Download button */}
           <button
@@ -325,14 +325,14 @@ export default function LinksPage() {
                 a.click();
               }
             }}
-            style={{ width: "100%", padding: "12px", borderRadius: "12px", background: "#0A0A0A", color: "white", border: "none", fontSize: "14px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+            className="bg-[#0A0A0A] text-white" style={{ width: "100%", padding: "12px", borderRadius: "12px", border: "none", fontSize: "14px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
           >
             <Icon icon="ph:download-simple-bold" style={{ fontSize: "16px" }} /> Download QR Code
           </button>
           {/* Growthip branding */}
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <img src="/growthip-logo.png" alt="Growthip" style={{ width: "24px", height: "24px", objectFit: "contain" }} />
-            <span style={{ fontSize: "13px", fontWeight: 700, color: "#0A0A0A" }}>Growthip</span>
+            <span className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "13px", fontWeight: 700 }}>Growthip</span>
           </div>
         </div>
       </Modal>
@@ -340,28 +340,28 @@ export default function LinksPage() {
       {/* Share Modal */}
       <Modal show={showShare} onClose={() => setShowShare(false)}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
-          <p style={{ fontSize: "16px", fontWeight: 800, color: "#0A0A0A", margin: 0 }}>Share your link</p>
-          <button onClick={() => setShowShare(false)} style={{ width: "30px", height: "30px", borderRadius: "8px", border: "1px solid #E5E5E5", background: "#F5F5F5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Icon icon="ph:x-bold" style={{ fontSize: "14px", color: "#737373" }} />
+          <p className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "16px", fontWeight: 800, margin: 0 }}>Share your link</p>
+          <button onClick={() => setShowShare(false)} className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-[#F5F5F5] dark:bg-[#1E1E1E]" style={{ width: "30px", height: "30px", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Icon icon="ph:x-bold" className="text-[#737373] dark:text-[#8A8A8A]" style={{ fontSize: "14px" }} />
           </button>
         </div>
 
         {/* Custom message */}
         <div style={{ marginBottom: "16px" }}>
-          <p style={{ fontSize: "12px", fontWeight: 600, color: "#525252", margin: "0 0 8px" }}>Custom message</p>
+          <p className="text-[#525252] dark:text-[#B0B0B0]" style={{ fontSize: "12px", fontWeight: 600, margin: "0 0 8px" }}>Custom message</p>
           <textarea
             value={shareMsg}
             onChange={(e) => setShareMsg(e.target.value.slice(0, 280))}
             rows={3}
             maxLength={280}
             placeholder="Write a message to share with your link..."
-            style={{ width: "100%", padding: "10px 12px", borderRadius: "10px", border: "1px solid #E5E5E5", fontSize: "13px", resize: "none", outline: "none", fontFamily: "inherit", boxSizing: "border-box", lineHeight: 1.5, color: "#0A0A0A" }}
+            className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-white dark:bg-[#1A1A1A] text-[#0A0A0A] dark:text-[#E5E5E5]" style={{ width: "100%", padding: "10px 12px", borderRadius: "10px", fontSize: "13px", resize: "none", outline: "none", fontFamily: "inherit", boxSizing: "border-box", lineHeight: 1.5 }}
           />
-          <p style={{ fontSize: "11px", color: shareMsg.length >= 260 ? "#ef4444" : "#A3A3A3", margin: "4px 0 0" }}>{shareMsg.length}/280 characters</p>
+          <p className={shareMsg.length >= 260 ? "" : "dark:text-[#6A6A6A]"} style={{ fontSize: "11px", color: shareMsg.length >= 260 ? "#ef4444" : "#A3A3A3", margin: "4px 0 0" }}>{shareMsg.length}/280 characters</p>
         </div>
 
         {/* Platforms */}
-        <p style={{ fontSize: "12px", fontWeight: 600, color: "#525252", margin: "0 0 10px" }}>Share to</p>
+        <p className="text-[#525252] dark:text-[#B0B0B0]" style={{ fontSize: "12px", fontWeight: 600, margin: "0 0 10px" }}>Share to</p>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {SHARE_PLATFORMS.map((p) => (
             <button
@@ -375,11 +375,11 @@ export default function LinksPage() {
             >
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <Icon icon={p.icon} style={{ fontSize: "20px", color: p.available ? (p.id === "x" ? "currentColor" : p.color) : "#A3A3A3" }} className={p.id === "x" ? "dark:text-white text-black" : ""} />
-                <span style={{ fontSize: "13px", fontWeight: 600, color: "#0A0A0A" }}>{p.label}</span>
+                <span className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "13px", fontWeight: 600 }}>{p.label}</span>
               </div>
               {p.available
                 ? <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "999px", background: "#F0FDF4", color: "#16a34a", WebkitTextFillColor: "#16a34a" }}>Available</span>
-                : <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "999px", background: "#F5F5F5", color: "#A3A3A3" }}>Coming soon</span>
+                : <span className="bg-[#F5F5F5] dark:bg-[#2A2A2A] text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", borderRadius: "999px" }}>Coming soon</span>
               }
             </button>
           ))}
@@ -388,9 +388,9 @@ export default function LinksPage() {
         {/* Copy fallback */}
         <button
           onClick={() => { navigator.clipboard.writeText(shareMsg + "\n" + tipLink); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-          style={{ marginTop: "12px", width: "100%", padding: "11px", borderRadius: "12px", border: "1px solid #E5E5E5", background: "#F9FAFB", fontSize: "13px", fontWeight: 600, color: "#0A0A0A", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+          className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-[#F9FAFB] dark:bg-[#1A1A1A] text-[#0A0A0A] dark:text-[#E5E5E5]" style={{ marginTop: "12px", width: "100%", padding: "11px", borderRadius: "12px", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
         >
-          <Icon icon={copied ? "ph:check-bold" : "ph:copy-simple-bold"} style={{ fontSize: "15px", color: copied ? "#22c55e" : "#0A0A0A" }} />
+          <Icon icon={copied ? "ph:check-bold" : "ph:copy-simple-bold"} className={copied ? "" : "dark:text-[#E5E5E5]"} style={{ fontSize: "15px", color: copied ? "#22c55e" : "#0A0A0A" }} />
           {copied ? "Copied to clipboard!" : "Copy message + link"}
         </button>
       </Modal>
@@ -399,11 +399,11 @@ export default function LinksPage() {
       <Modal show={showTemplates} onClose={() => setShowTemplates(false)}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
           <div>
-            <p style={{ fontSize: "16px", fontWeight: 800, color: "#0A0A0A", margin: "0 0 2px" }}>Choose a Template</p>
-            <p style={{ fontSize: "12px", color: "#737373", margin: 0 }}>Select the perfect link type for your needs</p>
+            <p className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "16px", fontWeight: 800, margin: "0 0 2px" }}>Choose a Template</p>
+            <p className="text-[#737373] dark:text-[#8A8A8A]" style={{ fontSize: "12px", margin: 0 }}>Select the perfect link type for your needs</p>
           </div>
-          <button onClick={() => setShowTemplates(false)} style={{ width: "30px", height: "30px", borderRadius: "8px", border: "1px solid #E5E5E5", background: "#F5F5F5", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Icon icon="ph:x-bold" style={{ fontSize: "14px", color: "#737373" }} />
+          <button onClick={() => setShowTemplates(false)} className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-[#F5F5F5] dark:bg-[#1E1E1E]" style={{ width: "30px", height: "30px", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Icon icon="ph:x-bold" className="text-[#737373] dark:text-[#8A8A8A]" style={{ fontSize: "14px" }} />
           </button>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -415,18 +415,18 @@ export default function LinksPage() {
                 setShowTemplates(false);
                 if (t.id === "fundraiser") setShowCampaignForm(true);
               }}
-              style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "14px", borderRadius: "12px", border: t.active ? "1.5px solid #22c55e" : "1px solid #E5E5E5", background: "white", cursor: t.active ? "pointer" : "default", opacity: t.active ? 1 : 0.55 }}
+              className={["bg-white dark:bg-[#1A1A1A]", t.active ? "border-[1.5px] border-[#22c55e]" : "border border-[#E5E5E5] dark:border-[#2A2A2A]"].join(" ")} style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "14px", borderRadius: "12px", cursor: t.active ? "pointer" : "default", opacity: t.active ? 1 : 0.55 }}
             >
               <div style={{ width: "38px", height: "38px", borderRadius: "10px", background: t.iconBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <Icon icon={t.icon} style={{ fontSize: "18px", color: t.iconColor }} />
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "3px" }}>
-                  <p style={{ fontSize: "13px", fontWeight: 700, color: "#0A0A0A", margin: 0 }}>{t.label}</p>
-                  <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 7px", borderRadius: "999px", background: t.active ? "#F0FDF4" : "#F5F5F5", color: t.active ? "#22c55e" : "#A3A3A3" }}>{t.active ? "Active" : "Coming soon"}</span>
+                  <p className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "13px", fontWeight: 700, margin: 0 }}>{t.label}</p>
+                  <span className={t.active ? "bg-[#F0FDF4] dark:bg-[#12271A]" : "bg-[#F5F5F5] dark:bg-[#2A2A2A]"} style={{ fontSize: "10px", fontWeight: 700, padding: "2px 7px", borderRadius: "999px", color: t.active ? "#22c55e" : "#A3A3A3" }}>{t.active ? "Active" : "Coming soon"}</span>
                 </div>
-                <p style={{ fontSize: "12px", color: "#525252", margin: "0 0 3px", lineHeight: 1.5 }}>{t.desc}</p>
-                <p style={{ fontSize: "11px", color: "#A3A3A3", margin: 0 }}>Best for: {t.bestFor}</p>
+                <p className="text-[#525252] dark:text-[#B0B0B0]" style={{ fontSize: "12px", margin: "0 0 3px", lineHeight: 1.5 }}>{t.desc}</p>
+                <p className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "11px", margin: 0 }}>Best for: {t.bestFor}</p>
               </div>
             </div>
           ))}
