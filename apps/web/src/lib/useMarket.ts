@@ -4,21 +4,21 @@ import { useEffect, useState, useCallback } from "react";
 
 // ── Price hook (CoinGecko free, no API key) ─────────────────────────────
 interface Prices {
-  xlm:  { usd: number; usd_24h_change: number };
-  usdc: { usd: number; usd_24h_change: number };
+  xlm:  { usd: number; idr: number; usd_24h_change: number };
+  usdc: { usd: number; idr: number; usd_24h_change: number };
 }
 
 export function usePrices() {
   const [prices, setPrices] = useState<Prices>({
-    xlm:  { usd: 0, usd_24h_change: 0 },
-    usdc: { usd: 1, usd_24h_change: 0 },
+    xlm:  { usd: 0, idr: 0, usd_24h_change: 0 },
+    usdc: { usd: 1, idr: 0, usd_24h_change: 0 },
   });
   const [loading, setLoading] = useState(true);
 
   const fetch_ = useCallback(async () => {
     try {
       const res = await fetch(
-        "https://api.coingecko.com/api/v3/simple/price?ids=stellar%2Cusd-coin&vs_currencies=usd&include_24hr_change=true",
+        "https://api.coingecko.com/api/v3/simple/price?ids=stellar%2Cusd-coin&vs_currencies=usd%2Cidr&include_24hr_change=true",
         { next: { revalidate: 30 } }
       );
       if (!res.ok) return;
@@ -26,10 +26,12 @@ export function usePrices() {
       setPrices({
         xlm: {
           usd:            data.stellar?.["usd"]            ?? 0,
+          idr:            data.stellar?.["idr"]             ?? 0,
           usd_24h_change: data.stellar?.["usd_24h_change"] ?? 0,
         },
         usdc: {
           usd:            data["usd-coin"]?.["usd"]            ?? 1,
+          idr:            data["usd-coin"]?.["idr"]             ?? 0,
           usd_24h_change: data["usd-coin"]?.["usd_24h_change"] ?? 0,
         },
       });

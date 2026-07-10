@@ -17,6 +17,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Icon } from "@iconify/react";
 import { QRCodeSVG } from "qrcode.react";
 import { useRegistryClient } from "@/lib/registryClient";
@@ -123,10 +124,12 @@ export default function EncryptionSetup({ address, onComplete }: EncryptionSetup
     setError("");
     if (password.length < 8) {
       setError("Password must be at least 8 characters.");
+      toast.error("Password too short", { description: "Must be at least 8 characters." });
       return;
     }
     if (password !== passwordConfirm) {
       setError("Passwords do not match.");
+      toast.error("Passwords do not match");
       return;
     }
     setBusy(true);
@@ -150,6 +153,7 @@ export default function EncryptionSetup({ address, onComplete }: EncryptionSetup
       setStep("recovery-reveal");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create identity.");
+      toast.error("Setup failed", { description: err instanceof Error ? err.message : "Failed to create identity." });
     } finally {
       setBusy(false);
     }
@@ -163,6 +167,7 @@ export default function EncryptionSetup({ address, onComplete }: EncryptionSetup
     );
     if (!allCorrect) {
       setError("One or more words don't match. Check your written copy and try again.");
+    toast.error("Recovery phrase mismatch", { description: "Check your written copy and try again." });
       return;
     }
     setStep("paying");
@@ -185,6 +190,7 @@ export default function EncryptionSetup({ address, onComplete }: EncryptionSetup
       setStep("backup");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Payment or registration failed.");
+      toast.error("Payment failed", { description: err instanceof Error ? err.message : "Payment or registration failed." });
     } finally {
       setBusy(false);
     }
@@ -214,6 +220,7 @@ export default function EncryptionSetup({ address, onComplete }: EncryptionSetup
       onComplete?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to unlock.");
+      toast.error("Unlock failed", { description: err instanceof Error ? err.message : "Failed to unlock." });
     } finally {
       setBusy(false);
     }
@@ -223,6 +230,7 @@ export default function EncryptionSetup({ address, onComplete }: EncryptionSetup
     setError("");
     if (!restoreFile) {
       setError("Choose a backup file first.");
+      toast.error("No file selected", { description: "Choose a backup file first." });
       return;
     }
     setBusy(true);
@@ -231,6 +239,7 @@ export default function EncryptionSetup({ address, onComplete }: EncryptionSetup
       setStep("restore-password");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid backup file.");
+      toast.error("Restore failed", { description: err instanceof Error ? err.message : "Invalid backup file." });
     } finally {
       setBusy(false);
     }
@@ -287,7 +296,7 @@ export default function EncryptionSetup({ address, onComplete }: EncryptionSetup
           <button
             onClick={async () => {
               setError("");
-              if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
+              if (password.length < 8) { setError("Password must be at least 8 characters."); toast.error("Password too short", { description: "Must be at least 8 characters." }); return; }
               setBusy(true);
               try {
                 const { rotateIdentity } = await import("@/lib/encryption/keyManagement");
@@ -303,6 +312,7 @@ export default function EncryptionSetup({ address, onComplete }: EncryptionSetup
                 setStep("done");
               } catch (err) {
                 setError(err instanceof Error ? err.message : "Key rotation failed.");
+                toast.error("Key update failed", { description: err instanceof Error ? err.message : "Key rotation failed." });
               } finally {
                 setBusy(false);
               }
@@ -438,24 +448,41 @@ export default function EncryptionSetup({ address, onComplete }: EncryptionSetup
   if (step === "recovery-reveal") {
     const words = recoveryPhrase.split(" ");
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-        <p style={{ fontSize: "13px", fontWeight: 700, color: "#171717" }}>Your recovery phrase</p>
-        <p style={{ fontSize: "12px", color: "#737373", lineHeight: 1.6 }}>
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <Icon icon="ph:key-bold" className="text-xl text-[#0A0A0A] dark:text-[#F5F5F5]" />
+          <p className="text-sm font-bold text-[#171717] dark:text-[#F0F0F0]">Your recovery phrase</p>
+        </div>
+        <p className="text-xs leading-relaxed text-[#737373] dark:text-[#8A8A8A]">
           Write these 12 words down, in order, somewhere safe and offline. Anyone with this phrase can read your private notes.
         </p>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", padding: "14px", borderRadius: "12px", border: "1px solid #E5E5E5", background: "#FAFAFA" }}>
+
+        <div className="grid grid-cols-3 gap-2 rounded-xl border border-[#E5E5E5] dark:border-[#2A2A2A] bg-[#FAFAFA] dark:bg-[#1A1A1A] p-3.5">
           {words.map((word, i) => (
-            <div key={i} style={{ fontSize: "12px", color: "#171717", fontFamily: "monospace" }}>
-              <span style={{ color: "#A3A3A3" }}>{i + 1}.</span> {word}
+            <div key={i} className="font-mono text-xs text-[#171717] dark:text-[#E5E5E5]">
+              <span className="text-[#A3A3A3] dark:text-[#6A6A6A]">{i + 1}.</span> {word}
             </div>
           ))}
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", padding: "16px", borderRadius: "12px", border: "1px solid #E5E5E5" }}>
+
+        <div className="flex flex-col items-center gap-2 rounded-xl border border-[#E5E5E5] dark:border-[#2A2A2A] p-4">
           <QRCodeSVG value={recoveryPhrase} size={160} level="M" />
-          <p style={{ fontSize: "11px", color: "#A3A3A3" }}>Scan to save (do this on a separate, offline device)</p>
+          <p className="text-[11px] text-[#A3A3A3] dark:text-[#6A6A6A]">Scan to save (do this on a separate, offline device)</p>
         </div>
-        <button onClick={() => setStep("recovery-confirm")} style={{ padding: "12px", borderRadius: "12px", background: "#0A0A0A", color: "white", border: "none", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
-          I've written it down
+
+        <div className="flex gap-2.5 rounded-xl border border-[#BFDBFE] dark:border-[#1E3A5F] bg-[#EFF6FF] dark:bg-[#0D1F2B] p-3.5">
+          <Icon icon="ph:info-bold" className="mt-0.5 shrink-0 text-base text-[#2563EB] dark:text-[#5B9BF5]" />
+          <p className="text-[11px] leading-relaxed text-[#1E40AF] dark:text-[#8FB8F0]">
+            This phrase alone isn&apos;t the full picture. After payment, you&apos;ll also get a <strong>backup file</strong> — you need BOTH if you ever switch devices or clear your browser. This phrase without that file (or vice versa) won&apos;t be enough to unlock future tips.
+          </p>
+        </div>
+
+        <button
+          onClick={() => setStep("recovery-confirm")}
+          className="flex items-center justify-center gap-2 rounded-xl bg-[#0A0A0A] px-3 py-3 text-sm font-bold text-white"
+        >
+          <Icon icon="ph:check-bold" className="text-base" />
+          I&apos;ve written it down
         </button>
       </div>
     );
@@ -505,19 +532,57 @@ export default function EncryptionSetup({ address, onComplete }: EncryptionSetup
 
   if (step === "backup") {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-        <div style={{ padding: "14px", borderRadius: "12px", border: "1px solid #D1FAE5", background: "#F0FDF4" }}>
-          <p style={{ fontSize: "13px", fontWeight: 700, color: "#171717" }}>Premium activated!</p>
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2.5 rounded-xl border border-[#D1FAE5] dark:border-[#1F4A2E] bg-[#F0FDF4] dark:bg-[#12271A] p-3.5">
+          <Icon icon="ph:check-circle-bold" className="text-xl text-[#22C55E]" />
+          <p className="text-sm font-bold text-[#171717] dark:text-[#F0F0F0]">Premium activated!</p>
         </div>
-        <p style={{ fontSize: "12px", color: "#737373" }}>
-          Download an encrypted backup file too -- useful if you forget your password but still have this file.
-        </p>
-        <button onClick={handleDownloadBackup} style={{ padding: "12px", borderRadius: "12px", background: "white", color: "#171717", border: "1px solid #E5E5E5", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
+
+        {/* Two-layer explainer -- this is the part people get confused
+            about: the recovery phrase from the previous step and this
+            backup file protect two DIFFERENT things, and you need both
+            together to recover access on a new device. */}
+        <div className="rounded-xl border border-[#E5E5E5] dark:border-[#2A2A2A] p-3.5">
+          <p className="mb-2.5 text-[11px] font-bold uppercase tracking-wide text-[#A3A3A3] dark:text-[#6A6A6A]">
+            One last, critical step
+          </p>
+          <div className="flex flex-col gap-2.5">
+            <div className="flex items-start gap-2.5">
+              <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#F5F5F5] dark:bg-[#2A2A2A]">
+                <Icon icon="ph:key-bold" className="text-sm text-[#525252] dark:text-[#B0B0B0]" />
+              </div>
+              <p className="text-xs leading-relaxed text-[#525252] dark:text-[#B0B0B0]">
+                <strong className="text-[#171717] dark:text-[#F0F0F0]">Your password / recovery phrase</strong> — the key. You already have this.
+              </p>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#F5F5F5] dark:bg-[#2A2A2A]">
+                <Icon icon="ph:file-lock-bold" className="text-sm text-[#525252] dark:text-[#B0B0B0]" />
+              </div>
+              <p className="text-xs leading-relaxed text-[#525252] dark:text-[#B0B0B0]">
+                <strong className="text-[#171717] dark:text-[#F0F0F0]">This backup file</strong> — the lock itself. Without downloading it now, your key only exists in this browser.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-2.5 rounded-xl border border-[#FDE68A] dark:border-[#4A3A0D] bg-[#FFFBEB] dark:bg-[#2B220D] p-3.5">
+          <Icon icon="ph:warning-circle-bold" className="mt-0.5 shrink-0 text-base text-[#D97706]" />
+          <p className="text-[11px] leading-relaxed text-[#92400E] dark:text-[#D4A15C]">
+            If you switch devices or clear this browser&apos;s data <strong>without</strong> this file downloaded, future tips sent to you can never be decrypted — not even with your recovery phrase alone. This isn&apos;t optional.
+          </p>
+        </div>
+
+        <button
+          onClick={handleDownloadBackup}
+          className="flex items-center justify-center gap-2 rounded-xl border border-[#E5E5E5] dark:border-[#2A2A2A] bg-white dark:bg-[#1A1A1A] px-3 py-3 text-sm font-bold text-[#171717] dark:text-[#F0F0F0]"
+        >
+          <Icon icon="ph:download-simple-bold" className="text-base" />
           Download Backup File
         </button>
         <button
           onClick={() => { setStep("done"); onComplete?.(); }}
-          style={{ padding: "12px", borderRadius: "12px", background: "#0A0A0A", color: "white", border: "none", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}
+          className="rounded-xl bg-[#0A0A0A] px-3 py-3 text-sm font-bold text-white"
         >
           Done
         </button>

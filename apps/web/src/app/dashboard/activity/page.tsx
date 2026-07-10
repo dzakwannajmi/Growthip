@@ -1,5 +1,6 @@
 "use client";
 import { unwrapCampaignMessage } from "@/lib/campaign";
+import { toast } from "sonner";
 
 import { useCallback, useEffect, useState } from "react";
 import { Buffer } from "buffer";
@@ -55,6 +56,12 @@ const PROGRESS_LABELS: Record<ProofProgress, string> = {
   "generating-proof":  "Generating zero-knowledge proof (5-15s)...",
   "serializing":       "Serializing proof...",
   "done":              "Proof ready",
+};
+
+const TOKEN_ICONS: Record<string, string> = {
+  XLM:  "cryptocurrency-color:xlm",
+  USDC: "cryptocurrency-color:usdc",
+  EURC: "cryptocurrency-color:eur",
 };
 
 export default function ActivityPage() {
@@ -266,10 +273,13 @@ export default function ActivityPage() {
       // fall back to connected address for legacy notes.
       markNoteAsClaimed(note.recipientAddress ?? address, note.nullifierHash, hash);
       setClaimStage("done");
+      toast.success("Tip claimed!", { description: "Funds have been transferred to your wallet." });
       loadNotes();
     } catch (err) {
-      setClaimError(err instanceof Error ? err.message : "Claim failed.");
+      const message = err instanceof Error ? err.message : "Claim failed.";
+      setClaimError(message);
       setClaimStage("error");
+      toast.error("Claim failed", { description: message });
     } finally {
       setClaimProgress(null);
     }
@@ -470,9 +480,7 @@ export default function ActivityPage() {
             {notes.map((note) => (
               <div key={note.nullifierHash || note.commitment} className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] rounded-2xl flex items-center justify-between gap-4" style={{ padding: "16px 20px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, minWidth: 0 }}>
-                  <div className={note.claimed ? "bg-[#F0FDF4] dark:bg-[#12271A] border border-[#BBF7D0] dark:border-[#1F4A2E]" : "bg-[#FAFAFA] dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A]"} style={{ width: 40, height: 40, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <Icon icon={note.claimed ? "ph:check-circle-bold" : "ph:clock-bold"} className={note.claimed ? "" : "dark:text-[#6A6A6A]"} style={{ fontSize: "20px", color: note.claimed ? "#22c55e" : "#A3A3A3" }} />
-                  </div>
+                  <Icon icon={TOKEN_ICONS[note.token] || "ph:coin-bold"} style={{ fontSize: "36px", flexShrink: 0 }} />
                   <div style={{ minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                       <span className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "15px", fontWeight: 800 }}>{formatAmount(note)}</span>

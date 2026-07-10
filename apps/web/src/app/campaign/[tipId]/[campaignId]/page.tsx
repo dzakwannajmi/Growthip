@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { useParams, useSearchParams } from "next/navigation";
 import { Icon } from "@iconify/react";
 import { QRCodeSVG } from "qrcode.react";
@@ -486,7 +487,7 @@ function CampaignPageInner() {
                         style={{ fontSize: "14px", color: "#22c55e" }}
                     />
                     <span style={{ fontSize: "12px", fontWeight: 600, color: "#22c55e" }}>
-                        Zero-knowledge — your identity stays private
+                        Zero-knowledge — nobody can link this tip back to who received it
                     </span>
                 </div>
 
@@ -665,6 +666,7 @@ function CampaignPageInner() {
                                     <button
                                         onClick={() => {
                                             navigator.clipboard.writeText(window.location.href);
+                                            toast.success("Link copied");
                                         }}
                                         style={{
                                             marginTop: "8px",
@@ -1286,6 +1288,7 @@ function CampaignPageInner() {
                                         onClick={() => {
                                             if (!encryptedNoteBundle) return;
                                             navigator.clipboard.writeText(encryptedNoteBundle);
+                                            toast.success("Private note copied");
                                             setCopiedNote(true);
                                             setTimeout(() => setCopiedNote(false), 2000);
                                         }}

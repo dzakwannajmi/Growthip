@@ -1,5 +1,6 @@
 "use client";
 import { Icon } from "@iconify/react";
+import { toast } from "sonner";
 import WalletModal from "@/components/WalletModal";
 
 import { useCallback, useMemo, useState, Suspense } from "react";
@@ -185,10 +186,13 @@ function ClaimContent() {
       // fall back to connected address for legacy notes.
       markNoteAsClaimed(note.recipientAddress ?? address, note.nullifierHash, hash);
       setStage("done");
+      toast.success("Tip claimed!", { description: "Funds have been transferred to your wallet." });
     } catch (err) {
       console.error(err);
-      setError(err instanceof Error ? err.message : "Claim failed.");
+      const message = err instanceof Error ? err.message : "Claim failed.";
+      setError(message);
       setStage("error");
+      toast.error("Claim failed", { description: message });
     } finally {
       setProgress(null);
     }
@@ -368,8 +372,10 @@ function ClaimContent() {
             setStage("idle");
             setShowWalletModal(false);
           } catch (err) {
-            setError(err instanceof Error ? err.message : "Connection failed.");
+            const message = err instanceof Error ? err.message : "Connection failed.";
+            setError(message);
             setStage("error");
+            toast.error("Wallet connection failed", { description: message });
           }
         }}
       />

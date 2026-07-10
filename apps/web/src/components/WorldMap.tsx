@@ -29,7 +29,7 @@ interface WorldMapProps {
  * sit inside an intentionally dark section here, not react to a toggle that
  * doesn't exist in this app.
  */
-export function WorldMap({ dots = [], lineColor = "#6b45f3" }: WorldMapProps) {
+export function WorldMap({ dots = [], lineColor = "#00B2FF" }: WorldMapProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const isDark = useIsDarkMode();
   const map = new DottedMap({ height: 100, grid: "diagonal" });

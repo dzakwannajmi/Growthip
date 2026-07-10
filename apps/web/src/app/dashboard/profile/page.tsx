@@ -1,5 +1,6 @@
 "use client";
 import { Icon } from "@iconify/react";
+import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import Modal from "@/components/Modal";
@@ -62,12 +63,14 @@ export default function ProfilePage() {
 
   function copyAddress() {
     navigator.clipboard.writeText(tipId);
+    toast.success("Address copied");
     setCopiedAddress(true);
     setTimeout(() => setCopiedAddress(false), 2000);
   }
 
   function copyTipLink() {
     navigator.clipboard.writeText(tipLink);
+    toast.success("Tip link copied");
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
   }

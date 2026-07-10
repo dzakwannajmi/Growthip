@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { usePrices, useWalletBalances } from "@/lib/useMarket";
+import { useCurrency, formatMoney } from "@/lib/currency";
 import { Buffer } from "buffer";
 import { Icon } from "@iconify/react";
 import { QRCodeSVG } from "qrcode.react";
@@ -79,30 +81,38 @@ function InfoTooltip({ text }: { text: string }) {
         onMouseLeave={() => setShow(false)}
       />
       {show && (
-        <div style={{
-          position: "absolute", bottom: "calc(100% + 12px)", left: "0",
-          background: "white", color: "#171717",
-          fontSize: "12px", fontWeight: 500, padding: "10px 14px", borderRadius: "12px",
-          whiteSpace: "normal", maxWidth: "240px", width: "240px",
-          boxShadow: "0 2px 12px rgba(0,0,0,0.12)", zIndex: 100, lineHeight: 1.6,
-          pointerEvents: "none", border: "1px solid #E5E5E5",
-        }}>
+        <div
+          className="bg-white dark:bg-[#1E1E1E] text-[#171717] dark:text-[#E5E5E5] border border-[#E5E5E5] dark:border-[#2A2A2A]"
+          style={{
+            position: "absolute", bottom: "calc(100% + 12px)", left: "0",
+            fontSize: "12px", fontWeight: 500, padding: "10px 14px", borderRadius: "12px",
+            whiteSpace: "normal", maxWidth: "240px", width: "240px",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.12)", zIndex: 100, lineHeight: 1.6,
+            pointerEvents: "none",
+          }}
+        >
           {text}
           {/* Speech bubble pointer - bottom left */}
-          <div style={{
-            position: "absolute", top: "100%", left: "10px",
-            width: 0, height: 0,
-            borderLeft: "8px solid transparent",
-            borderRight: "8px solid transparent",
-            borderTop: "8px solid #E5E5E5",
-          }} />
-          <div style={{
-            position: "absolute", top: "calc(100% - 1px)", left: "10px",
-            width: 0, height: 0,
-            borderLeft: "8px solid transparent",
-            borderRight: "8px solid transparent",
-            borderTop: "8px solid white",
-          }} />
+          <div
+            className="border-t-[#E5E5E5] dark:border-t-[#2A2A2A]"
+            style={{
+              position: "absolute", top: "100%", left: "10px",
+              width: 0, height: 0,
+              borderLeft: "8px solid transparent",
+              borderRight: "8px solid transparent",
+              borderTopWidth: "8px", borderTopStyle: "solid",
+            }}
+          />
+          <div
+            className="border-t-white dark:border-t-[#1E1E1E]"
+            style={{
+              position: "absolute", top: "calc(100% - 1px)", left: "10px",
+              width: 0, height: 0,
+              borderLeft: "8px solid transparent",
+              borderRight: "8px solid transparent",
+              borderTopWidth: "8px", borderTopStyle: "solid",
+            }}
+          />
         </div>
       )}
     </div>
@@ -293,6 +303,12 @@ export default function DashboardPage() {
 
   const { xlm, usdc, total } = useLivePrices();
   const { prices } = usePrices();
+  const [currency] = useCurrency();
+  const rateFor = (tokenSymbol: string): number => {
+    if (tokenSymbol === "XLM")  return currency === "IDR" ? prices.xlm.idr  : prices.xlm.usd;
+    if (tokenSymbol === "USDC") return currency === "IDR" ? prices.usdc.idr : prices.usdc.usd;
+    return 0;
+  };
   const { balances, refetch: refetchBalances } = useWalletBalances(address);
 
   // Pool client
@@ -578,6 +594,7 @@ export default function DashboardPage() {
   function copyLink() {
     if (!tipLink) return;
     navigator.clipboard.writeText(tipLink);
+    toast.success("Tip link copied");
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -614,11 +631,23 @@ export default function DashboardPage() {
       <div style={{ maxWidth: "700px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "24px", paddingBottom: "80px" }}>
 
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-extrabold text-[#0A0A0A] dark:text-[#FAFAFA]">Dashboard</h1>
-          <p className="text-sm text-[#737373] dark:text-[#8A8A8A]">
-            Welcome back{address ? `, ${displayName || address.slice(0, 4) + "..." + address.slice(-4)}` : ""}!
-          </p>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {address && (
+            <img
+              src={avatarUrlFor(address)}
+              alt="avatar"
+              width={44}
+              height={44}
+              className="rounded-full flex-shrink-0 bg-[#F5F5F5] dark:bg-[#1E1E1E] border border-[#E5E5E5] dark:border-[#2A2A2A]"
+              style={{ width: 44, height: 44 }}
+            />
+          )}
+          <div>
+            <h1 className="text-2xl font-extrabold text-[#0A0A0A] dark:text-[#FAFAFA]">Dashboard</h1>
+            <p className="text-sm text-[#737373] dark:text-[#8A8A8A]">
+              Welcome back{address ? `, ${displayName || address.slice(0, 4) + "..." + address.slice(-4)}` : ""}!
+            </p>
+          </div>
         </div>
 
         {/* Stealth Balances */}
@@ -630,24 +659,24 @@ export default function DashboardPage() {
           <div style={{ marginBottom: "24px" }}>
             <div style={{ display: "flex", alignItems: "flex-end", gap: "8px" }}>
               <span className="text-light-950 dark:text-[#FAFAFA] font-extrabold leading-none" style={{ fontSize: "clamp(28px, 8vw, 48px)" }}>
-                ${address ? (balances.xlm * prices.xlm.usd + balances.usdc * prices.usdc.usd).toFixed(2) : "0.00"}
+                {formatMoney(address ? (balances.xlm * rateFor("XLM") + balances.usdc * rateFor("USDC")) : 0, currency)}
               </span>
-              <span className="text-sm font-semibold text-[#737373] dark:text-[#8A8A8A]" style={{ marginBottom: "6px" }}>USD</span>
+              <span className="text-sm font-semibold text-[#737373] dark:text-[#8A8A8A]" style={{ marginBottom: "6px" }}>{currency}</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "6px" }}>
               {(() => {
-                const totalUsd = balances.xlm * prices.xlm.usd + balances.usdc * prices.usdc.usd;
+                const totalConverted = balances.xlm * rateFor("XLM") + balances.usdc * rateFor("USDC");
                 const change24h = prices.xlm.usd_24h_change;
                 const isUp = change24h >= 0;
-                const dollarChange = Math.abs(totalUsd * change24h / 100);
-                return address && totalUsd > 0 ? (
+                const amountChange = Math.abs(totalConverted * change24h / 100);
+                return address && totalConverted > 0 ? (
                   <>
                     <span style={{ display: "flex", alignItems: "center", fontSize: "13px", fontWeight: 700, color: isUp ? "#16a34a" : "#dc2626", WebkitTextFillColor: isUp ? "#16a34a" : "#dc2626" }}>
                       <Icon icon={isUp ? "ph:trend-up-bold" : "ph:trend-down-bold"} style={{ marginRight: "4px", color: isUp ? "#16a34a" : "#dc2626" }} />
                       {(isUp ? "+" : "") + change24h.toFixed(2)}%
                     </span>
                     <span style={{ fontSize: "13px", fontWeight: 500, color: isUp ? "rgba(22,163,74,0.8)" : "rgba(220,38,38,0.8)", WebkitTextFillColor: isUp ? "rgba(22,163,74,0.8)" : "rgba(220,38,38,0.8)" }}>
-                      ({isUp ? "+" : "-"}${dollarChange.toFixed(2)})
+                      ({isUp ? "+" : "-"}{formatMoney(amountChange, currency)})
                     </span>
                   </>
                 ) : null;
@@ -661,22 +690,22 @@ export default function DashboardPage() {
             {[
               {
                 icon: "cryptocurrency-color:xlm", name: "XLM", sub: "Stellar Network",
-                balance: balances.xlm, usdValue: balances.xlm * prices.xlm.usd,
-                change: prices.xlm.usd_24h_change, price: prices.xlm.usd,
+                balance: balances.xlm, convertedValue: balances.xlm * rateFor("XLM"),
+                change: prices.xlm.usd_24h_change, price: prices.xlm.usd, displayPrice: rateFor("XLM"),
               },
               {
                 icon: "cryptocurrency-color:usdc", name: "USDC", sub: "USD Coin",
-                balance: balances.usdc, usdValue: balances.usdc * prices.usdc.usd,
-                change: prices.usdc.usd_24h_change, price: prices.usdc.usd,
+                balance: balances.usdc, convertedValue: balances.usdc * rateFor("USDC"),
+                change: prices.usdc.usd_24h_change, price: prices.usdc.usd, displayPrice: rateFor("USDC"),
               },
-            ].map(({ icon, name, sub, balance, usdValue, change, price }) => (
+            ].map(({ icon, name, sub, balance, convertedValue, change, price, displayPrice }) => (
               <div key={name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                   <Icon icon={icon} style={{ fontSize: "36px" }} />
                   <div>
                     <div className="text-sm font-bold text-[#0A0A0A] dark:text-[#F0F0F0]">{name}</div>
                     <div className="text-[11px] text-[#737373] dark:text-[#8A8A8A]">
-                      {sub}{price > 0 && <span className="ml-1.5 text-[#A3A3A3] dark:text-[#6A6A6A]">${price.toFixed(4)}</span>}
+                      {sub}{price > 0 && <span className="ml-1.5 text-[#A3A3A3] dark:text-[#6A6A6A]">{formatMoney(displayPrice, currency)}</span>}
                     </div>
                   </div>
                 </div>
@@ -687,7 +716,7 @@ export default function DashboardPage() {
                       <Icon icon={change >= 0 ? "ph:trend-up-bold" : "ph:trend-down-bold"} style={{ marginRight: "2px", color: change >= 0 ? "#16a34a" : "#dc2626" }} />
                       {(change >= 0 ? "+" : "") + change.toFixed(2)}%
                     </span>
-                    <span className="text-[11px] text-[#737373] dark:text-[#8A8A8A]">${usdValue.toFixed(2)}</span>
+                    <span className="text-[11px] text-[#737373] dark:text-[#8A8A8A]">{formatMoney(convertedValue, currency)}</span>
                   </div>
                 </div>
               </div>
@@ -1217,7 +1246,7 @@ export default function DashboardPage() {
                 ))}
               </div>
               <button
-                onClick={() => { navigator.clipboard.writeText(dashShareMsg + "\n" + (tipLink ?? "")); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                onClick={() => { navigator.clipboard.writeText(dashShareMsg + "\n" + (tipLink ?? "")); toast.success("Message and link copied"); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
                 className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-[#F9FAFB] dark:bg-[#1A1A1A] text-[#0A0A0A] dark:text-[#E5E5E5]"
                 style={{ width: "100%", padding: "11px", borderRadius: "12px", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
               >

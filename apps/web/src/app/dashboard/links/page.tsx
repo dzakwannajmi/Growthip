@@ -1,5 +1,6 @@
 "use client";
 import { Icon } from "@iconify/react";
+import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import Modal from "@/components/Modal";
@@ -67,18 +68,21 @@ export default function LinksPage() {
   function copyLink() {
     if (!tipLink) return;
     navigator.clipboard.writeText(tipLink);
+    toast.success("Tip link copied");
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
 
   function createCampaign() {
-    if (!address || !campaignTitle.trim() || !campaignGoal.trim()) return;
+    if (!address) { toast.error("Connect your wallet first"); return; }
+    if (!campaignTitle.trim()) { toast.error("Campaign title is required"); return; }
+    if (!campaignGoal.trim()) { toast.error("Goal amount is required"); return; }
 
     const token = getToken(campaignToken as TokenSymbol);
-    if (!token) return;
+    if (!token) { toast.error("Invalid token selected"); return; }
 
     const goalAmount = toBaseUnits(Number(campaignGoal), token);
-    if (!Number.isFinite(goalAmount) || goalAmount <= 0) return;
+    if (!Number.isFinite(goalAmount) || goalAmount <= 0) { toast.error("Enter a valid goal amount"); return; }
 
     const deadline = campaignDeadline
       ? Math.floor(new Date(campaignDeadline).getTime() / 1000)
@@ -104,6 +108,7 @@ export default function LinksPage() {
   function copyCampaignLink(meta: CampaignMetadata) {
     const url = `https://growthip.vercel.app${buildCampaignPath(meta)}`;
     navigator.clipboard.writeText(url);
+    toast.success("Campaign link copied");
     setCopiedCampaignId(meta.campaignId);
     setTimeout(() => setCopiedCampaignId(null), 2000);
   }
@@ -387,7 +392,7 @@ export default function LinksPage() {
 
         {/* Copy fallback */}
         <button
-          onClick={() => { navigator.clipboard.writeText(shareMsg + "\n" + tipLink); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+          onClick={() => { navigator.clipboard.writeText(shareMsg + "\n" + tipLink); toast.success("Message and link copied"); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
           className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-[#F9FAFB] dark:bg-[#1A1A1A] text-[#0A0A0A] dark:text-[#E5E5E5]" style={{ marginTop: "12px", width: "100%", padding: "11px", borderRadius: "12px", fontSize: "13px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
         >
           <Icon icon={copied ? "ph:check-bold" : "ph:copy-simple-bold"} className={copied ? "" : "dark:text-[#E5E5E5]"} style={{ fontSize: "15px", color: copied ? "#22c55e" : "#0A0A0A" }} />

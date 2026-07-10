@@ -16,7 +16,7 @@ function FAQItem({ question, answer, isOpen, onClick, isLast }: {
   return (
     <div className={isLast ? "" : "border-b border-[#E5E5E5] dark:border-[#2A2A2A]"}>
       <button onClick={onClick} className="w-full text-left px-8 lg:px-10 py-7 flex items-center justify-between gap-4 focus:outline-none group">
-        <span className="font-bold text-[16px] text-[#0A0A0A] dark:text-[#F5F5F5] group-hover:text-[#6b45f3] transition-colors">{question}</span>
+        <span className="font-bold text-[16px] text-[#0A0A0A] dark:text-[#F5F5F5] group-hover:text-[#00B2FF] transition-colors">{question}</span>
         <Icon icon="ph:caret-down-bold" className={"w-4 h-4 text-[#A3A3A3] dark:text-[#6A6A6A] shrink-0 transition-transform duration-300" + (isOpen ? " rotate-180" : "")} />
       </button>
       <div className={"px-8 lg:px-10 text-[#525252] dark:text-[#A3A3A3] text-[15px] leading-relaxed transition-all duration-300 ease-in-out overflow-hidden" + (isOpen ? " max-h-96 pb-7 opacity-100" : " max-h-0 opacity-0")}>
@@ -91,8 +91,8 @@ function CornerMarks() {
       {positions.map((pos, i) => (
         <div key={i} className="absolute w-2 h-2 pointer-events-none z-10" style={pos}>
           <svg viewBox="0 0 8 8" className="w-full h-full">
-            <line x1="0" y1="4" x2="8" y2="4" stroke="#6b45f3" strokeWidth="1" />
-            <line x1="4" y1="0" x2="4" y2="8" stroke="#6b45f3" strokeWidth="1" />
+            <line x1="0" y1="4" x2="8" y2="4" stroke="#00B2FF" strokeWidth="1" />
+            <line x1="4" y1="0" x2="4" y2="8" stroke="#00B2FF" strokeWidth="1" />
           </svg>
         </div>
       ))}
@@ -136,14 +136,14 @@ function EdgeMarkPair({ edge }: { edge: "top" | "bottom" }) {
     <>
       <div className="absolute w-2 h-2 pointer-events-none z-10" style={{ ...vertical, left: "-4px" }}>
         <svg viewBox="0 0 8 8" className="w-full h-full">
-          <line x1="0" y1="4" x2="8" y2="4" stroke="#6b45f3" strokeWidth="1" />
-          <line x1="4" y1="0" x2="4" y2="8" stroke="#6b45f3" strokeWidth="1" />
+          <line x1="0" y1="4" x2="8" y2="4" stroke="#00B2FF" strokeWidth="1" />
+          <line x1="4" y1="0" x2="4" y2="8" stroke="#00B2FF" strokeWidth="1" />
         </svg>
       </div>
       <div className="absolute w-2 h-2 pointer-events-none z-10" style={{ ...vertical, right: "-4px" }}>
         <svg viewBox="0 0 8 8" className="w-full h-full">
-          <line x1="0" y1="4" x2="8" y2="4" stroke="#6b45f3" strokeWidth="1" />
-          <line x1="4" y1="0" x2="4" y2="8" stroke="#6b45f3" strokeWidth="1" />
+          <line x1="0" y1="4" x2="8" y2="4" stroke="#00B2FF" strokeWidth="1" />
+          <line x1="4" y1="0" x2="4" y2="8" stroke="#00B2FF" strokeWidth="1" />
         </svg>
       </div>
     </>
@@ -165,10 +165,19 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#0A0A0A] text-[#171717] dark:text-[#F5F5F5] relative overflow-hidden" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-      <style dangerouslySetInnerHTML={{ __html: `@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap'); .glass-nav { background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #E5E5E5; } ::selection { background: #6b45f3; color: white; } html { scroll-behavior: smooth; }` }} />
+      <style dangerouslySetInnerHTML={{ __html: `@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap'); .glass-nav { background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #E5E5E5; } ::selection { background: #00B2FF; color: white; } html { scroll-behavior: smooth; }` }} />
 
-      <div className="absolute top-[-10%] left-[-5%] w-[40rem] h-[40rem] bg-[#6b45f3] opacity-[0.04] rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute top-[20%] right-[-10%] w-[35rem] h-[35rem] bg-[#7ffc58] opacity-[0.06] rounded-full blur-[100px] pointer-events-none" />
+      {/* Ambient glow — fixed to the VIEWPORT (like the navbar), not the
+          page document. Stays visible at the top/bottom edge of the
+          screen at all times regardless of scroll position, rather than
+          being anchored to the top/bottom of the full page content. */}
+      {/* mix-blend-screen: lightens whatever opaque section backgrounds
+          sit on top of it (instead of being hidden behind them like a
+          plain -z-10 div would be), same trick the cyphras reference
+          uses so its glow bleeds through the whole page regardless of
+          how many stacked section backgrounds are in the way. High
+          z-index so it paints above content, pointer-events-none so it
+          never blocks clicks/text selection. */}
 
       <CardNav
         logo="/growthip-logo.png"
@@ -216,7 +225,7 @@ export default function Home() {
               background peek through at the very bottom edge. */}
           <div className="absolute inset-0">
             <WorldMap
-              lineColor="#6b45f3"
+              lineColor="#00B2FF"
               dots={[
                 { start: { lat: -6.21, lng: 106.85 }, end: { lat: 35.68, lng: 139.65 } },
                 { start: { lat: 51.51, lng: -0.13 }, end: { lat: 40.71, lng: -74.01 } },
@@ -235,7 +244,7 @@ export default function Home() {
               <h1 className="text-4xl md:text-5xl lg:text-[3.25rem] font-black tracking-tight text-[#0A0A0A] dark:text-[#F5F5F5] leading-[1.1]">
                 Tip creators privately.
                 <br />
-                <span className="text-[#6b45f3]">No one can link you to it.</span>
+                <span className="text-[#00B2FF]">No one can link you to it.</span>
               </h1>
 
               <p className="text-base md:text-lg leading-relaxed text-[#525252] dark:text-[#A3A3A3] max-w-md">
@@ -257,7 +266,7 @@ export default function Home() {
         {/* Dashboard preview — real product screenshot, browser-mockup frame */}
         <section className="mx-auto max-w-6xl px-6 py-20">
           <div className="text-center mb-12">
-            <p className="text-[13px] font-bold uppercase tracking-widest text-[#6b45f3] mb-3">Built for privacy</p>
+            <p className="text-[13px] font-bold uppercase tracking-widest text-[#00B2FF] mb-3">Built for privacy</p>
             <h2 className="text-3xl md:text-4xl font-black text-[#0A0A0A] dark:text-[#F5F5F5] tracking-tight leading-snug">Everything you tip. Nothing you reveal.</h2>
             <p className="mt-4 text-[16px] text-[#737373] dark:text-[#8A8A8A] max-w-xl mx-auto">Check your balance, tokens, and withdrawals — end-to-end encrypted, so only you can read what&apos;s inside.</p>
           </div>
@@ -280,7 +289,7 @@ export default function Home() {
 
         <section className="mx-auto max-w-7xl px-6 py-24">
           <div className="max-w-2xl mb-12 text-center md:text-left mx-auto md:mx-0">
-            <p className="text-[13px] font-bold uppercase tracking-widest text-[#6b45f3] mb-3">Why Growthip?</p>
+            <p className="text-[13px] font-bold uppercase tracking-widest text-[#00B2FF] mb-3">Why Growthip?</p>
             <h2 className="text-3xl md:text-4xl font-black text-[#0A0A0A] dark:text-[#F5F5F5] tracking-tight leading-snug">The ultimate way to support creators privately.</h2>
           </div>
           <div className="relative border border-[#E5E5E5] dark:border-[#2A2A2A] bg-white dark:bg-[#171717]">
@@ -302,7 +311,7 @@ export default function Home() {
               return (
                 <div key={r.title} className={cellClasses}>
                   <CornerMarks />
-                  <div className="w-14 h-14 rounded-2xl bg-[#F5F5F5] dark:bg-[#1E1E1E] flex items-center justify-center shrink-0 text-[#6b45f3]">
+                  <div className="w-14 h-14 rounded-2xl bg-[#F5F5F5] dark:bg-[#1E1E1E] flex items-center justify-center shrink-0 text-[#00B2FF]">
                     <Icon icon={r.icon} className="w-7 h-7" />
                   </div>
                   <div>
@@ -318,7 +327,7 @@ export default function Home() {
 
         <section id="how-it-works" className="scroll-mt-24 mx-auto max-w-7xl px-6 py-24 border-t border-[#E5E5E5]/50">
           <div className="text-center md:text-left mb-16">
-            <p className="text-[13px] font-bold uppercase tracking-widest text-[#6b45f3] mb-3">How it works</p>
+            <p className="text-[13px] font-bold uppercase tracking-widest text-[#00B2FF] mb-3">How it works</p>
             <h2 className="text-3xl md:text-5xl font-black text-[#0A0A0A] dark:text-[#F5F5F5] tracking-tight leading-tight">How Growthip protects<br className="hidden md:block" /> your privacy.</h2>
           </div>
 
@@ -357,7 +366,7 @@ export default function Home() {
 
         <section id="features" className="scroll-mt-24 mx-auto max-w-7xl px-6 py-24">
           <div className="text-center mb-16">
-            <p className="text-[13px] font-bold uppercase tracking-widest text-[#6b45f3] mb-3">Privacy by Design</p>
+            <p className="text-[13px] font-bold uppercase tracking-widest text-[#00B2FF] mb-3">Privacy by Design</p>
             <h2 className="text-3xl md:text-5xl font-black text-[#0A0A0A] dark:text-[#F5F5F5] tracking-tight leading-tight">Simple for you,<br />secure underneath.</h2>
           </div>
           <div className="relative border border-[#E5E5E5] dark:border-[#2A2A2A] bg-white dark:bg-[#171717]">
@@ -383,7 +392,7 @@ export default function Home() {
               return (
                 <div key={i} className={cellClasses}>
                   <CornerMarks />
-                  <div className="w-12 h-12 rounded-xl bg-[#F5F5F5] dark:bg-[#1E1E1E] text-[#6b45f3] flex items-center justify-center mb-5">
+                  <div className="w-12 h-12 rounded-xl bg-[#F5F5F5] dark:bg-[#1E1E1E] text-[#00B2FF] flex items-center justify-center mb-5">
                     <Icon icon={f.icon} className="w-6 h-6" />
                   </div>
                   <h3 className="text-[17px] font-bold text-[#0A0A0A] dark:text-[#F5F5F5] mb-2">{f.title}</h3>
@@ -444,7 +453,7 @@ export default function Home() {
                     <p className="text-4xl md:text-5xl font-black text-[#0A0A0A] dark:text-[#F5F5F5] tracking-tight">{stat.value}</p>
                     <p className="text-[13px] text-[#737373] dark:text-[#8A8A8A] mt-1 max-w-xs">{stat.label}</p>
                   </div>
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-[#6b45f3] border border-[#6b45f3]/20 bg-[#6b45f3]/5 rounded-full px-3 py-1.5 whitespace-nowrap shrink-0">
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-[#00B2FF] border border-[#00B2FF]/20 bg-[#00B2FF]/5 rounded-full px-3 py-1.5 whitespace-nowrap shrink-0">
                     {stat.tag}
                   </span>
                 </div>
@@ -458,7 +467,7 @@ export default function Home() {
             <div className="grid md:grid-cols-2">
             <div className="p-10 border-b md:border-b-0 md:border-r border-[#E5E5E5] dark:border-[#2A2A2A] flex items-center">
               <p className="text-2xl md:text-3xl font-bold text-[#0A0A0A] dark:text-[#F5F5F5] leading-snug">
-                The link between your tip and your identity <span className="text-[#6b45f3]">stays hidden</span> — that is the one guarantee the protocol enforces.
+                The link between your tip and your identity <span className="text-[#00B2FF]">stays hidden</span> — that is the one guarantee the protocol enforces.
               </p>
             </div>
             <div className="p-10 flex flex-col justify-center gap-5">
@@ -475,7 +484,7 @@ export default function Home() {
 
         <section id="fees" className="scroll-mt-24 mx-auto max-w-7xl px-6 py-24">
           <div className="max-w-2xl mb-12 text-center md:text-left mx-auto md:mx-0">
-            <p className="text-[13px] font-bold uppercase tracking-widest text-[#6b45f3] mb-3">Transparent Fees</p>
+            <p className="text-[13px] font-bold uppercase tracking-widest text-[#00B2FF] mb-3">Transparent Fees</p>
             <h2 className="text-3xl md:text-4xl font-black text-[#0A0A0A] dark:text-[#F5F5F5] tracking-tight leading-snug">A platform fee built for sustainability.</h2>
             <p className="mt-5 text-[16px] leading-relaxed text-[#737373] dark:text-[#8A8A8A]">No hidden cuts, no surprises. Growthip charges a flat 1% platform fee, calculated on the actual amount deposited — and every stroop of it is verifiable on-chain.</p>
           </div>
@@ -492,13 +501,13 @@ export default function Home() {
                   <p className="text-6xl font-black text-[#0A0A0A] dark:text-[#F5F5F5] leading-none">99<span className="text-3xl">%</span></p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[13px] font-bold uppercase tracking-widest text-[#6b45f3] mb-2">Platform fee</p>
-                  <p className="text-6xl font-black text-[#6b45f3] leading-none">1<span className="text-3xl">%</span></p>
+                  <p className="text-[13px] font-bold uppercase tracking-widest text-[#00B2FF] mb-2">Platform fee</p>
+                  <p className="text-6xl font-black text-[#00B2FF] leading-none">1<span className="text-3xl">%</span></p>
                 </div>
               </div>
               <div className="flex h-3 w-full overflow-hidden rounded-full bg-[#E5E5E5] dark:bg-[#2A2A2A]">
                 <div className="h-full bg-[#137333]" style={{ width: "99%" }} />
-                <div className="h-full bg-[#6b45f3]" style={{ width: "1%" }} />
+                <div className="h-full bg-[#00B2FF]" style={{ width: "1%" }} />
               </div>
               <p className="mt-6 text-[14px] leading-relaxed text-[#737373] dark:text-[#8A8A8A]">Calculated on the real deposited amount — so a larger tip means a larger payout, not a flat base unit.</p>
             </div>
@@ -511,7 +520,7 @@ export default function Home() {
                 { icon: "ph:wrench-bold", title: "Funds the protocol", desc: "The fee supports ongoing maintenance, infrastructure, and feature development — keeping Growthip running and improving." },
               ].map((f) => (
                 <div key={f.title} className="flex gap-5">
-                  <div className="w-12 h-12 rounded-xl bg-[#F5F5F5] dark:bg-[#1E1E1E] border border-[#E5E5E5] dark:border-[#2A2A2A] flex items-center justify-center shrink-0 text-[#6b45f3]">
+                  <div className="w-12 h-12 rounded-xl bg-[#F5F5F5] dark:bg-[#1E1E1E] border border-[#E5E5E5] dark:border-[#2A2A2A] flex items-center justify-center shrink-0 text-[#00B2FF]">
                     <Icon icon={f.icon} className="w-6 h-6" />
                   </div>
                   <div>
@@ -561,7 +570,7 @@ export default function Home() {
 
         <section className="relative w-full overflow-hidden" style={{ minHeight: "70vh" }}>
           <div className="absolute inset-0">
-            <WorldMap lineColor="#6b45f3" dots={[]} />
+            <WorldMap lineColor="#00B2FF" dots={[]} />
           </div>
 
           <div className="relative z-10 flex items-center justify-center h-full" style={{ minHeight: "70vh" }}>

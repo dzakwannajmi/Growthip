@@ -60,8 +60,9 @@ export default function Modal({ show, onClose, children, maxWidth = "480px" }: M
       `}</style>
       <div
         onClick={(e) => e.stopPropagation()}
+        className="bg-white dark:bg-[#151515]"
         style={{
-          background: "white", borderRadius: "20px",
+          borderRadius: "20px",
           width: "100%", maxWidth, padding: "24px",
           maxHeight: "85vh", overflowY: "auto",
           animation: closing

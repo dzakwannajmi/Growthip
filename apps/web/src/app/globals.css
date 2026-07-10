@@ -55,7 +55,7 @@ html.dark img[alt="Soroban"] {
   --color-dark-indigo: #0a061b;
   --color-black-forest: #020e0d;
   --color-midnight-blue: #030028;
-  --color-neon-violet: #6b45f3;
+  --color-neon-violet: #00B2FF;
   --color-fresh-green: #7ffc58;
   --color-black: #000000;
   --color-coral-red: #ff6f5e;
@@ -97,7 +97,7 @@ body {
 
 /* Plus Jakarta Sans font */
 ::selection {
-  background: #6b45f3;
+  background: #00B2FF;
   color: #ffffff;
 }
 

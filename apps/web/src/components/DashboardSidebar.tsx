@@ -147,12 +147,29 @@ export default function DashboardSidebar() {
         >
           <button
             onClick={() => setOpen(!open)}
-            className="w-10 h-10 rounded-full hover:bg-[#F5F5F5] flex items-center justify-center transition-colors cursor-pointer text-[#0A0A0A]"
+            className="w-10 h-10 rounded-full flex items-center justify-center relative transition-colors cursor-pointer text-[#0A0A0A] dark:text-[#F5F5F5] hover:bg-[#F5F5F5] dark:hover:bg-[#2A2A2A]"
           >
-            {logoHover
-              ? <Icon icon="ph:sidebar-simple" className="text-2xl" />
-              : <img src="/growthip-logo.png" alt="Growthip" className="w-7 h-7 object-contain" />
-            }
+            {/* Crossfade: both icons stacked, opacity-transitioned on
+                hover instead of an instant DOM swap -- same technique as
+                the Untitled UI MobileNavigationHeader reference
+                (hamburger/close icons layered + opacity transition),
+                applied here without pulling in their icon package or
+                react-aria-components. */}
+            <img
+              src="/growthip-logo.png"
+              alt="Growthip"
+              className={[
+                "w-7 h-7 object-contain absolute transition-opacity duration-200 ease-in-out",
+                logoHover ? "opacity-0" : "opacity-100",
+              ].join(" ")}
+            />
+            <Icon
+              icon="ph:sidebar-simple"
+              className={[
+                "text-2xl absolute transition-opacity duration-200 ease-in-out",
+                logoHover ? "opacity-100" : "opacity-0",
+              ].join(" ")}
+            />
           </button>
           {collapsed && (
             <div className="absolute top-1/2 -translate-y-1/2 left-[calc(100%+16px)] flex items-center pointer-events-none z-[100]" style={{ display: logoHover ? "flex" : "none" }}>
@@ -285,11 +302,10 @@ export default function DashboardSidebar() {
                 <img
                   src={avatarUrlFor(address)}
                   alt="avatar"
-                  className="w-9 h-9 rounded-full flex-shrink-0"
-                  style={{ background: "#F5F5F5", border: "1px solid #E5E5E5" }}
+                  className="w-9 h-9 rounded-full flex-shrink-0 bg-[#F5F5F5] dark:bg-[#1E1E1E] border border-[#E5E5E5] dark:border-[#2A2A2A]"
                 />
               ) : (
-                <div className="w-9 h-9 rounded-full bg-[#E5E5E5] flex items-center justify-center font-bold text-[#A3A3A3] text-sm flex-shrink-0">
+                <div className="w-9 h-9 rounded-full bg-[#E5E5E5] dark:bg-[#2A2A2A] flex items-center justify-center font-bold text-[#A3A3A3] dark:text-[#6A6A6A] text-sm flex-shrink-0">
                   ?
                 </div>
               )}

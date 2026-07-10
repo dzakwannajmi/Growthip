@@ -1,5 +1,6 @@
 "use client";
 import WalletModal from "@/components/WalletModal";
+import { toast } from "sonner";
 import { useDepositFlow } from "@/hooks/useDepositFlow";
 
 import { useEffect, useState, useCallback } from "react";
@@ -140,7 +141,7 @@ export default function PublicTipPage() {
         {/* Privacy badge */}
         <div style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "center", padding: "8px 14px", borderRadius: "999px", background: "#F0FDF4", border: "1px solid #BBF7D0", margin: "0 auto" }}>
           <Icon icon="ph:shield-check-bold" style={{ fontSize: "14px", color: "#22c55e" }} />
-          <span style={{ fontSize: "12px", fontWeight: 600, color: "#22c55e" }}>Zero-knowledge — your identity stays private</span>
+          <span style={{ fontSize: "12px", fontWeight: 600, color: "#22c55e" }}>Zero-knowledge — nobody can link this tip back to who received it</span>
         </div>
 
         <div style={{ borderRadius: "12px", border: "1px solid #FCA5A5", background: "#FEF2F2", padding: "12px 16px" }}>
@@ -200,7 +201,7 @@ export default function PublicTipPage() {
                   Share this link with them so they can turn it on.
                 </p>
                 <button
-                  onClick={() => { navigator.clipboard.writeText(window.location.href); }}
+                  onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success("Link copied"); }}
                   style={{ marginTop: "8px", padding: "10px 16px", borderRadius: "10px", background: "#0A0A0A", color: "white", border: "none", fontSize: "13px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
                 >
                   <Icon icon="ph:copy-simple-bold" />
@@ -371,6 +372,7 @@ export default function PublicTipPage() {
                   onClick={() => {
                     if (!encryptedNoteBundle) return;
                     navigator.clipboard.writeText(encryptedNoteBundle);
+                    toast.success("Private note copied");
                     setCopiedNote(true);
                     setTimeout(() => setCopiedNote(false), 2000);
                   }}

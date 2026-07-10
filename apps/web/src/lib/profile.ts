@@ -17,19 +17,26 @@
  * (e.g. into the Creator Registry contract alongside is_premium), which
  * is tracked as a roadmap item, not implemented yet.
  *
- * Avatars are rendered via DiceBear's public HTTP API (api.dicebear.com),
- * not a bundled library -- deliberate choice over @dicebear/core +
- * @dicebear/styles after finding the bundled approach would add real
- * risk (untested `with { type: "json" }` import-attribute syntax under
- * Turbopack, extra bundle weight) for an identical visual result the
- * public API already provides for free, with zero new dependencies.
+ * Avatars are rendered LOCALLY via @dicebear/core + @dicebear/collection
+ * (identicon style), producing a data: URI -- no network round-trip to
+ * api.dicebear.com. This deliberately avoids @dicebear/styles, whose
+ * current API requires `with { type: "json" }` import-attribute syntax
+ * (untested under this project's Turbopack setup); @dicebear/collection
+ * exposes the same styles, including identicon, via a plain named
+ * import (`import { identicon } from "@dicebear/collection"`), so the
+ * same visual result is reached without that risk.
  *
- * Style is fixed to "bottts-neutral" (robot avatars) -- not a multi-style
- * picker. Variety comes from a curated list of seed strings (below) that
- * each produce a visually distinct robot within that one style.
+ * Style is fixed to "identicon" -- not a multi-style picker. Variety
+ * comes from a curated list of seed strings (below); note that this
+ * list was originally curated and eyeballed for "bottts-neutral" (robot
+ * avatars) -- since the switch to identicon (grid-pattern avatars), the
+ * seeds still produce visually distinct results from each other, but
+ * the "verified good-looking" claim was specific to the old style and
+ * hasn't been re-verified against identicon's output.
  */
 
-const AVATAR_DICEBEAR_STYLE = "bottts-neutral";
+import { createAvatar } from "@dicebear/core";
+import { identicon } from "@dicebear/collection";
 
 export interface CreatorProfile {
   displayName: string;
@@ -98,13 +105,14 @@ export function saveProfile(
 }
 
 /**
- * DiceBear public HTTP API avatar URL. Always bottts-neutral style.
- * `variant` (defaults to whatever the creator has saved, or "" if never
- * set) picks which curated seed name to use; "" falls back to the
- * wallet address itself as the seed.
+ * Locally-rendered identicon avatar as a data: URI (SVG). `variant`
+ * (defaults to whatever the creator has saved, or "" if never set)
+ * picks which curated seed name to use; "" falls back to the wallet
+ * address itself as the seed. No network request -- generated
+ * synchronously in-browser via @dicebear/core + @dicebear/collection.
  */
 export function avatarUrlFor(address: string, variant?: string): string {
   const resolvedVariant = variant !== undefined ? variant : getProfile(address).avatarVariant;
   const seed = resolvedVariant || address;
-  return `https://api.dicebear.com/7.x/${AVATAR_DICEBEAR_STYLE}/svg?seed=${encodeURIComponent(seed)}`;
+  return createAvatar(identicon, { seed }).toDataUri();
 }

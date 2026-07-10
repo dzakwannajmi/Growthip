@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import ToasterProvider from "@/components/ToasterProvider";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -26,6 +27,7 @@ export default function RootLayout({
         {/* Init theme before React hydration to prevent flash */}
         <script dangerouslySetInnerHTML={{ __html: "/* dark mode temporarily disabled for launch stability */" }} />
         {children}
+        <ToasterProvider />
       </body>
     </html>
   );

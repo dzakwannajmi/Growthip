@@ -40,7 +40,7 @@ function FlowNode({ data }: NodeProps) {
         className={
           "w-16 h-16 rounded-2xl flex items-center justify-center border " +
           (isHub
-            ? "bg-[#6b45f3] border-[#6b45f3] shadow-lg shadow-[#6b45f3]/30"
+            ? "bg-[#00B2FF] border-[#00B2FF] shadow-lg shadow-[#00B2FF]/30"
             : "bg-[#F5F5F5] dark:bg-[#1E1E1E] border-[#E5E5E5] dark:border-[#2A2A2A]")
         }
       >
@@ -112,9 +112,9 @@ const edges: Edge[] = [
     source: "sender",
     target: "pool",
     animated: true,
-    style: { stroke: "#6b45f3", strokeWidth: 2 },
+    style: { stroke: "#00B2FF", strokeWidth: 2 },
     label: "Encrypted deposit",
-    labelStyle: { fontSize: 11, fontWeight: 700, fill: "#6b45f3" },
+    labelStyle: { fontSize: 11, fontWeight: 700, fill: "#00B2FF" },
     labelBgStyle: { fill: "#FAFAFA" },
   },
   {
@@ -122,9 +122,9 @@ const edges: Edge[] = [
     source: "pool",
     target: "creator",
     animated: true,
-    style: { stroke: "#6b45f3", strokeWidth: 2 },
+    style: { stroke: "#00B2FF", strokeWidth: 2 },
     label: "ZK proof claim",
-    labelStyle: { fontSize: 11, fontWeight: 700, fill: "#6b45f3" },
+    labelStyle: { fontSize: 11, fontWeight: 700, fill: "#00B2FF" },
     labelBgStyle: { fill: "#FAFAFA" },
   },
 ];

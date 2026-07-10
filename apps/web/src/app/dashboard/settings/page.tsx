@@ -7,10 +7,13 @@ import { QRCodeSVG } from "qrcode.react";
 import EncryptionSetup from "@/components/EncryptionSetup";
 import { encodeTipId } from "@/lib/addressId";
 import { getProfile, saveProfile, avatarUrlFor, AVATAR_VARIANTS } from "@/lib/profile";
+import { useCurrency, type CurrencyCode } from "@/lib/currency";
+import { toast } from "sonner";
 
 export default function SettingsPage() {
   const [address, setAddress] = useState("");
   const [showSecurity, setShowSecurity] = useState(false);
+  const [currency, setCurrencyPref] = useCurrency();
 
   async function handleExportBackup() {
     try {
@@ -69,6 +72,7 @@ export default function SettingsPage() {
   function copyAddress() {
     if (!address) return;
     navigator.clipboard.writeText(address);
+    toast.success("Address copied");
     setCopiedAddress(true);
     setTimeout(() => setCopiedAddress(false), 2000);
   }
@@ -76,6 +80,7 @@ export default function SettingsPage() {
   function copyTipLink() {
     if (!tipLink) return;
     navigator.clipboard.writeText(tipLink);
+    toast.success("Tip link copied");
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
   }
@@ -95,7 +100,7 @@ export default function SettingsPage() {
         ) : (<>
             <div>
               <p className="text-xs font-bold uppercase tracking-widest mb-3 text-[#737373] dark:text-[#6A6A6A]">Preferences</p>
-              <div className="rounded-2xl overflow-hidden dark:bg-[#1A1A1A] dark:border-[#2A2A2A]" style={{ border: "1px solid #E5E5E5", background: "white" }}>
+              <div className="rounded-2xl overflow-hidden bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A]">
                 <button onClick={handleExportBackup} className="w-full p-4 flex items-center justify-between transition-colors hover:bg-[#F5F5F5] dark:hover:bg-[#2A2A2A]">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full flex items-center justify-center dark:bg-[#2A2A2A]" style={{ background: "#F5F5F5" }}>
@@ -103,7 +108,7 @@ export default function SettingsPage() {
                     </div>
                     <div className="text-left">
                       <div className="font-bold text-sm text-[#0A0A0A] dark:text-[#FAFAFA]">Export Backup</div>
-                      <div className="text-xs text-[#737373] dark:text-[#8A8A8A]">Download your encryption key backup · Required to recover on new device</div>
+                      <div className="text-xs text-[#737373] dark:text-[#8A8A8A]">Save a copy of your key — you'll need it on a new device or if browser data is cleared</div>
                     </div>
                   </div>
                   <Icon icon="ph:caret-right-bold" className="text-[#A3A3A3] dark:text-[#6A6A6A]" />
@@ -121,18 +126,56 @@ export default function SettingsPage() {
                   </div>
                   <Icon icon={showSecurity ? "ph:caret-up-bold" : "ph:caret-right-bold"} className="text-[#A3A3A3] dark:text-[#6A6A6A]" />
                 </button>
+                <div className="dark:bg-[#2A2A2A]" style={{ height: "1px", background: "#E5E5E5" }} />
+                <div className="w-full p-4 flex items-center justify-between relative">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center dark:bg-[#2A2A2A]" style={{ background: "#F5F5F5" }}>
+                      <Icon icon="ph:currency-circle-dollar-bold" className="text-xl text-[#0A0A0A] dark:text-[#F0F0F0]" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-bold text-sm text-[#0A0A0A] dark:text-[#FAFAFA]">Display Currency</div>
+                      <div className="text-xs text-[#737373] dark:text-[#8A8A8A]">How balances and earnings are shown on Dashboard &amp; Analytics</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 rounded-full p-1 bg-[#F5F5F5] dark:bg-[#2A2A2A]">
+                    {([
+                      { code: "USD" as CurrencyCode, flag: "twemoji:flag-united-states" },
+                      { code: "IDR" as CurrencyCode, flag: "twemoji:flag-indonesia" },
+                    ]).map(({ code, flag }) => (
+                      <button
+                        key={code}
+                        onClick={() => {
+                          setCurrencyPref(code);
+                          toast.success(`Switched to ${code}`, {
+                            description: code === "IDR" ? "Balances and earnings now show in Rupiah" : "Balances and earnings now show in US Dollars",
+                          });
+                        }}
+                        className={[
+                          "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors",
+                          currency === code
+                            ? "bg-white dark:bg-[#0A0A0A] text-[#0A0A0A] dark:text-[#F5F5F5] shadow-sm"
+                            : "text-[#737373] dark:text-[#8A8A8A]",
+                        ].join(" ")}
+                      >
+                        <Icon icon={flag} className="text-sm" />
+                        {code}
+                      </button>
+                    ))}
+                  </div>
+
+                </div>
               </div>
             </div>
 
             {showSecurity && (
-              <div className="rounded-2xl p-4 dark:bg-[#1A1A1A] dark:border-[#2A2A2A]" style={{ border: "1px solid #E5E5E5", background: "white" }}>
+              <div className="rounded-2xl p-4 bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A]">
                 <EncryptionSetup address={address} />
               </div>
             )}
             {/* Supported Tokens section */}
             <div>
               <p className="text-xs font-bold uppercase tracking-widest mb-3 text-[#737373] dark:text-[#6A6A6A]">Supported Tokens</p>
-              <div className="rounded-2xl dark:bg-[#1A1A1A] dark:border-[#2A2A2A]" style={{ border: "1px solid #E5E5E5", background: "white", overflow: "hidden" }}>
+              <div className="rounded-2xl bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] overflow-hidden">
                 {/* Header */}
                 <div className="border-b border-[#E5E5E5] dark:border-[#2A2A2A]" style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: "10px" }}>
                   <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "#FFF7ED", display: "flex", alignItems: "center", justifyContent: "center" }}>
