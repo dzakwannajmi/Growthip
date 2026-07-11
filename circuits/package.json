@@ -12,6 +12,8 @@
     "info": "snarkjs r1cs info build/transaction2x2.r1cs"
   },
   "dependencies": {
+    "@noble/hashes": "^1.8.0",
+    "@scure/base": "^1.2.6",
     "circomlib": "^2.0.5",
     "circomlibjs": "^0.1.7",
     "snarkjs": "^0.7.6"
