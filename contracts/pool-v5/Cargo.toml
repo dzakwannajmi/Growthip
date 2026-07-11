@@ -1,0 +1,18 @@
+[package]
+name = "pool-v5"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+soroban-sdk = { workspace = true, features = ["hazmat-crypto"] }
+zk-types = { path = "../zk-types" }
+verifier-v5 = { path = "../verifier-v5" }
+poseidon2 = { path = "../poseidon2" }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["testutils", "hazmat-crypto"] }
+hex = "0.4"

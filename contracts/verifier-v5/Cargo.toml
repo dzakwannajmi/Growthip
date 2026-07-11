@@ -1,0 +1,22 @@
+[package]
+name = "verifier-v5"
+version = "0.1.0"
+edition = "2021"
+publish = false
+build = "build.rs"
+
+# rlib ONLY — no cdylib. This crate has no #[contract], so it is never a
+# deployable artifact on its own; it links into pool-v5's wasm as a library.
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+soroban-sdk = { workspace = true, features = ["hazmat-crypto"] }
+zk-types = { path = "../zk-types" }
+
+[build-dependencies]
+ark-bn254 = { version = "0.5" }
+ark-ff = { version = "0.5" }
+num-bigint = { version = "0.4" }
+serde_json = { version = "1" }
+sha2 = { version = "0.10" }

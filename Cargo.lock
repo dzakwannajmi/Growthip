@@ -1119,6 +1119,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "pool-v5"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "poseidon2",
+ "soroban-sdk",
+ "verifier-v5",
+ "zk-types",
+]
+
+[[package]]
+name = "poseidon2"
+version = "0.1.0"
+dependencies = [
+ "soroban-sdk",
+]
+
+[[package]]
 name = "powerfmt"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1800,6 +1818,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 
 [[package]]
+name = "verifier-v5"
+version = "0.1.0"
+dependencies = [
+ "ark-bn254",
+ "ark-ff",
+ "num-bigint",
+ "serde_json",
+ "sha2",
+ "soroban-sdk",
+ "zk-types",
+]
+
+[[package]]
 name = "version_check"
 version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2001,6 +2032,13 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "zk-types"
+version = "0.1.0"
+dependencies = [
+ "soroban-sdk",
 ]
 
 [[package]]
