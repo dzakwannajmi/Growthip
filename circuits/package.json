@@ -1,0 +1,19 @@
+{
+  "name": "growthip-circuits",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "mkdir -p build && echo '{\"type\": \"commonjs\"}' > build/package.json && circom src/transaction2x2.circom --r1cs --wasm --sym -l lib -l node_modules -o build",
+    "build:oracles": "mkdir -p build && echo '{\"type\": \"commonjs\"}' > build/package.json && for f in poseidon2_1_main poseidon2_2_main poseidon2_3_main poseidon2_compress_main; do circom parity/$f.circom --wasm -o build -l .; done",
+    "test": "node test/transaction2x2.test.mjs",
+    "parity": "node scripts/poseidon2-parity.mjs",
+    "setup": "bash scripts/setup.sh",
+    "info": "snarkjs r1cs info build/transaction2x2.r1cs"
+  },
+  "dependencies": {
+    "circomlib": "^2.0.5",
+    "circomlibjs": "^0.1.7",
+    "snarkjs": "^0.7.6"
+  }
+}
