@@ -9,7 +9,8 @@ members = [
   "contracts/growthip-pool",
   "contracts/growthip-merkle-verifier-v3-1",
   "contracts/growthip-creator-registry",
-  "contracts/growthip-merkle-verifier-v4"
+  "contracts/growthip-merkle-verifier-v4",
+  "contracts/poseidon2"
 ]
 
 [workspace.dependencies]

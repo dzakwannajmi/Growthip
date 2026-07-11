@@ -1,0 +1,17 @@
+[package]
+name = "poseidon2"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+# Vendored from fxjrin/cyphras (Apache-2.0), which vendored the core from
+# NethermindEth/stellar-private-payments (Apache-2.0). See ATTRIBUTION.md.
+
+[lib]
+crate-type = ["lib"]
+doctest = false
+
+[dependencies]
+soroban-sdk = { workspace = true, features = ["hazmat-crypto"] }
+
+[dev-dependencies]
+soroban-sdk = { workspace = true, features = ["hazmat-crypto", "testutils"] }
