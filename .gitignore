@@ -24,6 +24,8 @@ circuits/build/*.sym
 circuits/build/*.wtns
 circuits/build/*.zkey
 circuits/build/*.ptau
+circuits/keys/*.zkey
+circuits/keys/*.ptau
 
 # Backup files
 *.bak
