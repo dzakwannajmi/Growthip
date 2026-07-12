@@ -189,7 +189,7 @@ export default function SettingsPage() {
             )}
             {showGrIdentity && (
               <div className="rounded-2xl p-4 bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A]">
-                <GrIdentitySetup />
+                <GrIdentitySetup address={address} />
               </div>
             )}
             {/* Supported Tokens section */}

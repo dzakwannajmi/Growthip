@@ -21,7 +21,11 @@ import {
   unlockGrIdentity,
   lockGrSession,
   deleteGrIdentityCompletely,
+  getGrSeed,
+  deriveShieldedKeys,
+  packPoint,
 } from "@/lib/shielded";
+import { usePoolV5Client, type PoolV5Token } from "@/lib/poolV5Client";
 
 type Stage =
   | "checking"
@@ -41,7 +45,14 @@ const primaryButtonClass =
 const secondaryButtonClass =
   "w-full rounded-xl py-3 text-sm font-bold bg-[#F5F5F5] dark:bg-[#2A2A2A] text-[#0A0A0A] dark:text-[#F5F5F5] hover:bg-[#EBEBEB] dark:hover:bg-[#333333] transition-colors";
 
-export default function GrIdentitySetup() {
+interface GrIdentitySetupProps {
+  address: string | null;
+}
+
+export default function GrIdentitySetup({ address: walletAddress }: GrIdentitySetupProps) {
+  const { isReady: poolClientReady, buildPoolV5Client } = usePoolV5Client();
+  const [registering, setRegistering] = useState<PoolV5Token | null>(null);
+  const [registered, setRegistered] = useState<Record<PoolV5Token, boolean>>({ xlm: false, usdc: false });
   const [stage, setStage] = useState<Stage>("checking");
   const [address, setAddress] = useState<string | null>(null);
   const [mnemonic, setMnemonic] = useState("");
@@ -298,12 +309,63 @@ export default function GrIdentitySetup() {
     );
   }
 
+  async function handleRegister(token: PoolV5Token) {
+    if (!walletAddress) {
+      toast.error("Connect your wallet first");
+      return;
+    }
+    setError("");
+    setRegistering(token);
+    try {
+      const seed = getGrSeed();
+      const keys = await deriveShieldedKeys(seed);
+      const packed = await packPoint(keys.pkD);
+      const client = buildPoolV5Client(token, walletAddress);
+      const tx = await client.register_enc_key({
+        owner: walletAddress,
+        version: 1,
+        pubkey: Buffer.from(packed),
+      });
+      await tx.signAndSend({ force: true });
+      setRegistered((prev) => ({ ...prev, [token]: true }));
+      toast.success(`Registered on Pool ${token.toUpperCase()} V5`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : `Failed to register on Pool ${token.toUpperCase()} V5.`;
+      setError(message);
+      toast.error("Registration failed", { description: message });
+    } finally {
+      setRegistering(null);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <div className="rounded-xl p-4 bg-[#F0FDF4] dark:bg-[#132A1B] border border-[#BBF7D0] dark:border-[#265C3A]">
         <p className="text-xs font-bold text-[#166534] dark:text-[#86EFAC] mb-1">gr identity unlocked</p>
         <p className="text-xs font-mono text-[#166534] dark:text-[#86EFAC] break-all">{address}</p>
       </div>
+
+      <p className="text-xs text-[#737373] dark:text-[#8A8A8A]">
+        Register your gr address on-chain so supporters can find it when sending shielded tips. Register separately per token pool.
+      </p>
+      <div className="flex gap-2">
+        <button
+          onClick={() => handleRegister("xlm")}
+          disabled={!poolClientReady || registering !== null || !walletAddress}
+          className={secondaryButtonClass}
+        >
+          {registering === "xlm" ? "Registering..." : registered.xlm ? "✓ XLM registered" : "Register on XLM pool"}
+        </button>
+        <button
+          onClick={() => handleRegister("usdc")}
+          disabled={!poolClientReady || registering !== null || !walletAddress}
+          className={secondaryButtonClass}
+        >
+          {registering === "usdc" ? "Registering..." : registered.usdc ? "✓ USDC registered" : "Register on USDC pool"}
+        </button>
+      </div>
+      {error && <p className="text-xs text-[#EF4444]">{error}</p>}
+
       <button onClick={handleLock} className={secondaryButtonClass}>Lock</button>
       <button onClick={handleDeleteAndStartOver} className="text-xs text-[#EF4444] hover:underline mt-1">
         Delete this gr identity and start over
