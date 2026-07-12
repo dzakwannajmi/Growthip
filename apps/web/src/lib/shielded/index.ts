@@ -26,6 +26,7 @@ export {
 export { HRP, encodeAddress, parseAddress } from "./address";
 export { bytesToHex, bytesToBigInt, concatBytes } from "./hex";
 export { encryptNoteForRecipient, tryDecryptNote, CIPHERTEXT_LEN } from "./noteEncryption";
+export { scanForGrNotes, type DiscoveredGrNote } from "./grNoteScan";
 export { newGrMnemonic, isValidGrMnemonic, grSeedFromMnemonic, GR_MNEMONIC_STRENGTH_BITS } from "./seed";
 export {
   createGrIdentity,
