@@ -28,6 +28,16 @@ export { bytesToHex, bytesToBigInt, concatBytes } from "./hex";
 export { encryptNoteForRecipient, tryDecryptNote, CIPHERTEXT_LEN } from "./noteEncryption";
 export { scanForGrNotes, type DiscoveredGrNote } from "./grNoteScan";
 export { computeExtDataHash, calcPublicAmount, extDataScVal, FIELD, type ExtDataInput } from "./extDataHash";
+export {
+  buildDepositInput,
+  generateTipProof,
+  noteCommitment,
+  randomBlinding,
+  type CircuitInput,
+  type ProveFn,
+  type TxProofHex,
+  type BuildDepositArgs,
+} from "./tipFlow";
 export { newGrMnemonic, isValidGrMnemonic, grSeedFromMnemonic, GR_MNEMONIC_STRENGTH_BITS } from "./seed";
 export {
   createGrIdentity,
