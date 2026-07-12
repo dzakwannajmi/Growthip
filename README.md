@@ -178,6 +178,39 @@ CAP-0075: Cryptographic Primitives for Poseidon/Poseidon2 Hash Functions defines
 > three, each verified working on real testnet transactions, not just in
 > local tests.
 
+### V5 Contracts — shielded JoinSplit (experimental, in progress)
+
+Shielded-amount privacy pool: 2-in/2-out JoinSplit (Groth16/BN254,
+transaction2x2.circom, 62,807 constraints), Poseidon2 Merkle tree
+(CAP-0075 host function), and an in-process `verifier-v5` (Groth16
+verification runs as a plain Rust function call compiled into each
+pool's own wasm, not a separately deployed contract -- a deliberate
+architecture deviation from V4). Deployed and manually verified against
+this exact repo state, not assumed:
+
+| Contract | Address |
+|---|---|
+| Growthip Pool V5 — XLM | `CDPC5X2QR7OTZEVMKF6HRXL5N2CN6BSMJ2RXEPEQUJ42JMO7JEB375DU` |
+| Growthip Pool V5 — USDC | `CBEKS4IYO2WTZFAHND33ISPLU4JBZFGJMAO3NMJPPYJJZ6P6B7DUXDSK` |
+| Wasm hash (both pools, same binary) | `4f65a1f78801f47f7b2480e14151b929264cb323bf56444c47e955ccbf56a43a` |
+| Domain — XLM pool | `1` (replay-protection tag, immutable per pool) |
+| Domain — USDC pool | `2` |
+| Max deposit (both pools) | `100,000 units` (testnet-generous, no setter after `initialize()`) |
+| TVL cap (both pools) | `10,000,000 units` |
+| Admin | `GDPAPDZWAKBXUPCNMI4YHAZ7DS7UOUTPGXAFDSWZG4URRMWHFSQTDQBM` (same as V4) |
+| Token (both, same SAC as V4) | Native XLM `CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC` / USDC `CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA` |
+
+> Both pools' `current_root()` was queried live post-deploy and confirmed
+> to equal `119827e780a1850d7b7e34646edc1ce918211c26dda4e13bcd1611f6f81c3680`
+> -- the same empty-tree root value locked by local parity tests since
+> Day 1 of V5 development, now confirmed identical on live testnet
+> infrastructure, not just in local `cargo test` simulation. V5 is a
+> parallel, independent system from V4 -- separate contracts, separate
+> Merkle trees, separate hash function (Poseidon2 vs V4's Poseidon v1).
+> V4 remains the primary, fully-integrated demo path; V5's frontend
+> integration (note discovery, `gr` address registration, tip flow) is
+> in progress.
+
 ---
 
 ## Protocol Design
