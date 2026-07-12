@@ -153,14 +153,25 @@ export interface CreateGrIdentityResult {
   mnemonic: string;
 }
 
-export async function createGrIdentity(password: string): Promise<CreateGrIdentityResult> {
+export async function createGrIdentity(password: string, mnemonic: string): Promise<CreateGrIdentityResult> {
   if (await hasGrIdentity()) {
     throw new Error(
       "A gr identity already exists in this browser. Use restoreGrIdentity() to replace it, or unlock the existing one instead.",
     );
   }
 
-  const mnemonic = newGrMnemonic();
+  // IMPORTANT: mnemonic is a REQUIRED parameter, not generated internally.
+  // It must be the exact same mnemonic the UI already displayed and had
+  // the user confirm ("I've written this down") BEFORE calling this
+  // function -- generating a fresh one here instead would silently derive
+  // the identity from a phrase the user never saw, making their written
+  // recovery phrase useless for restoring THIS identity. (This was a real
+  // bug caught via manual restore testing: same-mnemonic restore produced
+  // a different address every time, because createGrIdentity was
+  // regenerating its own mnemonic instead of using the one already shown.)
+  if (!isValidGrMnemonic(mnemonic)) {
+    throw new Error("Internal error: invalid mnemonic passed to createGrIdentity.");
+  }
   const seed = grSeedFromMnemonic(mnemonic);
 
   const keys = await deriveShieldedKeys(seed);
