@@ -25,3 +25,16 @@ export {
 } from "./keys";
 export { HRP, encodeAddress, parseAddress } from "./address";
 export { bytesToHex, bytesToBigInt, concatBytes } from "./hex";
+export { newGrMnemonic, isValidGrMnemonic, grSeedFromMnemonic, GR_MNEMONIC_STRENGTH_BITS } from "./seed";
+export {
+  createGrIdentity,
+  restoreGrIdentity,
+  unlockGrIdentity,
+  isGrUnlocked,
+  lockGrSession,
+  getGrSeed,
+  getStoredGrAddress,
+  hasStoredGrIdentity,
+  deleteGrIdentityCompletely,
+  type CreateGrIdentityResult,
+} from "./grIdentity";
