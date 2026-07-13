@@ -51,3 +51,5 @@ export {
   deleteGrIdentityCompletely,
   type CreateGrIdentityResult,
 } from "./grIdentity";
+
+export { proveV5 } from "./zkpV5";
