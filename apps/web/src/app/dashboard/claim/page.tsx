@@ -143,10 +143,10 @@ function ClaimContent() {
         );
       }
 
-      const commitments: string[] = [];
+      const commitments: { index: number; commitment: string }[] = [];
       for (let i = 0; i < total; i++) {
         const cTx = await client.get_commitment({ index: i });
-        commitments.push(commitmentToDecimal(cTx.result as Buffer));
+        commitments.push({ index: i, commitment: commitmentToDecimal(cTx.result as Buffer) });
       }
 
       const noteCommitment = hexToDecimal(note.commitment);

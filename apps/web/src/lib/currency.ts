@@ -30,16 +30,9 @@ export function setCurrency(currency: CurrencyCode): void {
   window.dispatchEvent(new Event(CURRENCY_CHANGED_EVENT));
 }
 
-/** Explicit reset back to the USD default -- separate from setCurrency
- * only for readability at call sites ("reset to default" reads clearer
- * than "setCurrency('USD')" in UI code). */
-export function resetCurrency(): void {
-  setCurrency(DEFAULT_CURRENCY);
-}
-
 /** Live-updating hook: reflects the current preference and re-renders
  * this component whenever ANY component (including itself) calls
- * setCurrency()/resetCurrency() -- same-tab via a custom event,
+ * setCurrency() -- same-tab via a custom event,
  * cross-tab via the native `storage` event. */
 export function useCurrency(): [CurrencyCode, (c: CurrencyCode) => void] {
   const [currency, setCurrencyState] = useState<CurrencyCode>(DEFAULT_CURRENCY);

@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import Modal from "@/components/Modal";
-import { encodeTipId } from "@/lib/addressId";
+import { getStoredGrAddress } from "@/lib/shielded/grIdentity";
 import { getProfile, saveProfile, avatarUrlFor, AVATAR_VARIANTS } from "@/lib/profile";
 import { lockSession } from "@/lib/encryption/keyManagement";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -23,6 +23,7 @@ export default function ProfilePage() {
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [tipLink, setTipLink] = useState("");
   const [tipId, setTipId] = useState("");
+  const [needsGrSetup, setNeedsGrSetup] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
   const { isReady: registryReady, buildRegistryClient } = useRegistryClient();
 
@@ -34,11 +35,24 @@ export default function ProfilePage() {
     setDisplayName(p.displayName);
     setBio(p.bio);
     setAvatarVariant(p.avatarVariant);
-    try {
-      const id = encodeTipId(addr);
-      setTipId(id);
-      setTipLink(`https://growthip.vercel.app/tip/${id}`);
-    } catch {}
+    (async () => {
+      try {
+        const grAddress = await getStoredGrAddress();
+        if (grAddress) {
+          setTipId(grAddress);
+          setTipLink(`https://growthip.vercel.app/tip/${grAddress}`);
+          setNeedsGrSetup(false);
+        } else {
+          setTipId("");
+          setTipLink("");
+          setNeedsGrSetup(true);
+        }
+      } catch {
+        setTipId("");
+        setTipLink("");
+        setNeedsGrSetup(true);
+      }
+    })();
   }, []);
 
   useEffect(() => {
@@ -170,6 +184,13 @@ export default function ProfilePage() {
               </div>
             </div>
 
+            {needsGrSetup ? (
+              <div className="border border-dashed border-[#E5E5E5] dark:border-[#2A2A2A] bg-[#FAFAFA] dark:bg-[#1A1A1A]" style={{ padding: "20px", borderRadius: "16px", textAlign: "center" }}>
+                <p className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "13px", marginBottom: "10px" }}>Set up your gr address to activate this link</p>
+                <a href="/dashboard/settings" style={{ display: "inline-block", padding: "9px 16px", borderRadius: "10px", background: "#0A0A0A", color: "white", fontSize: "13px", fontWeight: 700, textDecoration: "none" }}>Set up gr address</a>
+              </div>
+            ) : (
+            <>
             {/* Tip link card */}
             <div className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-white dark:bg-[#151515]" style={{ borderRadius: "16px", padding: "20px" }}>
               <p className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 12px" }}>Your Tip Link</p>
@@ -187,6 +208,8 @@ export default function ProfilePage() {
                 </button>
               </div>
             </div>
+            </>
+            )}
 
             {/* Wallet card */}
             <div className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-white dark:bg-[#151515]" style={{ borderRadius: "16px", padding: "20px" }}>

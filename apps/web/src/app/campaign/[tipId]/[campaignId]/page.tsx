@@ -630,8 +630,8 @@ function CampaignPageInner() {
                         )}
 
                         <Card>
-                            {/* ── Step: select — creator not premium ── */}
-                            {step === "select" && premiumChecked && !creatorIsPremium && (
+                            {/* ── Step: select — outdated (non-gr) address ── */}
+                            {step === "select" && premiumChecked && !recipientAddress?.startsWith("gr") && (
                                 <div
                                     style={{
                                         display: "flex",
@@ -643,13 +643,13 @@ function CampaignPageInner() {
                                     }}
                                 >
                                     <Icon
-                                        icon="ph:lock-key-bold"
+                                        icon="ph:warning-circle-bold"
                                         style={{ fontSize: "32px", color: "#A3A3A3" }}
                                     />
                                     <p
                                         style={{ fontSize: "15px", fontWeight: 700, color: "#171717" }}
                                     >
-                                        This creator hasn&apos;t activated private notes yet
+                                        This campaign link is outdated
                                     </p>
                                     <p
                                         style={{
@@ -659,38 +659,15 @@ function CampaignPageInner() {
                                             maxWidth: "320px",
                                         }}
                                     >
-                                        Growthip requires creators to activate end-to-end encrypted
-                                        notes before they can receive contributions. Share this link
-                                        with them so they can turn it on.
+                                        This link uses an old address format that Growthip no
+                                        longer supports. Ask the creator to generate a new
+                                        campaign link from their dashboard.
                                     </p>
-                                    <button
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(window.location.href);
-                                            toast.success("Link copied");
-                                        }}
-                                        style={{
-                                            marginTop: "8px",
-                                            padding: "10px 16px",
-                                            borderRadius: "10px",
-                                            background: "#0A0A0A",
-                                            color: "white",
-                                            border: "none",
-                                            fontSize: "13px",
-                                            fontWeight: 700,
-                                            cursor: "pointer",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "6px",
-                                        }}
-                                    >
-                                        <Icon icon="ph:copy-simple-bold" />
-                                        Copy Link to Share
-                                    </button>
                                 </div>
                             )}
 
-                            {/* ── Step: select — creator is premium ── */}
-                            {step === "select" && premiumChecked && creatorIsPremium && (
+                            {/* ── Step: select — gr shielded address ── */}
+                            {step === "select" && premiumChecked && recipientAddress?.startsWith("gr") && (
                                 <div
                                     style={{ display: "flex", flexDirection: "column", gap: "16px" }}
                                 >

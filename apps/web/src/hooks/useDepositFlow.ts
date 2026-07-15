@@ -117,13 +117,22 @@ export function useDepositFlow(
         const tx = await client.tip_amount();
         setPoolTipAmount(Number(tx.result ?? 0));
       } catch (e) {
-        console.error("Failed to fetch tip_amount:", e);
       }
     })();
   }, [PoolClient, token]);
 
   useEffect(() => {
-    if (!recipientAddress || !registryReady) return;
+    if (!recipientAddress) return;
+    
+    // V5 SHIELDED CHECK: if the address starts with 'gr', it auto-passes
+    // because the encryption key (pkD) is already embedded in the address itself.
+    if (recipientAddress.startsWith("gr")) {
+      setCreatorIsPremium(true);
+      setPremiumChecked(true);
+      return;
+    }
+
+    if (!registryReady) return;
     (async () => {
       try {
         const client = buildRegistryClient(recipientAddress);
@@ -136,7 +145,6 @@ export function useDepositFlow(
           setCreatorEncryptionPubKey(new Uint8Array(pubkeyResult.result));
         }
       } catch (err) {
-        console.error("Failed to check creator premium status:", err);
         setCreatorIsPremium(false);
       } finally {
         setPremiumChecked(true);
@@ -176,7 +184,9 @@ export function useDepositFlow(
   
   useEffect(() => {
     if (!address || !token) return;
-    const poolId = process.env.NEXT_PUBLIC_POOL_V5_ID || poolV5Networks.testnet.contractId;
+    const poolId = token.symbol === "USDC"
+      ? (config.poolV5.usdc || poolV5Networks.testnet.contractId)
+      : (config.poolV5.xlm || poolV5Networks.testnet.contractId);
     const client = new PoolV5Client({
       ...poolV5Networks.testnet,
       contractId: poolId,
@@ -215,12 +225,6 @@ export function useDepositFlow(
 
   async function handleDeposit() {
     if (!address || !isTestnet || !poolV5Client || contractAmount === 0 || !recipientAddress) return;
-    
-    // Premium checks skipped momentarily for testing the raw ZK circuit flow
-    // if (!creatorIsPremium || !creatorEncryptionPubKey) {
-    //  setStatus("This creator hasn't activated private notes yet.");
-    //  return;
-    // }
 
     setBusy(true);
     setStatus("Fetching live Merkle root...");
@@ -232,9 +236,12 @@ export function useDepositFlow(
       const parsed = await parseAddress(recipientAddress);
       if (!parsed) throw new Error("Invalid creator address format.");
 
+
+
       setStatus("Building zero-knowledge circuit input...");
-      const feeAmount = BigInt(Math.floor(contractAmount * 0.01 * 1e7)); 
-      const amountInStroops = BigInt(Math.floor(contractAmount * 1e7));
+      // PERBAIKAN: contractAmount sudah dalam stroops, tidak perlu dikali 1e7 lagi
+      const feeAmount = BigInt(Math.floor(contractAmount * 0.01)); 
+      const amountInStroops = BigInt(contractAmount);
       
       const built = await buildDepositInput({
         creatorPkD: parsed.pkD,
@@ -242,36 +249,56 @@ export function useDepositFlow(
         tipAmount: amountInStroops,
         fee: feeAmount,
         poolCurrentRoot: currentRoot,
-        recipientAddress,
+        recipientAddress: address, // Privasi ZK dipertahankan
         relayerAddress: address, 
-        domain: 1n 
+        domain: token.symbol === "USDC" ? 2n : 1n 
       });
 
       setStatus("Generating Groth16 Proof (this may take a moment)...");
-      // built is already { input, ext, creatorNoteAmount } exactly as generateTipProof expects
       const { proof, ext } = await generateTipProof(built, proveV5);
       
-      setStatus("Encrypting private note...");
-      // For now we mock the note to ensure the transaction hits Soroban cleanly.
-      const encryptedBundle = "encrypted-bundle-v5-placeholder";
+      setStatus("Preparing encrypted note...");
+      // Enkripsi asli V5 diambil langsung dari output sirkuit, diubah ke Base64 untuk QR Code
+      const encryptedBundle = Buffer.from(ext.encryptedOutput0).toString("base64");
+      
+      setStatus("Formatting data for Soroban...");
+      const formattedExt = {
+        ext_amount: BigInt(ext.extAmount),
+        fee: BigInt(ext.fee),
+        recipient: address, 
+        relayer: address,
+        encrypted_output0: Buffer.from(ext.encryptedOutput0),
+        encrypted_output1: Buffer.from(ext.encryptedOutput1)
+      };
+
+      const formattedProof = {
+        a: Buffer.from(proof.a, "hex"),
+        b: Buffer.from(proof.b, "hex"),
+        c: Buffer.from(proof.c, "hex"),
+        public_amount: BigInt("0x" + proof.public_amount),
+        root: BigInt("0x" + proof.root),
+        ext_data_hash: BigInt("0x" + proof.ext_data_hash),
+        input_nullifiers: proof.nullifiers.map(n => BigInt("0x" + n)),
+        output_commitments: proof.commitments.map(c => BigInt("0x" + c))
+      };
       
       setStatus("Approve the tip transaction in your wallet...");
-      // Forcing "any" cast here to bypass TS checking.
-      // poolV5Bindings might strictly expect Buffers for TxProof inside, but 
-      // the Soroban client's txFromJSON often parses hex strings directly for byte arrays.
       const tx = await poolV5Client.transact({
-        proof: proof as any,
-        ext: ext as any,
+        proof: formattedProof as any,
+        ext: formattedExt as any,
         sender: address
       });
       
       const { result } = await tx.signAndSend({ force: true });
       
+      // Simpan enkripsi nyata ke state UI
+      setEncryptedNoteBundle(encryptedBundle);
+      setSentNote({} as any); // Trigger UI step "done"
+      
       setStatus("Tip sent successfully via ZK Circuit!");
       setStep("done");
       
     } catch (err) {
-      console.error(err);
       setStatus(err instanceof Error ? err.message : "Deposit failed.");
     } finally {
       setBusy(false);

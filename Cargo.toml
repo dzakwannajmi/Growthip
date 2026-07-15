@@ -1,15 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-  "contracts/square-verifier",
-  "contracts/growthip-note-verifier",
-  "contracts/growthip-merkle-verifier",
-  "contracts/growthip-merkle-verifier-v2",
-  "contracts/growthip-merkle-verifier-v3",
-  "contracts/growthip-pool",
-  "contracts/growthip-merkle-verifier-v3-1",
   "contracts/growthip-creator-registry",
-  "contracts/growthip-merkle-verifier-v4",
   "contracts/poseidon2",
   "contracts/zk-types",
   "contracts/verifier-v5",

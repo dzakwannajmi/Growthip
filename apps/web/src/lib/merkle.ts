@@ -16,7 +16,17 @@
  *   - empty_nodes[i] = hash2(empty_nodes[i-1], empty_nodes[i-1])
  */
 
-import { hash2 } from "./poseidon";
+import { poseidon2Compress } from "./shielded/poseidon2";
+
+// Adapter matching the old hash2(a: string, b: string) => Promise<string> signature,
+// but backed by PoseidonCompress (Poseidon2, no domain separator) instead of
+// the legacy V3 Poseidon v1 (circomlibjs) that used to live in "./poseidon".
+// See Bug #5 in the V5 claim debugging handoff: on-chain merkle_onchain_v2.rs
+// uses poseidon2_compress, not poseidon_permutation, so the client tree MUST
+// use the matching Poseidon2 compress circuit or roots never match.
+async function hash2(a: string, b: string): Promise<string> {
+  return (await poseidon2Compress(BigInt(a), BigInt(b))).toString();
+}
 
 /** Tree depth for Growthip V4. */
 export const TREE_DEPTH = 20;
@@ -73,14 +83,15 @@ export function bytesToDecimal(bytes: Uint8Array): string {
  * Siblings with no real descendants use precomputed empty subtree roots.
  *
  * @param commitment    The leaf to locate (decimal string).
- * @param allCommitments All deposits in order (decimal strings).
+ * @param allCommitments All deposits as {index, commitment} pairs, index = real on-chain leaf index (NOT array position).
  * @returns Merkle path + leafIndex + computed root.
  */
 export async function getMerklePath(
   commitment: string,
-  allCommitments: string[],
+  allCommitments: { index: number; commitment: string }[],
 ): Promise<MerklePath & { leafIndex: number; root: string }> {
-  const leafIndex = allCommitments.indexOf(commitment);
+  const found = allCommitments.find((c) => c.commitment === commitment);
+  const leafIndex = found ? found.index : -1;
   if (leafIndex === -1) {
     throw new Error(
       "Commitment not found in the on-chain pool. The note may belong to a " +
@@ -91,10 +102,17 @@ export async function getMerklePath(
   const emptyNodes = await getEmptyNodes();
 
   // Build sparse tree using Maps (index -> value) per level.
-  // Only real nodes are stored; missing nodes fall back to emptyNodes[level].
+  // IMPORTANT: keyed by the leaf's real ON-CHAIN index (data.index from the
+  // contract event), NOT by its position in allCommitments. If the scan that
+  // produced allCommitments is missing some early indices (e.g. RPC lookback
+  // window didn't reach far enough back), those missing indices are simply
+  // absent from the Map and correctly fall back to emptyNodes below --
+  // instead of silently shifting every later leaf's index, which produced a
+  // tree whose root could never match on-chain (root cause of the
+  // "Assert Failed ... ForceEqualIfEnabled" claim failures).
   let currentLayer = new Map<number, string>();
-  for (let i = 0; i < allCommitments.length; i++) {
-    currentLayer.set(i, allCommitments[i]);
+  for (const { index, commitment: c } of allCommitments) {
+    currentLayer.set(index, c);
   }
 
   const pathElements: string[] = [];
@@ -131,8 +149,6 @@ export async function getMerklePath(
   }
 
   const root = currentLayer.get(0) ?? emptyNodes[TREE_DEPTH];
-  console.log("[merkle] computed root:", BigInt(root).toString(16).padStart(64, "0"));
-  console.log("[merkle] leafIndex:", leafIndex, "commitments:", allCommitments.length);
   return { pathElements, pathIndices, leafIndex, root };
 }
 

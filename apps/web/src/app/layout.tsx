@@ -11,7 +11,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Growthip — Private Creator Tipping on Stellar",
+  title: "Growthip",
   description:
     "Growthip is a privacy-preserving creator tipping prototype built with Stellar Soroban, Groth16, BN254, and Merkle proofs.",
 };

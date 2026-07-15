@@ -4,7 +4,6 @@ import { Icon } from "@iconify/react";
 import { useState, useEffect } from "react";
 import { isConnected, requestAccess } from "@stellar/freighter-api";
 import { QRCodeSVG } from "qrcode.react";
-import EncryptionSetup from "@/components/EncryptionSetup";
 import GrIdentitySetup from "@/components/GrIdentitySetup";
 import { encodeTipId } from "@/lib/addressId";
 import { getProfile, saveProfile, avatarUrlFor, AVATAR_VARIANTS } from "@/lib/profile";
@@ -13,24 +12,8 @@ import { toast } from "sonner";
 
 export default function SettingsPage() {
   const [address, setAddress] = useState("");
-  const [showSecurity, setShowSecurity] = useState(false);
   const [showGrIdentity, setShowGrIdentity] = useState(false);
   const [currency, setCurrencyPref] = useCurrency();
-
-  async function handleExportBackup() {
-    try {
-      const { exportBackupFile } = await import("@/lib/encryption/keyManagement");
-      const blob = await exportBackupFile();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `growthip-backup-${address.slice(0, 6)}-${Date.now()}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      alert("No encryption key found. Please set up encryption first in Security & Private Notes.");
-    }
-  }
 
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
@@ -103,32 +86,6 @@ export default function SettingsPage() {
             <div>
               <p className="text-xs font-bold uppercase tracking-widest mb-3 text-[#737373] dark:text-[#6A6A6A]">Preferences</p>
               <div className="rounded-2xl overflow-hidden bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A]">
-                <button onClick={handleExportBackup} className="w-full p-4 flex items-center justify-between transition-colors hover:bg-[#F5F5F5] dark:hover:bg-[#2A2A2A]">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center dark:bg-[#2A2A2A]" style={{ background: "#F5F5F5" }}>
-                      <Icon icon="ph:download-simple-bold" className="text-xl text-[#0A0A0A] dark:text-[#F0F0F0]" />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-bold text-sm text-[#0A0A0A] dark:text-[#FAFAFA]">Export Backup</div>
-                      <div className="text-xs text-[#737373] dark:text-[#8A8A8A]">Save a copy of your key — you'll need it on a new device or if browser data is cleared</div>
-                    </div>
-                  </div>
-                  <Icon icon="ph:caret-right-bold" className="text-[#A3A3A3] dark:text-[#6A6A6A]" />
-                </button>
-                <div className="dark:bg-[#2A2A2A]" style={{ height: "1px", background: "#E5E5E5" }} />
-                <button onClick={() => setShowSecurity((p) => !p)} className="w-full p-4 flex items-center justify-between transition-colors hover:bg-[#F5F5F5] dark:hover:bg-[#2A2A2A] rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center dark:bg-[#2A2A2A]" style={{ background: "#F5F5F5" }}>
-                      <Icon icon="ph:shield-check-bold" className="text-xl text-[#0A0A0A] dark:text-[#F0F0F0]" />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-bold text-sm text-[#0A0A0A] dark:text-[#FAFAFA]">Security & Private Notes</div>
-                      <div className="text-xs text-[#737373] dark:text-[#8A8A8A]">Enable encrypted notes from supporters · Est. fee ~0.016 XLM</div>
-                    </div>
-                  </div>
-                  <Icon icon={showSecurity ? "ph:caret-up-bold" : "ph:caret-right-bold"} className="text-[#A3A3A3] dark:text-[#6A6A6A]" />
-                </button>
-                <div className="dark:bg-[#2A2A2A]" style={{ height: "1px", background: "#E5E5E5" }} />
                 <button onClick={() => setShowGrIdentity((p) => !p)} className="w-full p-4 flex items-center justify-between transition-colors hover:bg-[#F5F5F5] dark:hover:bg-[#2A2A2A]">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full flex items-center justify-center dark:bg-[#2A2A2A]" style={{ background: "#F5F5F5" }}>
@@ -182,11 +139,6 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            {showSecurity && (
-              <div className="rounded-2xl p-4 bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A]">
-                <EncryptionSetup address={address} />
-              </div>
-            )}
             {showGrIdentity && (
               <div className="rounded-2xl p-4 bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A]">
                 <GrIdentitySetup address={address} />
@@ -209,7 +161,7 @@ export default function SettingsPage() {
                 {/* Token list */}
                 {[
                   { icon: "cryptocurrency-color:xlm", name: "XLM", fullName: "Stellar Lumens", standard: "Native", decimals: 7, baseTip: "10 XLM", fee: "~0.00001 XLM", available: true },
-                  { icon: "cryptocurrency-color:usdc", name: "USDC", fullName: "USD Coin (Circle)", standard: "SEP-24", decimals: 7, baseTip: "2 USDC", fee: "~0.00001 XLM", available: true },
+                  { icon: "cryptocurrency-color:usdc", name: "USDC", fullName: "USD Coin (Circle)", standard: "SEP-24", decimals: 7, baseTip: "2 USDC", fee: "~0.00001 XLM", available: false },
                   { icon: "cryptocurrency-color:eur", name: "EURC", fullName: "Euro Coin (Circle)", standard: "SEP-24", decimals: 7, baseTip: "2 EURC", fee: "~0.00001 XLM", available: false },
                   { icon: "twemoji:flag-indonesia", name: "IDRT", fullName: "Rupiah Token (KBTrading)", standard: "SEP-24", decimals: 2, baseTip: "Rp50,000", fee: "~0.00001 XLM", available: false },
                 ].map((token, i, arr) => (

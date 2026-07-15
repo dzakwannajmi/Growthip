@@ -195,6 +195,7 @@ export async function createGrIdentity(password: string, mnemonic: string): Prom
   await saveGrIdentity(identity);
 
   sessionSeed = seed;
+
   resetAutoLockTimer();
 
   return { address, mnemonic };
@@ -255,6 +256,10 @@ export async function unlockGrIdentity(password: string): Promise<void> {
   }
 
   sessionSeed = seed;
+
+  const keys = await deriveShieldedKeys(seed);
+
+
   resetAutoLockTimer();
 }
 

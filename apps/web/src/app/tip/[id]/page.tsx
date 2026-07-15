@@ -76,11 +76,31 @@ export default function PublicTipPage() {
   useEffect(() => {
     if (!tipId) return;
     try {
-      const decoded = decodeTipId(tipId);
-      setRecipientAddress(decoded);
-      const p = getProfile(decoded);
-      setCreatorDisplayName(p.displayName);
-      setCreatorAvatarVariant(p.avatarVariant);
+      let address = "";
+      
+      // V5 Shielded Address Check: if it starts with gr1, skip base62 decoding
+      if (tipId.startsWith("gr1")) {
+        address = tipId;
+      } else {
+        // V4 Base62 tip ID lama
+        address = decodeTipId(tipId);
+      }
+      
+      setRecipientAddress(address);
+      
+      try {
+        const p = getProfile(address);
+        setCreatorDisplayName(p.displayName);
+        setCreatorAvatarVariant(p.avatarVariant);
+      } catch (profileErr) {
+        // If the profile isn't found in the registry for the V5 shielded address
+        if (address.startsWith("gr1")) {
+          setCreatorDisplayName("Shielded Creator");
+          setCreatorAvatarVariant("beam");
+        } else {
+          throw profileErr;
+        }
+      }
     } catch {
       setLinkError("This tip link is invalid or corrupted.");
     }
@@ -192,25 +212,18 @@ export default function PublicTipPage() {
             )}
 
           <Card>
-            {step === "select" && premiumChecked && !creatorIsPremium && (
+            {step === "select" && premiumChecked && !recipientAddress?.startsWith("gr") && (
               <div style={{ display: "flex", flexDirection: "column", gap: "12px", alignItems: "center", textAlign: "center", padding: "12px 0" }}>
-                <Icon icon="ph:lock-key-bold" style={{ fontSize: "32px", color: "#A3A3A3" }} />
-                <p style={{ fontSize: "15px", fontWeight: 700, color: "#171717" }}>This creator hasn&apos;t activated private notes yet</p>
+                <Icon icon="ph:warning-circle-bold" style={{ fontSize: "32px", color: "#A3A3A3" }} />
+                <p style={{ fontSize: "15px", fontWeight: 700, color: "#171717" }}>This tip link is outdated</p>
                 <p style={{ fontSize: "13px", color: "#737373", lineHeight: 1.6, maxWidth: "320px" }}>
-                  Growthip requires creators to activate end-to-end encrypted notes before they can receive tips.
-                  Share this link with them so they can turn it on.
+                  This link uses an old address format that Growthip no longer supports.
+                  Ask the creator to generate a new tip link from their dashboard.
                 </p>
-                <button
-                  onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success("Link copied"); }}
-                  style={{ marginTop: "8px", padding: "10px 16px", borderRadius: "10px", background: "#0A0A0A", color: "white", border: "none", fontSize: "13px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
-                >
-                  <Icon icon="ph:copy-simple-bold" />
-                  Copy Link to Share
-                </button>
               </div>
             )}
 
-            {step === "select" && premiumChecked && creatorIsPremium && (
+            {step === "select" && premiumChecked && recipientAddress?.startsWith("gr") && (
               <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                 <div>
                   <p style={{ fontSize: "11px", fontWeight: 700, color: "#A3A3A3", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>Select Token</p>
@@ -330,6 +343,11 @@ export default function PublicTipPage() {
                     A private note will be generated after sending — save it, it&apos;s the only way the creator can claim this tip.
                   </p>
                 </div>
+                {!busy && status && (
+                  <div style={{ padding: "12px 14px", borderRadius: "10px", border: "1px solid #FECACA", background: "#FEF2F2" }}>
+                    <p style={{ fontSize: "12px", color: "#B91C1C", margin: 0, lineHeight: 1.5 }}>{status}</p>
+                  </div>
+                )}
                 <button
                   onClick={handleDeposit}
                   disabled={busy}

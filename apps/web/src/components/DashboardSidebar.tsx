@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Buffer } from "buffer";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "@iconify/react";
+import { toast } from "sonner";
 import { useRegistryClient } from "@/lib/registryClient";
 import { getProfile, avatarUrlFor } from "@/lib/profile";
 
@@ -124,6 +126,39 @@ export default function DashboardSidebar() {
       }
     })();
   }, [address, registryReady, buildRegistryClient]);
+
+  const [upgradeBusy, setUpgradeBusy] = useState(false);
+
+  async function handleUpgrade() {
+    if (!address) {
+      toast.error("Connect your wallet first.");
+      return;
+    }
+    if (!registryReady) {
+      toast.error("Still loading, try again in a moment.");
+      return;
+    }
+    setUpgradeBusy(true);
+    try {
+      const client = buildRegistryClient(address);
+      // Premium activation piggybacks on register_encryption_pubkey (see
+      // growthip-creator-registry contract comment): the FIRST call for a
+      // given recipient charges the one-time premium fee and marks them
+      // premium forever, regardless of the pubkey's contents. Premium no
+      // longer gates note encryption (that's V5 shielded now, unrelated) --
+      // only the Analytics dashboard -- so we pass a throwaway random
+      // pubkey purely to satisfy the contract's activation entry point.
+      const dummyPubkey = Buffer.from(crypto.getRandomValues(new Uint8Array(32)));
+      const tx = await client.register_encryption_pubkey({ recipient: address, pubkey: dummyPubkey });
+      await tx.signAndSend({ force: true });
+      setIsPremium(true);
+      toast.success("Premium activated! Analytics is now unlocked.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upgrade failed.");
+    } finally {
+      setUpgradeBusy(false);
+    }
+  }
   const collapsed               = !open;
 
   return (
@@ -234,21 +269,14 @@ export default function DashboardSidebar() {
                 <Icon icon="ph:star-four-bold" />
                 Upgrade to Premium
               </div>
-              <p className="text-[11px] opacity-60 mb-3">6 XLM one-time, unlocks:</p>
-              <ul className="space-y-1.5 mb-4">
-                {["Encrypted private notes", "Creator analytics dashboard"].map((f) => (
-                  <li key={f} className="flex items-center gap-2 text-[11px] opacity-75">
-                    <span className="w-1.5 h-1.5 rounded-full bg-white flex-shrink-0" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/dashboard/settings"
-                className="w-full bg-white text-[#0A0A0A] font-bold text-xs py-2 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center"
+              <p className="text-[11px] opacity-60 mb-3">6 XLM one-time — unlocks the creator analytics dashboard.</p>
+              <button
+                onClick={handleUpgrade}
+                disabled={upgradeBusy}
+                className="w-full bg-white text-[#0A0A0A] font-bold text-xs py-2 rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Upgrade Now
-              </Link>
+                {upgradeBusy ? "Confirm in wallet..." : "Upgrade Now"}
+              </button>
             </div>
           </div>
         )}

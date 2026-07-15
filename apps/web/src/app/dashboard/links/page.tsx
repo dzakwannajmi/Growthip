@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import Modal from "@/components/Modal";
-import { encodeTipId } from "@/lib/addressId";
+import { getStoredGrAddress } from "@/lib/shielded/grIdentity";
 import { getProfile, avatarUrlFor } from "@/lib/profile";
 import { getToken, getAvailableTokens, toBaseUnits, fromBaseUnits, type TokenSymbol } from "@/lib/tokens";
 import {
@@ -21,7 +21,7 @@ const TEMPLATES = [
   { id: "digital-product", icon: "ph:package-bold", iconBg: "#F5F3FF", iconColor: "#7c3aed", label: "Digital product", desc: "Sell AI prompts, Notion templates, Figma presets, and more.", bestFor: "Prompt engineers, designers, educators", active: false },
   { id: "monthly-support", icon: "ph:arrows-clockwise-bold", iconBg: "#EFF6FF", iconColor: "#2563eb", label: "Monthly support", desc: "Let supporters back you every month. Private, recurring tips.", bestFor: "Newsletters, podcasters, indie developers", active: false },
   { id: "commission", icon: "ph:briefcase-bold", iconBg: "#FFFBEB", iconColor: "#d97706", label: "Commission request", desc: "Set a price for custom work. Client pays privately, you deliver.", bestFor: "Freelancers, illustrators, developers", active: false },
-  { id: "fundraiser", icon: "ph:target-bold", iconBg: "#FEF2F2", iconColor: "#dc2626", label: "Fundraiser", desc: "Set a goal, show progress. Supporters back it without being linked to their contribution.", bestFor: "Community projects, open source, indie games", active: true },
+  { id: "fundraiser", icon: "ph:target-bold", iconBg: "#FEF2F2", iconColor: "#dc2626", label: "Fundraiser", desc: "Set a goal, show progress. Supporters back it without being linked to their contribution.", bestFor: "Community projects, open source, indie games", active: false },
 ];
 
 const SHARE_PLATFORMS = [
@@ -35,6 +35,7 @@ export default function LinksPage() {
   const [displayName, setDisplayName] = useState("Creator");
   const [avatarVariant, setAvatarVariant] = useState("A");
   const [tipLink, setTipLink] = useState("");
+  const [needsGrSetup, setNeedsGrSetup] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [showShare, setShowShare] = useState(false);
@@ -56,11 +57,23 @@ export default function LinksPage() {
     if (addr) {
       const p = getProfile(addr);
       setDisplayName(p.displayName || "Creator");
-      try {
-        const link = `https://growthip.vercel.app/tip/${encodeTipId(addr)}`;
-        setTipLink(link);
-        setShareMsg(`Support me privately on Growthip — zero-knowledge tips, nobody knows who paid 🌱`);
-      } catch {}
+      (async () => {
+        try {
+          const grAddr = await getStoredGrAddress();
+          if (grAddr) {
+            const link = `https://growthip.vercel.app/tip/${grAddr}`;
+            setTipLink(link);
+            setNeedsGrSetup(false);
+            setShareMsg(`Support me privately on Growthip — zero-knowledge tips, nobody knows who paid 🌱`);
+          } else {
+            setTipLink("");
+            setNeedsGrSetup(true);
+          }
+        } catch {
+          setTipLink("");
+          setNeedsGrSetup(true);
+        }
+      })();
       setCampaigns(loadCampaigns(addr));
     }
   }, []);
@@ -159,7 +172,17 @@ export default function LinksPage() {
             <span style={{ fontSize: "11px", fontWeight: 700, padding: "3px 10px", borderRadius: "999px", background: "#F0FDF4", color: "#16a34a", WebkitTextFillColor: "#16a34a" }}>Active</span>
           </div>
 
-          {/* Profile preview */}
+          {needsGrSetup ? (
+            <div className="bg-[#FFFBEB] dark:bg-[#1A1A1A]" style={{ borderRadius: "12px", padding: "16px 14px", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "10px" }}>
+              <p className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "13px", fontWeight: 700, margin: 0 }}>Set up your gr address to activate this link</p>
+              <p className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "11px", margin: 0, lineHeight: 1.5 }}>You need a gr address before your tip link is ready to share. It only takes a minute in Settings.</p>
+              <a href="/dashboard/settings" className="btn-hover" style={{ padding: "9px 16px", borderRadius: "10px", border: "1px solid #E5E5E5", background: "#0A0A0A", fontSize: "12px", fontWeight: 600, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px", textDecoration: "none" }}>
+                <Icon icon="ph:arrow-right-bold" style={{ fontSize: "15px" }} /> Set up gr address
+              </a>
+            </div>
+          ) : (
+            <>
+              {/* Profile preview */}
           <div className="bg-[#F9FAFB] dark:bg-[#1A1A1A]" style={{ borderRadius: "12px", padding: "12px 14px", display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px" }}>
             {avatarUrl
               ? <img src={avatarUrl} alt="avatar" style={{ width: "38px", height: "38px", borderRadius: "50%", objectFit: "cover" }} />
@@ -186,6 +209,8 @@ export default function LinksPage() {
               <Icon icon="ph:arrow-square-out-bold" style={{ fontSize: "15px" }} /> View
             </a>
           </div>
+            </>
+          )}
         </div>
       </div>
 

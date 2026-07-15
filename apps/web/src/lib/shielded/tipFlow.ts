@@ -35,7 +35,14 @@ const foldPoint = (p: Point, dom: number): Promise<bigint> => poseidon2([p[0], p
 
 /** Poseidon2([amount, pkdFold, blinding], 0x01) — same as circuit/contract. */
 export async function noteCommitment(amount: bigint, pkD: Point, blinding: bigint): Promise<bigint> {
-  return poseidon2([amount, await foldPoint(pkD, DOM.PKD), blinding], DOM.COMMIT);
+
+  const commitment = await poseidon2(
+    [amount, await foldPoint(pkD, DOM.PKD), blinding],
+    DOM.COMMIT,
+  );
+
+
+  return commitment;
 }
 
 /** Fresh CSPRNG blinding, never derived (cross-device collision safety). */
@@ -179,6 +186,7 @@ export async function buildDepositInput(args: BuildDepositArgs): Promise<BuiltDe
   const outComm0 = await noteCommitment(creatorNoteAmount, args.creatorPkD, b0);
   const outComm1 = await noteCommitment(0n, changePkD, b1);
 
+
   const zeroPath = new Array<string>(TREE_DEPTH).fill("0");
   const input: CircuitInput = {
     root: args.poolCurrentRoot.toString(),
@@ -225,4 +233,118 @@ export async function generateTipProof(
     },
     ext: built.ext,
   };
+}
+
+
+// --- INJEKSI ARSITEKTUR WITHDRAW V5 ---
+export interface BuildWithdrawArgs {
+  noteAmount: bigint;
+  blinding: bigint;
+  keys: any; // ShieldedKeys
+  fee?: bigint;
+  recipientAddress: string;
+  relayerAddress: string;
+  poolCurrentRoot: bigint;
+  domain: bigint;
+  merklePathElements: string[];
+  merklePathIndices: string[];
+  /** Real on-chain leaf index (0..2^TREE_DEPTH-1) — packed whole into the
+   * circuit's single `pathIndices` signal (see circuits/lib/merkleProof.circom,
+   * Num2Bits(levels) unpack), NOT the per-level bit array in merklePathIndices
+   * above (that array is only used client-side by merkle.ts to build the
+   * sibling path; passing merklePathIndices[0] here was Bug #6 — it fed the
+   * circuit a single bit instead of the full packed index, so only level 0
+   * of ForceEqualIfEnabled's root recompute matched by coincidence). */
+  leafIndex: number;
+  /** Bug #11 fix: use the note's OWN diversifier (note.d, decoded from
+   * the encrypted note payload), NOT the claiming wallet's own keys.d.
+   * The circuit reconstructs pk_d = ivk . g_d(inD) internally
+   * (transaction2x2.circom) and uses that to recompute the leaf
+   * commitment for the Merkle root check -- so inD MUST be the
+   * diversifier the note was actually committed under. Previously this
+   * field didn't exist and the circuit input silently fell back to
+   * args.keys.d (usually all-zero DEFAULT_DIVERSIFIER), which only
+   * matched note.d by coincidence for default-diversifier notes. Any
+   * note using a non-default diversifier failed ForceEqualIfEnabled
+   * even though the locally-computed root matched on-chain, because
+   * the circuit was rebuilding a DIFFERENT leaf from keys.d. */
+  noteD: Uint8Array;
+}
+
+export async function buildWithdrawInput(args: BuildWithdrawArgs): Promise<{ input: CircuitInput, ext: ExtDataInput }> {
+  const fee = args.fee ?? 0n;
+  const withdrawAmount = args.noteAmount - fee;
+  
+  // 1. Input 0: Note Asli yang ditarik
+  // Bug #6 continued: the nullifier hash (circuit line ~151-155,
+  // inNullifierHasher domain 0x02) uses the FULL packed leaf index as its
+  // second input, matching inPathIndices[tx] fed to the circuit -- NOT the
+  // single per-level direction bit. Must stay consistent with the leafIndex
+  // now passed into inPathIndices below, or the client-computed nullifier
+  // diverges from the one the circuit recomputes internally.
+  const pathIndexBigInt = BigInt(args.leafIndex);
+  const commitment = await noteCommitment(args.noteAmount, args.keys.pkD, args.blinding);
+  const realNullifier = await poseidon2([commitment, pathIndexBigInt, args.keys.nkFold], DOM.NULLIFIER);
+  
+  // 2. Input 1: Dummy
+  const in1 = await makeDummyInput();
+  
+  // 3. Output 0 & 1: Dummy (fully withdrawn to wallet, no change note needed)
+  const changePkD0 = await throwawayPkD();
+  const changePkD1 = await throwawayPkD();
+  const outB0 = randomBlinding();
+  const outB1 = randomBlinding();
+  const outComm0 = await noteCommitment(0n, changePkD0, outB0);
+  const outComm1 = await noteCommitment(0n, changePkD1, outB1);
+  
+  // 4. Perhitungan ExtData
+  // Di sirkuit UTXO, extAmount untuk withdraw biasanya didefinisikan sebagai nilai negatif (keluar dari pool)
+  // Untuk MVP ini kita akan menggunakan representasi BigInt dari nilai tarik.
+  const enc0 = await encryptNoteForRecipient(changePkD0, DEFAULT_DIVERSIFIER, 0n, outB0);
+  const enc1 = await encryptNoteForRecipient(changePkD1, DEFAULT_DIVERSIFIER, 0n, outB1);
+  
+  const ext: ExtDataInput = {
+    extAmount: -withdrawAmount, // Bug #8: withdraw must be negative (money leaving the pool); ExtDataInput's own doc comment says so ("+ deposit, - withdraw") but this was left positive. 
+    fee,
+    recipient: args.recipientAddress,
+    relayer: args.relayerAddress,
+    encryptedOutput0: enc0,
+    encryptedOutput1: enc1,
+  };
+  
+  const extDataHash = computeExtDataHash(ext);
+  
+  // Bug #7: circuit checks sumIns + publicAmount === sumOuts (line 226).
+  // For withdraw, sumIns = noteAmount, sumOuts = 0 (both outputs are dummy),
+  // so publicAmount must be -noteAmount. Use the same calcPublicAmount()
+  // helper the deposit path uses (extDataHash.ts) rather than a hand-rolled
+  // formula, so both paths stay in sync -- this requires ext.extAmount to
+  // already be the correctly-signed (negative) withdraw amount below.
+  const publicAmount = calcPublicAmount(ext); 
+
+  const input: CircuitInput = {
+    root: args.poolCurrentRoot.toString(),
+    publicAmount: publicAmount.toString(),
+    extDataHash: extDataHash.toString(),
+    domain: args.domain.toString(),
+    
+    inputNullifier: [realNullifier.toString(), in1.nullifier.toString()],
+    inAmount: [args.noteAmount.toString(), "0"],
+    inAsk: [args.keys.ask.toString(), in1.ask.toString()],
+    inNsk: [args.keys.nsk.toString(), in1.nsk.toString()],
+    inD: [dField(args.noteD).toString(), dField(DEFAULT_DIVERSIFIER).toString()],
+    inBlinding: [args.blinding.toString(), in1.blinding.toString()],
+    inPathIndices: [args.leafIndex.toString(), "0"],
+    
+    // Path Element: Asli vs Dummy
+    inPathElements: [args.merklePathElements, new Array(20).fill("0")],
+    
+    outputCommitment: [outComm0.toString(), outComm1.toString()],
+    outAmount: ["0", "0"],
+    outPubkeyAx: [changePkD0[0].toString(), changePkD1[0].toString()],
+    outPubkeyAy: [changePkD0[1].toString(), changePkD1[1].toString()],
+    outBlinding: [outB0.toString(), outB1.toString()],
+  };
+
+  return { input, ext };
 }

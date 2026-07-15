@@ -734,95 +734,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "growthip-merkle-verifier"
-version = "0.1.0"
-dependencies = [
- "ark-bn254",
- "ark-ec",
- "ark-ff",
- "hex",
- "serde",
- "serde_json",
- "soroban-sdk",
-]
-
-[[package]]
-name = "growthip-merkle-verifier-v2"
-version = "0.1.0"
-dependencies = [
- "ark-bn254",
- "ark-ec",
- "ark-ff",
- "hex",
- "serde",
- "serde_json",
- "soroban-sdk",
-]
-
-[[package]]
-name = "growthip-merkle-verifier-v3"
-version = "0.1.0"
-dependencies = [
- "ark-bn254",
- "ark-ec",
- "ark-ff",
- "hex",
- "serde",
- "serde_json",
- "soroban-sdk",
-]
-
-[[package]]
-name = "growthip-merkle-verifier-v3-1"
-version = "0.1.0"
-dependencies = [
- "ark-bn254",
- "ark-ec",
- "ark-ff",
- "hex",
- "serde",
- "serde_json",
- "soroban-sdk",
-]
-
-[[package]]
-name = "growthip-merkle-verifier-v4"
-version = "0.1.0"
-dependencies = [
- "ark-bn254",
- "ark-ec",
- "ark-ff",
- "hex",
- "serde",
- "serde_json",
- "soroban-sdk",
-]
-
-[[package]]
-name = "growthip-note-verifier"
-version = "0.1.0"
-dependencies = [
- "ark-bn254",
- "ark-ec",
- "ark-ff",
- "hex",
- "serde",
- "serde_json",
- "soroban-sdk",
-]
-
-[[package]]
-name = "growthip-pool"
-version = "0.1.0"
-dependencies = [
- "growthip-merkle-verifier-v2",
- "growthip-merkle-verifier-v3",
- "growthip-merkle-verifier-v3-1",
- "hex",
- "soroban-sdk",
-]
-
-[[package]]
 name = "hash32"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1649,19 +1560,6 @@ checksum = "d91ed6c858b01f942cd56b37a94b3e0a1798290327d1236e4d9cf4eaca44d29d"
 dependencies = [
  "base64ct",
  "der",
-]
-
-[[package]]
-name = "square-verifier"
-version = "0.1.0"
-dependencies = [
- "ark-bn254",
- "ark-ec",
- "ark-ff",
- "hex",
- "serde",
- "serde_json",
- "soroban-sdk",
 ]
 
 [[package]]

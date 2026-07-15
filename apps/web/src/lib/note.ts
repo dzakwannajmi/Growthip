@@ -56,22 +56,6 @@ function storageKeyFor(address: string): string {
   return `growthip:notes:${address}`;
 }
 
-/** Encode a note to a base64 string for sharing/QR. */
-export function encodeNote(note: PrivateNote): string {
-  return btoa(JSON.stringify(note));
-}
-
-/** Decode a base64 note string. Returns null if invalid. */
-export function decodeNote(encoded: string): PrivateNote | null {
-  try {
-    const parsed = JSON.parse(atob(encoded));
-    if (parsed.version !== "growthip-v3") return null;
-    if (!parsed.secret || !parsed.nullifier || !parsed.recipientHash) return null;
-    return parsed as PrivateNote;
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Saves the full notes array for a given address, overwriting whatever
@@ -104,14 +88,6 @@ export function saveNote(address: string, note: PrivateNote): void {
   }
 }
 
-/** @deprecated Use getNotes(address) instead. Kept temporarily so any
- * call site not yet updated fails loudly rather than silently reading
- * the wrong (legacy, unnamespaced) data. */
-export function getAllNotes(): never {
-  throw new Error(
-    "getAllNotes() is address-unaware and has been removed. Use getNotes(address) instead.",
-  );
-}
 
 export function getPendingNotes(address: string): PrivateNote[] {
   return getNotes(address).filter((n) => !n.claimed);
@@ -129,13 +105,6 @@ export function markNoteAsClaimed(address: string, nullifierHash: string, txHash
       ? { ...n, claimed: true, claimedAt: Date.now(), txHash }
       : n,
   );
-  saveNotes(address, notes);
-}
-
-/** Delete a note by nullifierHash, within the given address's namespace.
- * Use with caution — irreversible. */
-export function deleteNote(address: string, nullifierHash: string): void {
-  const notes = getNotes(address).filter((n) => n.nullifierHash !== nullifierHash);
   saveNotes(address, notes);
 }
 

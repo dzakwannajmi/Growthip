@@ -24,3 +24,15 @@ export async function poseidon2(inputs: bigint[], dom: number): Promise<bigint> 
   await snarkjs.wtns.calculate({ inputs: inputs.map(String), dom: String(dom) }, wasm, wtns);
   return ((await snarkjs.wtns.exportJson(wtns)) as bigint[])[1];
 }
+
+// PoseidonCompress (2-input, no domain separator) — used for Merkle internal
+// node hashing (merkleProof.circom / merkle_onchain_v2.rs), NOT the same
+// circuit as poseidon2() above which is for commitment/nullifier/fold hashes
+// with a mandatory domain-separator input. Do not conflate the two: they use
+// different .circom templates and different .wasm witness calculators.
+export async function poseidon2Compress(left: bigint, right: bigint): Promise<bigint> {
+  const wasm = `${base}/poseidon2_compress_main.wasm`;
+  const wtns: { type: string } = { type: "mem" };
+  await snarkjs.wtns.calculate({ inputs: [String(left), String(right)] }, wasm, wtns);
+  return ((await snarkjs.wtns.exportJson(wtns)) as bigint[])[1];
+}

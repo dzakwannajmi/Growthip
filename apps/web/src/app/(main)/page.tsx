@@ -278,7 +278,7 @@ export default function Home() {
               <span className="w-3 h-3 rounded-full bg-[#28C840]" />
             </div>
             <img
-              src="/dashboard-preview.png"
+              src={isDark ? "/dashboard-preview-dark.png" : "/dashboard-preview-light.png"}
               alt="Growthip dashboard preview"
               className="w-full h-auto block select-none [-webkit-user-drag:none]"
               draggable={false}
@@ -605,22 +605,22 @@ export default function Home() {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 sm:gap-16">
               <div className="flex flex-col gap-3">
                 <p className="text-[13px] font-bold uppercase tracking-widest text-[#0A0A0A] dark:text-[#F5F5F5] mb-1">Explore</p>
-                <a href="#how-it-works" className="text-[14px] text-[#737373] dark:text-[#8A8A8A] hover:text-[#0A0A0A] dark:hover:text-[#F5F5F5] transition-colors">How it works</a>
-                <a href="#features" className="text-[14px] text-[#737373] dark:text-[#8A8A8A] hover:text-[#0A0A0A] dark:hover:text-[#F5F5F5] transition-colors">Features</a>
-                <a href="#fees" className="text-[14px] text-[#737373] dark:text-[#8A8A8A] hover:text-[#0A0A0A] dark:hover:text-[#F5F5F5] transition-colors">Fees</a>
-                <a href="#faq" className="text-[14px] text-[#737373] dark:text-[#8A8A8A] hover:text-[#0A0A0A] dark:hover:text-[#F5F5F5] transition-colors">FAQ</a>
+                <a href="#how-it-works" className="text-[14px] text-[#737373] dark:text-[#8A8A8A] hover:text-[#00B2FF] dark:hover:text-[#00B2FF] transition-colors">How it works</a>
+                <a href="#features" className="text-[14px] text-[#737373] dark:text-[#8A8A8A] hover:text-[#00B2FF] dark:hover:text-[#00B2FF] transition-colors">Features</a>
+                <a href="#fees" className="text-[14px] text-[#737373] dark:text-[#8A8A8A] hover:text-[#00B2FF] dark:hover:text-[#00B2FF] transition-colors">Fees</a>
+                <a href="#faq" className="text-[14px] text-[#737373] dark:text-[#8A8A8A] hover:text-[#00B2FF] dark:hover:text-[#00B2FF] transition-colors">FAQ</a>
               </div>
               <div className="flex flex-col gap-3">
                 <p className="text-[13px] font-bold uppercase tracking-widest text-[#0A0A0A] dark:text-[#F5F5F5] mb-1">Product</p>
-                <Link href="/dashboard" className="text-[14px] text-[#737373] dark:text-[#8A8A8A] hover:text-[#0A0A0A] dark:hover:text-[#F5F5F5] transition-colors">Dashboard</Link>
-                <Link href="/dashboard/activity" className="text-[14px] text-[#737373] dark:text-[#8A8A8A] hover:text-[#0A0A0A] dark:hover:text-[#F5F5F5] transition-colors">Activity</Link>
-                <Link href="/dashboard/analytics" className="text-[14px] text-[#737373] dark:text-[#8A8A8A] hover:text-[#0A0A0A] dark:hover:text-[#F5F5F5] transition-colors">Analytics</Link>
+                <Link href="/dashboard" className="text-[14px] text-[#737373] dark:text-[#8A8A8A] hover:text-[#00B2FF] dark:hover:text-[#00B2FF] transition-colors">Dashboard</Link>
+                <Link href="/dashboard/activity" className="text-[14px] text-[#737373] dark:text-[#8A8A8A] hover:text-[#00B2FF] dark:hover:text-[#00B2FF] transition-colors">Activity</Link>
+                <Link href="/dashboard/analytics" className="text-[14px] text-[#737373] dark:text-[#8A8A8A] hover:text-[#00B2FF] dark:hover:text-[#00B2FF] transition-colors">Analytics</Link>
               </div>
               <div className="flex flex-col gap-3">
                 <p className="text-[13px] font-bold uppercase tracking-widest text-[#0A0A0A] dark:text-[#F5F5F5] mb-1">Legal</p>
-                <Link href="/privacy" className="text-[14px] text-[#737373] dark:text-[#8A8A8A] hover:text-[#0A0A0A] dark:hover:text-[#F5F5F5] transition-colors">Privacy Policy</Link>
-                <Link href="/terms" className="text-[14px] text-[#737373] dark:text-[#8A8A8A] hover:text-[#0A0A0A] dark:hover:text-[#F5F5F5] transition-colors">Terms of Service</Link>
-                <a href="https://github.com/dzakwannajmi/Growthip" target="_blank" rel="noreferrer" className="text-[14px] text-[#737373] dark:text-[#8A8A8A] hover:text-[#0A0A0A] dark:hover:text-[#F5F5F5] transition-colors">GitHub</a>
+                <Link href="/privacy" className="text-[14px] text-[#737373] dark:text-[#8A8A8A] hover:text-[#00B2FF] dark:hover:text-[#00B2FF] transition-colors">Privacy Policy</Link>
+                <Link href="/terms" className="text-[14px] text-[#737373] dark:text-[#8A8A8A] hover:text-[#00B2FF] dark:hover:text-[#00B2FF] transition-colors">Terms of Service</Link>
+                <a href="https://github.com/dzakwannajmi/Growthip" target="_blank" rel="noreferrer" className="text-[14px] text-[#737373] dark:text-[#8A8A8A] hover:text-[#00B2FF] dark:hover:text-[#00B2FF] transition-colors">GitHub</a>
               </div>
             </div>
           </div>

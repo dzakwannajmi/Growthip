@@ -78,6 +78,7 @@ export async function encryptNoteForRecipient(
   const gd = await mulBase(rd);
   const esk = randScalar();
   const epk = await mulPoint(gd, esk); // esk . g_d  (NOT esk . Base8)
+
   const shared = await mulPoint(pkD, esk); // esk . pk_d
   const epkPacked = await packPoint(epk);
   const key = kdf(await packPoint(shared), epkPacked);
@@ -102,6 +103,9 @@ export async function tryDecryptNote(
     const nonce = blob.slice(EPK_LEN, EPK_LEN + NONCE_LEN);
     const ct = blob.slice(EPK_LEN + NONCE_LEN);
     const epk = await unpackPoint(epkPacked);
+
+    if (epk) {
+    }
     // Reject off-subgroup epk BEFORE the ECDH: a small-order epk could force a
     // predictable shared secret.
     if (!epk || !(await inSubgroup(epk))) return null;

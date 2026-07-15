@@ -11,6 +11,20 @@ import {
   type PrivateNote,
 } from "@/lib/note";
 import { getToken } from "@/lib/tokens";
+import { deriveShieldedKeys, getGrSeed, unlockGrIdentity } from "@/lib/shielded";
+import { scanAllOnChainActivity } from "@/lib/shielded/onChainActivity";
+import { networks as poolV5Networks } from "@/lib/poolV5Bindings";
+
+// Resolves the V5 pool contract ID for a token, matching the SAME env
+// vars onChainActivity.ts uses when it saves a note's poolId. The
+// previous filter compared against NEXT_PUBLIC_POOL_ID (the LEGACY
+// pool), so it silently hid every V5 note -- copied verbatim from the
+// proven working implementation in activity/page.tsx.
+function poolV5ContractId(tokenSymbol: string): string {
+  return tokenSymbol === "USDC"
+    ? (process.env.NEXT_PUBLIC_POOL_V5_USDC_ID || "")
+    : (process.env.NEXT_PUBLIC_POOL_V5_XLM_ID || poolV5Networks.testnet.contractId);
+}
 import { isConnected, requestAccess } from "@stellar/freighter-api";
 import { useRegistryClient } from "@/lib/registryClient";
 import { usePrices } from "@/lib/useMarket";
@@ -86,11 +100,20 @@ export default function AnalyticsPage() {
   const availableTokens = SUPPORTED_TOKENS.filter((t) => t.available);
 
   // Analytics is a premium feature -- gated behind growthip-creator-registry's
-  // is_premium(), same activation as private notes (Tahap 3 decision).
+  // is_premium(). Premium is a one-time paid upgrade unlocking Analytics
+  // only; it is unrelated to V5 shielded note encryption.
   const { isReady: registryReady, buildRegistryClient } = useRegistryClient();
   const [address, setAddress] = useState("");
   const [premiumChecked, setPremiumChecked] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
+  // Unlock state for the shielded encryption key -- without this,
+  // getGrSeed() throws silently every time and the on-chain scan never
+  // runs, which is why Analytics previously always showed all zeros.
+  const [encLocked, setEncLocked] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [unlockPw, setUnlockPw] = useState("");
+  const [unlockBusy, setUnlockBusy] = useState(false);
+  const [unlockErr, setUnlockErr] = useState("");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -108,7 +131,6 @@ export default function AnalyticsPage() {
         const result = await client.is_premium({ recipient: address });
         setIsPremium(result.result === true);
       } catch (err) {
-        console.error("Failed to check premium status:", err);
       } finally {
         setPremiumChecked(true);
       }
@@ -125,17 +147,24 @@ export default function AnalyticsPage() {
       availableTokens.forEach((t, i) => { map[t.symbol] = results[i]; });
       setStats(map);
     } catch (e) {
-      console.error(e);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
-  useEffect(() => {
+
+  // Same on-chain scan Activity uses -- Analytics is a rollup of Activity's
+  // data (per Najmi), so it must not rely on Activity having been opened
+  // first in this session. Runs independently on every load.
+  // Reads whatever is currently cached in local storage and applies the
+  // V5 pool filter -- separated from the on-chain scan so it can also be
+  // re-run right after a scan completes, without re-triggering the scan
+  // itself.
+  const loadNotes = useCallback(() => {
     if (!address) { setPending([]); setClaimed([]); return; }
-    const currentPoolId = process.env.NEXT_PUBLIC_POOL_ID;
-    const currentUsdcPoolId = process.env.NEXT_PUBLIC_POOL_USDC_ID;
+    const currentPoolId = poolV5ContractId("XLM");
+    const currentUsdcPoolId = poolV5ContractId("USDC");
     const filterByPool = (notes: ReturnType<typeof getPendingNotes>) =>
       notes.filter((n) => {
         if (!n.poolId) return false; // legacy notes without poolId: hide
@@ -145,6 +174,53 @@ export default function AnalyticsPage() {
     setPending(filterByPool(getPendingNotes(address)));
     setClaimed(filterByPool(getClaimedNotes(address)));
   }, [address]);
+
+  // Scans on-chain activity for this wallet, same as Activity page.
+  // getGrSeed() throws while the shielded identity is locked -- that is
+  // now surfaced via encLocked (unlock banner below) instead of being
+  // swallowed silently, which is why every stat used to show zero.
+  const refreshOnChainActivity = useCallback(async () => {
+    if (!address) return;
+    let seed: Uint8Array;
+    try {
+      seed = getGrSeed();
+      setEncLocked(false);
+    } catch {
+      setEncLocked(true);
+      return;
+    }
+    setScanning(true);
+    try {
+      const keys = await deriveShieldedKeys(seed);
+      await scanAllOnChainActivity(address, keys);
+    } catch {
+      // Network hiccup or scan issue -- keep showing the last known
+      // cache rather than clearing the list; the next refresh retries.
+    } finally {
+      setScanning(false);
+      loadNotes();
+    }
+  }, [address, loadNotes]);
+
+  useEffect(() => { loadNotes(); }, [loadNotes]);
+  useEffect(() => { refreshOnChainActivity(); }, [refreshOnChainActivity]);
+
+  // Poll for encryption unlock -- refreshOnChainActivity skips if
+  // locked. Once unlocked elsewhere (e.g. via Settings), re-trigger.
+  useEffect(() => {
+    if (!address) return;
+    const interval = setInterval(async () => {
+      try {
+        if (getGrSeed()) {
+          clearInterval(interval);
+          refreshOnChainActivity();
+        }
+      } catch {
+        // Still locked -- keep polling.
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [address, refreshOnChainActivity]);
 
   const allStats      = Object.values(stats);
 
@@ -289,7 +365,9 @@ export default function AnalyticsPage() {
   }
 
   // Premium gate: Analytics is locked behind growthip-creator-registry's
-  // is_premium(), the same activation flow as private notes.
+  // is_premium(). Upgrade now happens directly from the sidebar card
+  // (DashboardSidebar.tsx handleUpgrade) -- this fallback still points to
+  // Settings for anyone who lands here without the sidebar in view.
   if (premiumChecked && !isPremium) {
     return (
       <div className="bg-[#FAFAFA] dark:bg-[#0A0A0A]" style={{ padding: "32px", minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -297,7 +375,7 @@ export default function AnalyticsPage() {
           <Icon icon="ph:chart-line-up-bold" className="text-[#A3A3A3] dark:text-[#6A6A6A]" style={{ fontSize: "36px" }} />
           <p className="text-[#171717] dark:text-[#E5E5E5]" style={{ fontSize: "16px", fontWeight: 700 }}>Analytics is a Premium feature</p>
           <p className="text-[#737373] dark:text-[#8A8A8A]" style={{ fontSize: "13px", lineHeight: 1.6 }}>
-            Activate private notes (one-time 6 XLM) in Settings to unlock detailed analytics, alongside encrypted notes from supporters.
+            Upgrade to Premium (one-time 6 XLM) to unlock detailed creator analytics.
           </p>
           <a
             href="/dashboard/settings"
@@ -354,6 +432,52 @@ export default function AnalyticsPage() {
             )}
           </div>
         </div>
+
+        {/* Unlock banner -- shown while the shielded encryption key is
+            locked, since refreshOnChainActivity() cannot scan without it
+            (see encLocked state above). Mirrors the proven pattern from
+            activity/page.tsx so the two pages behave consistently. */}
+        {encLocked && (
+          <div className="bg-white dark:bg-[#1A1A1A] border border-[#E5E5E5] dark:border-[#2A2A2A] rounded-2xl flex flex-col gap-2.5" style={{ padding: "16px 20px" }}>
+            <p className="text-[#0A0A0A] dark:text-[#F5F5F5]" style={{ fontSize: "14px", fontWeight: 700 }}>🔐 Unlock encryption to see your full analytics</p>
+            <p className="text-[#737373] dark:text-[#8A8A8A]" style={{ fontSize: "12px" }}>Enter your encryption password to pull your on-chain tip history.</p>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <input
+                type="password"
+                placeholder="Encryption password..."
+                value={unlockPw}
+                onChange={(e) => setUnlockPw(e.target.value)}
+                onKeyDown={async (e) => {
+                  if (e.key !== "Enter" || unlockBusy) return;
+                  setUnlockBusy(true);
+                  try {
+                    await unlockGrIdentity(unlockPw);
+                    setEncLocked(false);
+                    setUnlockErr("");
+                    refreshOnChainActivity();
+                  } catch { setUnlockErr("Wrong password."); } finally { setUnlockBusy(false); }
+                }}
+                className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-white dark:bg-[#1A1A1A] text-[#0A0A0A] dark:text-[#E5E5E5]" style={{ flex: 1, padding: "10px 12px", borderRadius: "10px", fontSize: "13px", outline: "none" }}
+              />
+              <button
+                disabled={unlockBusy || !unlockPw.trim()}
+                onClick={async () => {
+                  setUnlockBusy(true);
+                  try {
+                    await unlockGrIdentity(unlockPw);
+                    setEncLocked(false);
+                    setUnlockErr("");
+                    refreshOnChainActivity();
+                  } catch { setUnlockErr("Wrong password."); } finally { setUnlockBusy(false); }
+                }}
+                style={{ padding: "10px 16px", borderRadius: "10px", background: "#0A0A0A", color: "white", border: "none", fontSize: "13px", fontWeight: 700, cursor: unlockBusy ? "not-allowed" : "pointer", opacity: unlockBusy || !unlockPw.trim() ? 0.5 : 1 }}
+              >
+                {unlockBusy ? "Unlocking..." : "Unlock"}
+              </button>
+            </div>
+            {unlockErr && <p style={{ fontSize: "12px", color: "#EF4444" }}>{unlockErr}</p>}
+          </div>
+        )}
 
         {/* Total Earnings -- combined USD value across all tokens, using
             the shared usePrices() hook (same CoinGecko-backed price feed

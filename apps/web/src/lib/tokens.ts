@@ -43,7 +43,7 @@ export const SUPPORTED_TOKENS: Token[] = [
     baseUnit:   1_000_000,    // 0.1 USDC
     presets:    [0.1, 0.5, 1, 2], // USDC amounts
     logoUrl:    "https://assets.coingecko.com/coins/images/6319/standard/USDC.png?1769615602",
-    available:  config.token.usdc !== "",
+    available:  false,  // TEMP: USDC transfer disabled, moved to roadmap
   },
   {
     symbol:     "EURC",
@@ -74,12 +74,6 @@ export function toBaseUnits(amount: number, token: Token): number {
 /** Convert base units to human-readable amount */
 export function fromBaseUnits(amount: number, token: Token): number {
   return amount / Math.pow(10, token.decimals);
-}
-
-/** Format amount for display */
-export function formatAmount(amount: number, token: Token): string {
-  const human = fromBaseUnits(amount, token); 
-  return `${human % 1 === 0 ? human.toFixed(0) : human.toFixed(1)} ${token.symbol}`;
 }
 
 /** Get contract amount (stroops) from preset display amount */
