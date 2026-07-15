@@ -40,8 +40,8 @@ linkable docs — start here:
 | **[docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md)** | 3–5 minute demo walkthrough script — start here if you're evaluating this project |
 | **[docs/protocol-flow-contracts.md](docs/protocol-flow-contracts.md)** | Contract-side flow: Pool → Claim verification → Verifier → Registry, what's public vs. protected, known limitations |
 | **[docs/protocol-flow-frontend.md](docs/protocol-flow-frontend.md)** | Browser-side flow: note encryption, Merkle path, ZK proof generation — all client-side, no backend |
-| **[docs/testnet-deployment.md](docs/testnet-deployment.md)** | All deployed contract addresses (V4 active + V5 experimental), tip amounts, network params |
-| **[docs/zk-circuit.md](docs/zk-circuit.md)** | V4 circuit design, public/private inputs, trusted setup, circuit version history |
+| **[docs/testnet-deployment.md](docs/testnet-deployment.md)** | All deployed contract addresses (V5 active + V4 deprecated), tip amounts, network params |
+| **[docs/zk-circuit.md](docs/zk-circuit.md)** | Circuit design, public/private inputs, trusted setup, circuit version history (this doc's own V4-specific claims weren't re-verified this session — worth a separate pass) |
 | **[docs/fee-model.md](docs/fee-model.md)** | How the 1% platform fee and 6 XLM premium activation fee work, on-chain |
 | **[docs/creator-experience.md](docs/creator-experience.md)** | Shareable tip links, QR codes, premium private notes & analytics |
 | **[docs/prior-art.md](docs/prior-art.md)** | How Growthip compares to prior Stellar privacy-pool work (SPP) and what's distinctive |
@@ -116,9 +116,9 @@ recipient hash, and the proof's `index` output (used to look up the
 actual deposited amount) — in that order, fail-fast before the expensive
 pairing check runs.
 
-### GrowthipMerkleVerifierV4
+### GrowthipMerkleVerifierV4 — Deprecated
 Native Soroban Groth16 verifier using Protocol 25/26 BN254 host
-functions (`verify(proof_bytes, public_inputs) -> bool`). Compatible with V4 circuit (depth-20, 5400 non-linear constraints, pot14 trusted setup).
+functions (`verify(proof_bytes, public_inputs) -> bool`). Compatible with V4 circuit (depth-20, 5400 non-linear constraints, pot14 trusted setup). **No longer used by the frontend** — superseded by the in-process `verifier-v5` library described in `contracts/README.md`. The corresponding `growthip-merkle-verifier` crate still exists on disk but is not a workspace member (see `contracts/README.md`).
 
 ### GrowthipCreatorRegistry
 Global, deployed-once creator identity: encryption public key and
@@ -152,14 +152,27 @@ growthip/
 │                                          # apps/web/README.md for the
 │                                          # full file-by-file breakdown
 ├── circuits/
-│   ├── growthip_merkle_note_v4.circom     # Active circuit — depth-20
-│   └── growthip_merkle_note_v3_1.circom  # Deprecated (depth-3)
-├── contracts/                            # 8-crate Cargo workspace — see
+│   ├── src/
+│   │   └── transaction2x2.circom         # Active V5 circuit — 2-in/2-out
+│   │                                      # JoinSplit, Poseidon2, 62,807
+│   │                                      # constraints
+│   ├── lib/poseidon2/                    # Poseidon2 circom components
+│   │                                      # (parity-tested against
+│   │                                      # contracts/poseidon2)
+│   ├── growthip_merkle_note_v4.circom     # Deprecated — old V4 circuit
+│   └── growthip_merkle_note_v3_1.circom  # Deprecated — superseded by V4,
+│                                          # itself now superseded by V5
+├── contracts/                            # 5-crate Cargo workspace — see
 │                                          # contracts/README.md
-│   ├── growthip-pool/
-│   ├── growthip-merkle-verifier-v3-1/
+│   ├── pool-v5/
+│   ├── verifier-v5/
+│   ├── poseidon2/
+│   ├── zk-types/
 │   ├── growthip-creator-registry/
-│   └── ...                               # deprecated verifier versions
+│   └── growthip-merkle-verifier/         # orphaned — not a workspace
+│                                          # member, deprecated V4 leftover
+├── docs/                                 # Protocol docs — see the table
+│                                          # further down this README
 ├── scripts/                              # Circuit input generation,
 │                                          # proof conversion, constant
 │                                          # extraction
