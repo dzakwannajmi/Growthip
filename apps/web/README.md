@@ -75,104 +75,146 @@ only in memory for the duration of an unlocked session.
 
 ```text
 src/lib/
-├── config.ts                # Centralized env var access — read contract
-│                             # addresses, RPC URL, network passphrase from
-│                             # here, not process.env directly elsewhere
-├── tokens.ts                 # SUPPORTED_TOKENS — symbol, decimals, baseUnit,
-│                             # presets, pool/token contract addresses per
-│                             # token. THIS is the source of truth for what
-│                             # amounts the UI offers — must match each
-│                             # pool's on-chain tip_amount exactly, or every
-│                             # deposit from that token will be rejected by
-│                             # deposit_paid()'s denomination check
-├── poseidon.ts                # hash1/hash2/hash3, computeCommitment(),
-│                             # computeNullifierHash(), computeRecipientHash().
-│                             # Must stay byte-for-byte consistent with the
-│                             # on-chain Poseidon host function. OUTDATED
-│                             # CITATION: this used to point to
-│                             # contracts/growthip-pool/src/poseidon_verify_test.rs,
-│                             # but that crate was removed in the V4→V5
-│                             # migration. Likely replacement:
-│                             # contracts/poseidon2/src/parity_test.rs
-│                             # (same stated purpose — pins reference
-│                             # vectors against the circuit's hash) but
-│                             # this wasn't independently confirmed.
-├── merkle.ts                  # getMerklePath() — sparse O(N×DEPTH) tree,
-│                             # depth-20, MAX_LEAVES=1,048,576. Must stay
-│                             # consistent with the on-chain tree logic.
-│                             # OUTDATED CITATION: this used to point to
-│                             # contracts/growthip-pool/src/merkle_verify_test.rs,
-│                             # also removed. Likely on-chain counterpart
-│                             # now is contracts/pool-v5/src/merkle_onchain_v2.rs,
-│                             # not independently confirmed. NOTE:
-│                             # getMerklePath() is the function at the
-│                             # center of the still-unresolved leafIndex-0
-│                             # claim bug — see SECURITY.md's internal
-│                             # debug notes before changing this file.
-├── zkp.ts                     # generateProof() — wraps snarkjs witness
-│                             # calculation + Groth16 proving (4 public
-│                             # inputs: root, nullifierHash,
-│                             # recipientHash, index), toClaimArgs() —
-│                             # formats proof for claim_to(). Loads the
-│                             # circom-generated witness_calculator.js via
-│                             # a real <script> tag injection rather than
-│                             # `new Function(...)`, since the latter is
-│                             # functionally eval() and is blocked by the
-│                             # CSP without the much broader 'unsafe-eval'
-├── note.ts                    # PrivateNote type, encode/decode,
-│                             # localStorage persistence — namespaced per
-│                             # connected wallet address
-│                             # (growthip:notes:${address}), with
-│                             # migrateLegacyNotes() to recover
-│                             # pre-namespacing data
-├── addressId.ts               # Cosmetic, reversible obfuscation of a
-│                             # Stellar address for /tip/[id] links — NOT
-│                             # cryptographic privacy, see the file's own
-│                             # doc comment and SECURITY.md
-├── profile.ts                 # Local-only creator profile (display
-│                             # name, bio, avatar variant), namespaced
-│                             # per address. Avatars render via DiceBear's
-│                             # public HTTP API (bottts-neutral style,
-│                             # curated seed list) — not a bundled
-│                             # library, after finding @dicebear/core +
-│                             # @dicebear/styles would need unverified
-│                             # `with { type: "json" }` import-attribute
-│                             # support under Turbopack for an identical
-│                             # visual result
-├── registryClient.ts          # useRegistryClient() hook — builds a
-│                             # growthip-creator-registry client,
-│                             # mirroring the dashboard's existing
-│                             # buildClient pattern for growthip-pool
-├── encryption/
-│   ├── cryptoUtils.ts          # X25519 keypair gen, ECDH, HKDF,
-│   │                          # AES-GCM encrypt/decrypt, key wrapping —
-│   │                          # all native Web Crypto API
-│   ├── kdfWorker.ts            # Argon2id derivation in a dedicated
-│   │                          # Web Worker (64MB memory cost would
-│   │                          # otherwise freeze the UI on the main
-│   │                          # thread). Communicates only in raw bytes,
-│   │                          # never CryptoKey objects, over postMessage
-│   ├── keyManagement.ts        # Identity lifecycle: createIdentity(),
-│   │                          # unlockWithPassword()/
-│   │                          # unlockWithRecoveryPhrase(), session
-│   │                          # auto-lock (15 min), encrypted backup
-│   │                          # export/import, encryptNoteForRecipient()/
-│   │                          # decryptIncomingNote()
-│   └── storage.ts              # IndexedDB persistence — stores only
-│                              # AES-GCM-wrapped bytes, never a CryptoKey
-│                              # object, sidestepping historical browser
-│                              # inconsistencies around storing
-│                              # non-extractable EC keys via structured
-│                              # clone
-├── useMarket.ts                # usePrices() — CoinGecko free API, 30s
-│                             # refresh. useWalletBalances() — Stellar
-│                             # Horizon testnet, 15s refresh
-├── growthipPoolClient.ts       # Generated TS binding for the pool
-│                             # contract (regenerate if the interface
-│                             # changes)
-└── growthipCreatorRegistryClient.ts  # Generated TS binding for
-                                     # growthip-creator-registry
+├── config.ts                  # Centralized env var access — read contract
+│                               # addresses, RPC URL, network passphrase from
+│                               # here, not process.env directly elsewhere
+├── tokens.ts                  # SUPPORTED_TOKENS — symbol, decimals, baseUnit,
+│                               # presets, pool/token contract addresses per
+│                               # token. Source of truth for what amounts the
+│                               # UI offers — must match each pool's on-chain
+│                               # tip_amount exactly
+├── poseidon.ts                 # hash1/hash2/hash3, computeCommitment(),
+│                               # computeNullifierHash(), computeRecipientHash()
+│                               # — the V4 hash path. OUTDATED CITATION (not
+│                               # independently confirmed): likely on-chain
+│                               # counterpart is now
+│                               # contracts/poseidon2/src/parity_test.rs
+├── merkle.ts                   # getMerklePath() — V4 sparse tree, depth-20.
+│                               # OUTDATED CITATION (not independently
+│                               # confirmed): likely on-chain counterpart is
+│                               # now contracts/pool-v5/src/merkle_onchain_v2.rs.
+│                               # NOTE: getMerklePath() is the function at the
+│                               # center of the still-unresolved leafIndex-0
+│                               # claim bug — see SECURITY.md's internal debug
+│                               # notes before changing this file
+├── zkp.ts                      # V4 generateProof()/toClaimArgs() — snarkjs
+│                               # Groth16 proving for the legacy claim flow
+├── note.ts                     # PrivateNote type (V4), encode/decode,
+│                               # localStorage persistence namespaced per
+│                               # connected wallet (growthip:notes:${address})
+├── addressId.ts                # Cosmetic, reversible obfuscation of a
+│                               # Stellar address for /tip/[id] links — NOT
+│                               # cryptographic privacy
+├── campaign.ts                  # Campaign metadata encode/decode + storage
+│                               # for the /campaign/[tipId]/[campaignId]
+│                               # multi-template link flow (id generation,
+│                               # progress tracking) — undocumented before
+│                               # this pass, not independently verified
+├── currency.ts                  # User's preferred display currency for
+│                               # USD-denominated figures (Dashboard,
+│                               # Analytics) — localStorage + same-tab custom
+│                               # event, same pattern as ThemeToggle
+├── slugify.ts                   # Heading text -> URL-safe anchor id, shared
+│                               # between TocSidebar and the section markup
+│                               # on the Privacy/Terms pages so ids agree
+├── wallet.ts                    # Unified wallet abstraction — Freighter and
+│                               # xBull only, via @creit.tech/stellar-wallets-kit
+├── profile.ts                  # Local-only creator profile (display name,
+│                               # bio, avatar variant), namespaced per
+│                               # address. Avatars via DiceBear's public HTTP
+│                               # API (bottts-neutral style)
+├── registryClient.ts           # useRegistryClient() hook — builds a
+│                               # growthip-creator-registry client
+├── poolV5Client.ts              # buildPoolV5Client() — thin helper for a
+│                               # pool-v5 client (Pool XLM V5 or Pool USDC
+│                               # V5, same wasm, two deployed instances)
+├── poolV5Bindings.ts            # Generated TS contract binding for pool-v5
+│                               # (regenerate if the interface changes)
+├── growthipPoolClient.ts       # Generated TS binding for the V4 pool
+│                               # contract (regenerate if the interface
+│                               # changes)
+├── growthipCreatorRegistryClient.ts  # Generated TS binding for
+│                                    # growthip-creator-registry
+├── encryption/                  # V4 note encryption stack
+│   ├── cryptoUtils.ts           # X25519 keypair gen, ECDH, HKDF,
+│   │                            # AES-GCM encrypt/decrypt — native Web
+│   │                            # Crypto API
+│   ├── kdfWorker.ts             # Argon2id derivation in a dedicated Web
+│   │                            # Worker (64MB memory cost would otherwise
+│   │                            # freeze the UI on the main thread)
+│   ├── keyManagement.ts         # V4 identity lifecycle: createIdentity(),
+│   │                            # unlockWithPassword()/
+│   │                            # unlockWithRecoveryPhrase(), session
+│   │                            # auto-lock (15 min), encrypted backup
+│   │                            # export/import
+│   └── storage.ts               # IndexedDB persistence — stores only
+│                                # AES-GCM-wrapped bytes, never a raw
+│                                # CryptoKey object
+├── shielded/                    # V5 "gr" shielded module (Baby Jubjub —
+│                               # Sapling-style keys), largely adapted from
+│                               # fxjrin/cyphras (Apache-2.0). Undocumented
+│                               # before this pass — descriptions below are
+│                               # from each file's own header comment, not
+│                               # independently verified beyond that
+│   ├── index.ts                 # Public re-exports (babyjub + poseidon2
+│   │                            # primitives)
+│   ├── keys.ts                  # Seed-agnostic gr key hierarchy: seed ->
+│   │                            # ask/nsk/ovk -> ak/nk -> ivk/pkD, mirroring
+│   │                            # a Sapling-style derivation. Domain tags
+│   │                            # frozen by transaction2x2.circom
+│   ├── seed.ts                  # gr identity seed sourcing — dedicated
+│   │                            # BIP39 mnemonic (deliberately NOT derived
+│   │                            # from a wallet signature; see file header
+│   │                            # for the phishability rationale)
+│   ├── babyjub.ts               # Baby Jubjub curve constants/ops, wraps
+│   │                            # circomlibjs to stay in lockstep with the
+│   │                            # circuit
+│   ├── poseidon2.ts             # Poseidon2 over BN254, via the same circom
+│   │                            # witness calculators as the circuit, so the
+│   │                            # TS hash is bit-identical by construction
+│   ├── address.ts               # gr bech32m shielded receiving addresses
+│   │                            # (default + diversified payloads)
+│   ├── hex.ts                   # Browser-safe hex/bigint helpers (Buffer
+│   │                            # usage replaced for Next.js client runtime)
+│   ├── extDataHash.ts           # Client-side mirror of pool-v5's
+│   │                            # hash_ext_data/calc_public_amount, so a
+│   │                            # proof binds to exactly the ext data the
+│   │                            # contract recomputes on-chain
+│   ├── noteEncryption.ts        # V5 note encryption over Baby Jubjub ECDH
+│   │                            # (Sapling-style scheme) — cannot reuse V4's
+│   │                            # X25519 stack, different curve
+│   ├── grIdentity.ts            # Orchestration for the gr identity: setup,
+│   │                            # restore, unlock, session lifecycle.
+│   │                            # Simplified vs V4: single password-wrap,
+│   │                            # no dual password/recovery-phrase OR-gate
+│   ├── grStorage.ts             # IndexedDB persistence for the wrapped gr
+│   │                            # seed — a separate DB from V4's identity
+│   │                            # store by design, zero shared state
+│   ├── grNoteScan.ts            # On-chain note discovery: scans pool-v5
+│   │                            # NewCommitment events and trial-decrypts
+│   │                            # each encrypted_output against the
+│   │                            # caller's ivk. New territory vs V4, which
+│   │                            # shares notes out-of-band instead
+│   ├── onChainActivity.ts       # Shared activity scanner used by BOTH the
+│   │                            # Activity and Analytics pages, so pending/
+│   │                            # withdrawn status never diverges between
+│   │                            # them
+│   ├── tipFlow.ts               # Builds the shielded deposit circuit input
+│   │                            # and drives Groth16 proving for pool-v5
+│   │                            # transact()
+│   └── zkpV5.ts                 # Browser-side Groth16 proof generation for
+│                                # the V5 tip flow (loads
+│                                # transaction2x2.wasm/.zkey)
+└── useMarket.ts                # usePrices() — CoinGecko free API, 30s
+                                # refresh. useWalletBalances() — Stellar
+                                # Horizon testnet, 15s refresh
 ```
+
+**Note on V4 vs V5 duplication:** `poseidon.ts`/`merkle.ts`/`zkp.ts`/`note.ts`
+(V4) and `shielded/poseidon2.ts`/`shielded/tipFlow.ts`/`shielded/zkpV5.ts`
+(V5) both currently exist side by side. This tracks the project's stated V4
+deprecated / V5 active status (see Environment Variables below) — V4 code
+paths are kept for existing note claims, not for new deposits.
 
 ---
 
@@ -306,36 +348,56 @@ npm run dev
 
 ```text
 src/app/
-├── (main)/page.tsx               # Public landing page
-├── tip/[id]/page.tsx             # Public, no-login tip page for a
-│                                # creator's shareable link. Mandatory
-│                                # premium gate: a supporter cannot
-│                                # deposit at all if the creator hasn't
-│                                # activated private notes (no plaintext
-│                                # fallback) — shows a banner + "copy
-│                                # link to share with your creator"
-│                                # instead
+├── (main)/
+│   ├── page.tsx                 # Public landing page
+│   ├── layout.tsx                # Layout wrapper for the (main) route group
+│   ├── privacy/page.tsx          # Privacy Policy — static content page
+│   └── terms/page.tsx            # Terms of Service — static content page
+├── tip/[id]/page.tsx            # Public, no-login tip page for a
+│                               # creator's shareable link. Mandatory
+│                               # premium gate: a supporter cannot deposit
+│                               # at all if the creator hasn't activated
+│                               # private notes (no plaintext fallback) —
+│                               # shows a banner + "copy link to share
+│                               # with your creator" instead
+├── campaign/[tipId]/[campaignId]/page.tsx  # Templated campaign link page
+│                               # (simple-payment and other templates —
+│                               # see src/lib/campaign.ts). Undocumented
+│                               # before this pass, not independently
+│                               # verified beyond imports/route shape
 └── dashboard/
+    ├── layout.tsx                # Shared dashboard chrome (sidebar, etc.)
     ├── page.tsx                   # Main dashboard: wallet balance,
-    │                            # Withdraw tab, Personal
-    │                            # Link card (QR + copy)
+    │                            # Withdraw tab, Personal Link card (QR +
+    │                            # copy)
     ├── claim/page.tsx             # Standalone claim flow — detects and
     │                            # decrypts encrypted note bundles
     │                            # automatically, falls back to legacy
-    │                            # plaintext/base64 parsing for notes
-    │                            # sent before encryption was mandatory
+    │                            # plaintext/base64 parsing for notes sent
+    │                            # before encryption was mandatory
     ├── activity/page.tsx          # Pending/claimed notes list, with an
     │                            # inline claim modal (same
     │                            # decrypt-or-fallback logic as above)
     ├── analytics/page.tsx         # Per-wallet tip stats from localStorage
     │                            # (received, withdrawn, pending), recent
     │                            # tips — gated behind is_premium()
-    ├── notes/page.tsx             # Renders the standalone <PendingNotes>
-    │                            # component
-    └── settings/page.tsx          # Profile (avatar, display name, bio),
-                                 # tip link + QR, Security & Private
-                                 # Notes (full encryption setup flow)
+    ├── profile/page.tsx           # Profile (avatar, display name, bio),
+    │                            # tip link + QR — split out from
+    │                            # settings/page.tsx since the last
+    │                            # documented pass
+    ├── links/page.tsx             # Campaign link creation/management —
+    │                            # templates (simple-payment, etc.), backed
+    │                            # by src/lib/campaign.ts
+    └── settings/page.tsx          # Security & Private Notes (full
+                                 # encryption setup flow)
 ```
+
+**Removed since the last documented pass:** `dashboard/notes/page.tsx`
+(the standalone `<PendingNotes>` page) no longer exists — grep confirms
+`PendingNotes` now only appears in `note.ts` and stale `.bak-*` files, not
+in any active route. Its functionality appears folded into
+`dashboard/activity/page.tsx`, but this was not independently verified by
+reading the component internals.
 
 Notes (the `secret`/`nullifier`/`recipientHash` bundle needed to claim a
 tip) are stored in the browser's `localStorage`, **namespaced per
