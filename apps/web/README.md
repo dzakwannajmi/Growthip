@@ -88,13 +88,27 @@ src/lib/
 ├── poseidon.ts                # hash1/hash2/hash3, computeCommitment(),
 │                             # computeNullifierHash(), computeRecipientHash().
 │                             # Must stay byte-for-byte consistent with the
-│                             # on-chain Poseidon host function — verified by
-│                             # contracts/growthip-pool/src/poseidon_verify_test.rs
+│                             # on-chain Poseidon host function. OUTDATED
+│                             # CITATION: this used to point to
+│                             # contracts/growthip-pool/src/poseidon_verify_test.rs,
+│                             # but that crate was removed in the V4→V5
+│                             # migration. Likely replacement:
+│                             # contracts/poseidon2/src/parity_test.rs
+│                             # (same stated purpose — pins reference
+│                             # vectors against the circuit's hash) but
+│                             # this wasn't independently confirmed.
 ├── merkle.ts                  # getMerklePath() — sparse O(N×DEPTH) tree,
 │                             # depth-20, MAX_LEAVES=1,048,576. Must stay
-│                             # consistent with the on-chain incremental
-│                             # insert_leaf() — verified by
-│                             # contracts/growthip-pool/src/merkle_verify_test.rs
+│                             # consistent with the on-chain tree logic.
+│                             # OUTDATED CITATION: this used to point to
+│                             # contracts/growthip-pool/src/merkle_verify_test.rs,
+│                             # also removed. Likely on-chain counterpart
+│                             # now is contracts/pool-v5/src/merkle_onchain_v2.rs,
+│                             # not independently confirmed. NOTE:
+│                             # getMerklePath() is the function at the
+│                             # center of the still-unresolved leafIndex-0
+│                             # claim bug — see SECURITY.md's internal
+│                             # debug notes before changing this file.
 ├── zkp.ts                     # generateProof() — wraps snarkjs witness
 │                             # calculation + Groth16 proving (4 public
 │                             # inputs: root, nullifierHash,
@@ -164,23 +178,75 @@ src/lib/
 
 ## Environment Variables
 
-See `.env.local` (not committed) or `.env.example` for the template.
+See `.env.local` (not committed). **There is currently no `.env.example`
+file in the repo** — despite the "Run Locally" section below historically
+telling you to copy one. Use the list here directly until one exists.
+
+All variables are read through `src/lib/config.ts` — prefer importing
+`config` over reading `process.env` directly elsewhere in the codebase,
+so there's a single place to audit when contract addresses change.
+
+### V5 (active) — the live shielded claim/deposit flow
 
 ```bash
-NEXT_PUBLIC_POOL_ID=                  # XLM pool contract address
-NEXT_PUBLIC_VERIFIER_V3_ID=           # V4 verifier contract address (var name kept as V3 for backward compat with existing .env files; holds the V4 verifier's address)
-NEXT_PUBLIC_TOKEN_ID=                 # Native XLM SAC address
-NEXT_PUBLIC_POOL_USDC_ID=             # USDC pool contract address
-NEXT_PUBLIC_TOKEN_USDC_ID=            # USDC SAC address
-NEXT_PUBLIC_CREATOR_REGISTRY_ID=      # growthip-creator-registry address
+NEXT_PUBLIC_POOL_V5_XLM_ID=            # Pool V5 — XLM (shielded JoinSplit)
+NEXT_PUBLIC_POOL_V5_USDC_ID=           # Pool V5 — USDC. Deployed and
+                                        # functional on-chain, but the
+                                        # USDC deposit UI is currently
+                                        # disabled pending an unresolved
+                                        # claim-flow bug — see
+                                        # docs/testnet-deployment.md and
+                                        # SECURITY.md's internal debug notes
+NEXT_PUBLIC_CREATOR_REGISTRY_ID=       # growthip-creator-registry address
+NEXT_PUBLIC_TOKEN_ID=                  # Native XLM SAC address
+NEXT_PUBLIC_TOKEN_USDC_ID=             # USDC SAC address (testnet)
+NEXT_PUBLIC_USDC_ISSUER=               # USDC issuer account — used by
+                                        # src/lib/useMarket.ts for price
+                                        # lookups, separate from the SAC
+                                        # address above
 NEXT_PUBLIC_NETWORK=testnet
 NEXT_PUBLIC_RPC_URL=https://soroban-testnet.stellar.org
 NEXT_PUBLIC_NETWORK_PASSPHRASE=Test SDF Network ; September 2015
 ```
 
-All variables are read through `src/lib/config.ts` — prefer importing
-`config` over reading `process.env` directly elsewhere in the codebase,
-so there's a single place to audit when contract addresses change.
+### V4 (deprecated) — still required, do not remove yet
+
+```bash
+NEXT_PUBLIC_POOL_ID=                   # Old pool contract address. Note:
+                                        # config.ts's own inline comment
+                                        # calls this "GrowthipPool V3", not
+                                        # V4 — that inconsistency wasn't
+                                        # resolved this session, worth
+                                        # double-checking which version is
+                                        # actually deployed at this address
+NEXT_PUBLIC_POOL_USDC_ID=              # Old USDC pool contract address
+NEXT_PUBLIC_VERIFIER_V3_ID=            # Old verifier contract address (var
+                                        # name kept as "V3" for backward
+                                        # compat with existing .env files —
+                                        # which version it actually points
+                                        # to has the same "V3 vs V4" question
+                                        # as NEXT_PUBLIC_POOL_ID above)
+```
+
+These three are declared with `!` (non-optional) in `config.ts` — the app
+throws at startup if any are unset, **even though this pool/verifier pair
+is deprecated and no longer used for new deposits.** This is presumably
+because notes deposited before the V5 migration still need to resolve
+through this old pool/verifier to be claimable. Don't remove these from
+`.env.local` without confirming that's no longer a concern.
+
+### Not yet deployed (roadmap)
+
+```bash
+NEXT_PUBLIC_POOL_EURC_ID=              # EURC pool — code path already
+                                        # exists in config.ts and
+                                        # dashboard/claim/page.tsx, but no
+                                        # EURC pool is deployed yet
+NEXT_PUBLIC_TOKEN_EURC_ID=             # EURC SAC — not yet deployed
+```
+
+These can be left empty; `config.ts` defaults them to `""` rather than
+throwing.
 
 > If you redeploy any contract, update these values here **and** in your
 > hosting provider's environment variables (e.g. Vercel project
@@ -215,8 +281,11 @@ not auto-discover what the app legitimately needs.
 
 ```bash
 npm install
-cp .env.example .env.local
-# fill in addresses from contracts/README.md or root README Testnet Deployment section
+touch .env.local
+# fill in the variables listed under "Environment Variables" above —
+# there is currently no .env.example to copy from. Addresses come from
+# docs/testnet-deployment.md (or contracts/README.md for build/deploy
+# details).
 
 npm run dev
 # http://localhost:3000
