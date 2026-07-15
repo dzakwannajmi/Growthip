@@ -157,7 +157,7 @@ export default function Home() {
   const faqs = [
     { q: "How does the privacy mechanism work?", a: "In short: your tip is mixed into a shared pool so it can't be traced back to you, and only your chosen creator can claim it. For the technically curious — when you send a tip, your funds go into a shared smart contract pool, and your browser generates a mathematical 'commitment'. When a creator claims the tip, they provide a Zero-Knowledge Proof (Groth16) that matches the commitment. The smart contract verifies this proof without ever revealing which specific tip belongs to which creator." },
     { q: "What wallets are supported?", a: "Growthip supports Freighter and xBull wallet. Both are Stellar browser extensions. Connect either one to start tipping or receiving tips. Make sure your wallet is set to Stellar Testnet." },
-    { q: "Which tokens can I use to tip?", a: "The protocol currently supports XLM and USDC on the Stellar Testnet, each with its own dedicated pool. Because the pools are modular, EURC and other Stellar assets are planned next." },
+    { q: "Which tokens can I use to tip?", a: "The protocol currently supports XLM on the Stellar Testnet. USDC's pool is already deployed and will be enabled soon — EURC and other Stellar assets are planned after that." },
     { q: "Is there a platform fee?", a: "Yes — a transparent 1% platform fee, calculated on the actual amount deposited. The creator receives 99% of every tip, sent directly to their wallet on claim. The 1% accrues on-chain in the pool contract and is publicly auditable via the contract's accumulated_fees() function — anyone can verify the exact total at any time. This fee funds ongoing maintenance, infrastructure, and feature development to keep the protocol sustainable. Standard Stellar network fees still apply on top, as with any on-chain transaction." },
     { q: "Where does the 1% fee go?", a: "It accrues inside the pool smart contract's own storage, not to any hidden account — you can read the running total on-chain via accumulated_fees(). It is withdrawn later in batches via an admin-gated withdraw_fees() call, deliberately disconnected in time from any individual claim so that a specific claim cannot be linked to a treasury transfer. The treasury address is public, so aggregate fee revenue is fully observable." },
     { q: "Is Growthip fully audited?", a: "Not yet. Growthip is currently a hackathon prototype running experimentally on the Stellar Testnet. The smart contracts have not undergone a formal security audit. Please do not use real funds or Mainnet assets." },
@@ -378,7 +378,7 @@ export default function Home() {
               { icon: "ph:prohibit-bold", title: "One-Time Tip Tickets", desc: "Every tip comes with a unique, digital ticket. Once your favorite creator claims it, it can never be used again." },
               { icon: "ph:link-bold", title: "Locked to the Creator", desc: "Your tip is mathematically tied to your chosen creator. Nobody else can claim it — not even the platform." },
               { icon: "ph:globe-hemisphere-west-bold", title: "Stays on Your Device", desc: "All the security checks happen directly inside your web browser. Your private secrets never leave your phone or computer." },
-              { icon: "ph:coins-bold", title: "Flexible Tipping Options", desc: "Tip easily using XLM or USDC right now. We are adding more crypto options soon to make supporting creators effortless." },
+              { icon: "ph:coins-bold", title: "Flexible Tipping Options", desc: "Tip easily using XLM right now. USDC support is coming soon, with more crypto options planned to make supporting creators effortless." },
             ].map((f, i, arr) => {
               const isLastCol = i % 3 === 2;
               const isLastRow = i >= arr.length - 3;
@@ -440,7 +440,7 @@ export default function Home() {
             <div className="border border-[#E5E5E5] dark:border-[#2A2A2A] bg-white dark:bg-[#171717]">
               {[
                 { value: "1%",  label: "Platform fee — verifiable via accumulated_fees()", tag: "On-chain" },
-                { value: "2",   label: "Tokens supported today — XLM and USDC, EURC planned next", tag: "Multi-token" },
+                { value: "1",   label: "Token supported today — XLM, with USDC and EURC coming soon", tag: "Multi-token" },
                 { value: "<1s", label: "Typical tip settlement time on Stellar testnet", tag: "Testnet" },
               ].map((stat, i) => (
                 <div
