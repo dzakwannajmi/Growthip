@@ -218,6 +218,54 @@ paths are kept for existing note claims, not for new deposits.
 
 ---
 
+## ZK Circuit Artifacts (`public/`)
+
+Static proving artifacts served straight from `public/`, fetched at runtime
+by `zkp.ts` (V4) and `shielded/zkpV5.ts` (V5). Two live paths, split across
+three directories — layout is inherited from how each generation's build
+scripts happened to output files, not a deliberate scheme:
+
+```text
+public/
+├── growthip_merkle_note_v4.wasm        # V4 claim proof circuit — loaded
+│                                       # by zkp.ts's WASM_PATH
+├── growthip_merkle_note_v4_final.zkey  # V4 claim proof key — zkp.ts's
+│                                       # ZKEY_PATH
+├── zkp/
+│   └── witness_calculator_v3_1.js      # V4's witness calculator — despite
+│                                       # the "v3_1" name, this IS what
+│                                       # zkp.ts loads for the V4 claim flow
+│                                       # (WITNESS_CALCULATOR_PATH). Not a
+│                                       # leftover — never renamed when the
+│                                       # circuit moved from v3.1 to v4,
+│                                       # since the calculator itself didn't
+│                                       # change. Don't delete this thinking
+│                                       # it's a v3 artifact.
+└── circuits/                           # V5 — all fetched by shielded/zkpV5.ts
+    ├── transaction2x2.wasm             # V5 tip circuit
+    ├── transaction2x2.zkey             # V5 tip circuit proving key
+    ├── verification_key.json           # V5 verification key
+    ├── witness_calculator.js           # V5 witness calculator (unrelated
+    │                                   # to the file of the same base name
+    │                                   # formerly in zkp/, already removed)
+    ├── poseidon2_1_main.wasm           # Poseidon2 arity-1 witness calc,
+    ├── poseidon2_2_main.wasm           # arity-2,
+    ├── poseidon2_3_main.wasm           # arity-3 — used by
+    │                                   # shielded/poseidon2.ts as the hash
+    │                                   # oracle
+    └── poseidon2_compress_main.wasm    # Poseidon2 compression variant
+```
+
+**Removed (dead, confirmed unreferenced in source) as of this pass:**
+`zkp/growthip_merkle_note_v3.wasm`, `zkp/growthip_merkle_note_v3_1.wasm`,
+`zkp/growthip_merkle_note_v3_final.zkey`,
+`zkp/growthip_merkle_note_v3_1_final.zkey`, and `zkp/witness_calculator.js`
+(the bare, non-`_v3_1` one) — all superseded by the V4 files at `public/`
+root and the V5 files under `circuits/`, and none were fetched from any
+active (non-`.bak`) source file.
+
+---
+
 ## Environment Variables
 
 See `.env.local` (not committed). **There is currently no `.env.example`
