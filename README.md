@@ -3,7 +3,7 @@
 
 > *Support creators without exposing the relationship.*
 
-[![Demo Video](https://img.shields.io/badge/▶_Demo_Video-YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/o_RsWAA1OV8)
+[![Demo Video](https://img.shields.io/badge/▶_Demo_Video-YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/uRUuwQAeOfE)
 [![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-growthip.vercel.app-000000?style=for-the-badge)](https://growthip.vercel.app)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue?style=for-the-badge)](LICENSE)
 [![Stellar Testnet](https://img.shields.io/badge/Stellar-Testnet-7D00FF?style=for-the-badge&logo=stellar&logoColor=white)](https://stellar.org)
