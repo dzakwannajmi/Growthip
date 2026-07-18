@@ -321,9 +321,11 @@ export default function GrIdentitySetup({ address: walletAddress }: GrIdentitySe
       const keys = await deriveShieldedKeys(seed);
       const packed = await packPoint(keys.pkD);
       const client = buildPoolV5Client(token, walletAddress);
+      const existing = await client.get_enc_key({ owner: walletAddress });
+      const nextVersion = existing.result ? existing.result.version + 1 : 1;
       const tx = await client.register_enc_key({
         owner: walletAddress,
-        version: 1,
+        version: nextVersion,
         pubkey: Buffer.from(packed),
       });
       await tx.signAndSend({ force: true });

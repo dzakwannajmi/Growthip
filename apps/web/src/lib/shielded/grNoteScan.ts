@@ -126,7 +126,7 @@ export async function scanForGrNotes(
     // ledger range per call and return a short page while more matching
     // events still exist further ahead -- v1 has no `hasMore` flag to
     // signal this. Only a truly EMPTY page means we reached the chain tip.
-    if (page.events.length === 0) break;
+    if (!page.cursor || page.cursor === cursor) break;
     cursor = page.cursor;
   }
 

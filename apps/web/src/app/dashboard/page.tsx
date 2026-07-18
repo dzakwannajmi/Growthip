@@ -31,7 +31,7 @@ import { getAvailableTokens, type Token, type TokenSymbol } from "@/lib/tokens";
 import { saveNote, getPendingNotes, getClaimedNotes, markNoteAsClaimed, migrateLegacyNotes, formatRelativeTime, type PrivateNote } from "@/lib/note";
 import { proveV5 } from "@/lib/shielded/zkpV5";
 import { buildWithdrawInput } from "@/lib/shielded/tipFlow";
-import { Client as PoolV5Client } from "@/lib/poolV5Bindings";
+import { Client as PoolV5Client, networks as poolV5Networks } from "@/lib/poolV5Bindings";
 
 import { getStoredGrAddress } from "@/lib/shielded/grIdentity";
 import Link from "next/link";
@@ -425,11 +425,14 @@ const { diversifiedKey } = await import("@/lib/shielded/keys");
 const currentPkD = await diversifiedKey(keys.ivk, keys.d);
 
 
-const blob = Buffer.from(raw, "base64");
+const cleaned = raw.replace(/\s+/g, "");
+            const blob = Buffer.from(cleaned, "base64");
 
 
 const decrypted = await tryDecryptNote(keys.ivk, blob);
-            if (!decrypted) throw new Error("Failed to decrypt V5 note. Please verify your IVK key.");
+            if (!decrypted) {
+              throw new Error("Failed to decrypt V5 note. Please verify your IVK key.");
+            }
             note = decrypted;
 
             // 4. Siapkan Dummy Merkle Path (Karena backend belum punya Merkle Indexer)
@@ -456,7 +459,7 @@ const decrypted = await tryDecryptNote(keys.ivk, blob);
 
             const poolCandidates: { token: "USDC" | "XLM"; contractId: string }[] = [
                 { token: "USDC", contractId: process.env.NEXT_PUBLIC_POOL_V5_USDC_ID || "" },
-                { token: "XLM",  contractId: process.env.NEXT_PUBLIC_POOL_V5_XLM_ID  || "" },
+                { token: "XLM",  contractId: process.env.NEXT_PUBLIC_POOL_V5_XLM_ID  || poolV5Networks.testnet.contractId },
             ];
 
             let discoveredNotes: Awaited<ReturnType<typeof scanForGrNotes>> = [];
@@ -593,14 +596,6 @@ const claimPkD = await diversifiedKey(keys.ivk, note.d);
             }
 
 
-            console.log("[DEBUG withdraw]", {
-                token: (note as any).token,
-                calcCommitment: calcCommitment.toString(),
-                leafIndex: finalLeafIndex,
-                merkleComputedRoot: finalRoot.toString(),
-                commitmentsFound: commitments.length,
-                commitmentsList: commitments.map((c) => ({ index: c.index, commitment: c.commitment })),
-            });
             // DIAGNOSTIC (temporary): explicitly print the low-index leaves
             // (0-5) as found by the scan, sorted by index, plus whether each
             // index is present at all. If leafIndex 0's sibling (index 1) is
@@ -613,17 +608,6 @@ const claimPkD = await diversifiedKey(keys.ivk, note.d);
             // leafMatches:true) but the PATH used to get from that leaf to
             // the root is wrong because of this missing/incorrect sibling.
             const lowIndices = [0, 1, 2, 3, 4, 5];
-            console.log("[DEBUG low-index commitments]", {
-                requestedLeafIndex: finalLeafIndex,
-                present: lowIndices.map((i) => ({
-                    index: i,
-                    found: commitments.some((c) => c.index === i),
-                    commitment: commitments.find((c) => c.index === i)?.commitment ?? "MISSING -> fell back to emptyNodes",
-                })),
-                totalCommitmentsScanned: commitments.length,
-                minIndexScanned: Math.min(...commitments.map((c) => c.index)),
-                maxIndexScanned: Math.max(...commitments.map((c) => c.index)),
-            });
             // DIAGNOSTIC (temporary): print as a single flat string so it's
             // visible directly in a copy-pasted console log without needing
             // to expand the object tree in devtools. Also print duplicate
@@ -631,33 +615,6 @@ const claimPkD = await diversifiedKey(keys.ivk, note.d);
             // (e.g. from an unpaginated/overlapping RPC scan), Map-based
             // dedup in getMerklePath silently keeps only the LAST one seen,
             // which could be a stale/wrong value for that index.
-            const indexCounts = new Map<number, number>();
-            for (const c of commitments) {
-                indexCounts.set(c.index, (indexCounts.get(c.index) ?? 0) + 1);
-            }
-            const duplicateIndices = [...indexCounts.entries()].filter(([, n]) => n > 1);
-            console.log(
-                "[DEBUG low-index FLAT]",
-                JSON.stringify({
-                    requestedLeafIndex: finalLeafIndex,
-                    lowIndexEntries: lowIndices.map((i) => {
-                        const matches = commitments.filter((c) => c.index === i);
-                        return { index: i, matchCount: matches.length, values: matches.map((m) => m.commitment) };
-                    }),
-                    duplicateIndices,
-                })
-            );
-            try {
-                const liveRootRes = await client.current_root();
-                console.log("[DEBUG withdraw] live on-chain root:", BigInt(liveRootRes.result.toString()).toString());
-            } catch (e) {
-                console.log("[DEBUG withdraw] failed to fetch live root", e);
-            }
-            console.log("[DEBUG diversifier]", {
-                noteD: Array.from(note.d as Uint8Array),
-                keysD: Array.from(keys.d as Uint8Array),
-                sameD: Array.from(note.d as Uint8Array).join(",") === Array.from(keys.d as Uint8Array).join(","),
-            });
 
             // 5. Bangun Input ZK (Sangat Bersih)
             const builtWithdraw = await buildWithdrawInput({
@@ -691,28 +648,6 @@ const claimPkD = await diversifiedKey(keys.ivk, note.d);
             // diverge, the circuit WILL fail ForceEqualIfEnabled regardless
             // of anything else being correct -- this pinpoints it before
             // burning 5-15s on proof generation.
-            try {
-                const inputCheck = builtWithdraw.input;
-                const recomputedLeaf = await tipFlowLib.noteCommitment(
-                    BigInt(inputCheck.inAmount[0]),
-                    keys.pkD,
-                    BigInt(inputCheck.inBlinding[0]),
-                );
-                console.log("[DEBUG leaf-check]", {
-                    leafIndex: finalLeafIndex,
-                    calcCommitment: calcCommitment.toString(),
-                    recomputedLeafFromCircuitInput: recomputedLeaf.toString(),
-                    leafMatches: recomputedLeaf.toString() === calcCommitment.toString(),
-                    inAmountSent: inputCheck.inAmount[0],
-                    inBlindingSent: inputCheck.inBlinding[0],
-                    inDSent: inputCheck.inD[0],
-                    keysPkD: [keys.pkD[0].toString(), keys.pkD[1].toString()],
-                    firstPathElement: inputCheck.inPathElements[0][0],
-                    rootSent: inputCheck.root,
-                });
-            } catch (diagLeafErr) {
-                console.log("[DEBUG leaf-check] failed to compute", diagLeafErr);
-            }
 
             // 6. Generate Proof Groth16
             setClaimStage("submitting");
