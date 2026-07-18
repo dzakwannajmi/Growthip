@@ -206,7 +206,7 @@ export default function ActivityPage() {
     try {
       const note = modalNote;
       const v5 = (note as any).v5_raw;
-      if (!v5) throw new Error("Catatan ini tidak lengkap dan tidak bisa diklaim.");
+      if (!v5) throw new Error("This note is incomplete and cannot be claimed.");
 
       setClaimStatus("Loading your private keys...");
       const seed = getGrSeed();
@@ -226,11 +226,11 @@ export default function ActivityPage() {
         publicKey: address,
       });
 
-      setClaimStatus("Checking tip status on the network...");
+      setClaimStatus("In process..");
       const nullifier = BigInt("0x" + note.nullifierHash);
       const spentTx = await client.is_nullifier_spent({ nullifier });
       if (spentTx.result === true) {
-        throw new Error("Tip ini sudah pernah diklaim sebelumnya.");
+        throw new Error("This tip has been claimed before.");
       }
 
       setClaimStatus("Searching for the tip note on the network...");
@@ -252,7 +252,7 @@ export default function ActivityPage() {
         throw new Error("This tip note hasn't appeared on the network yet. Please try again in a moment.");
       }
 
-      setClaimStatus("Menyusun jalur verifikasi...");
+      setClaimStatus("Building a verification path...");
       const merkleData = await getMerklePath(calcCommitment.toString(), commitments);
       const merklePath: MerklePath = { pathElements: merkleData.pathElements, pathIndices: merkleData.pathIndices };
 
@@ -260,7 +260,7 @@ export default function ActivityPage() {
       const finalRoot = BigInt(rootRes.result.toString());
 
       setClaimStage("proving");
-      setClaimStatus("Menghasilkan bukti privasi (5-15 detik)...");
+      setClaimStatus("Generating privacy proof (5-15 seconds)...");
       const builtWithdraw = await buildWithdrawInput({
         noteAmount: cleanAmount,
         blinding: cleanBlinding,

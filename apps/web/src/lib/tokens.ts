@@ -43,7 +43,7 @@ export const SUPPORTED_TOKENS: Token[] = [
     baseUnit:   1_000_000,    // 0.1 USDC
     presets:    [0.1, 0.5, 1, 2], // USDC amounts
     logoUrl:    "https://assets.coingecko.com/coins/images/6319/standard/USDC.png?1769615602",
-    available:  false,  // TEMP: USDC transfer disabled, moved to roadmap
+    available:  true,
   },
   {
     symbol:     "EURC",
